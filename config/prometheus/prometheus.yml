@@ -1,0 +1,136 @@
+# ==========================================
+# Prometheus Configuration
+# ==========================================
+# このファイルはPrometheusのメトリクス収集設定です。
+# 配置先: prometheus_config ボリューム内の prometheus.yml
+
+# ----- グローバル設定 -----
+global:
+  # スクレイプ間隔（デフォルト）
+  scrape_interval: 15s
+
+  # スクレイプタイムアウト
+  scrape_timeout: 10s
+
+  # ルール評価間隔
+  evaluation_interval: 15s
+
+  # 外部システムとの通信時に付与されるラベル
+  external_labels:
+    cluster: 'monitoring-lab'
+    environment: 'local'
+
+# ----- アラートマネージャー設定 -----
+# Alertmanagerをデプロイしている場合に有効化
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#             - 'alertmanager:9093'
+
+# ----- ルールファイルの読み込み -----
+# アラートルールや記録ルールを定義したYAMLファイル
+rule_files:
+  # - '/etc/prometheus/rules/*.yml'
+
+# ----- スクレイプ設定 -----
+scrape_configs:
+  # ==========================================
+  # Job 1: Prometheus自身の監視
+  # ==========================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          tier: 'monitoring'
+
+  # ==========================================
+  # Job 2: Node Exporter（ホストメトリクス）
+  # ==========================================
+  # Node Exporterをデプロイしている場合に有効化
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+  #         tier: 'infrastructure'
+
+  # ==========================================
+  # Job 3: cAdvisor（Dockerコンテナメトリクス）
+  # ==========================================
+  # cAdvisorをデプロイしている場合に有効化
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
+  #       labels:
+  #         service: 'cadvisor'
+  #         tier: 'infrastructure'
+
+  # ==========================================
+  # Job 4: Zabbix Server（オプション）
+  # ==========================================
+  # Zabbix ServerがPrometheusメトリクスを公開している場合
+  # - job_name: 'zabbix'
+  #   static_configs:
+  #     - targets: ['zbx_server:10051']
+  #       labels:
+  #         service: 'zabbix'
+  #         tier: 'monitoring'
+
+  # ==========================================
+  # Job 5: PostgreSQL Exporter（オプション）
+  # ==========================================
+  # PostgreSQL Exporterをデプロイしている場合
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         service: 'postgres'
+  #         tier: 'database'
+
+  # ==========================================
+  # Job 6: Grafana（オプション）
+  # ==========================================
+  # Grafanaの内部メトリクスを収集
+  # - job_name: 'grafana'
+  #   static_configs:
+  #     - targets: ['grafana:3000']
+  #       labels:
+  #         service: 'grafana'
+  #         tier: 'monitoring'
+
+# ==========================================
+# リモートWrite設定（オプション）
+# ==========================================
+# 長期保存用のリモートストレージに送信する場合
+# remote_write:
+#   - url: 'http://remote-storage:9201/write'
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 5
+#       max_samples_per_send: 1000
+
+# ==========================================
+# リモートRead設定（オプション）
+# ==========================================
+# リモートストレージからデータを読み取る場合
+# remote_read:
+#   - url: 'http://remote-storage:9201/read'
+
+# ==========================================
+# 設定適用方法
+# ==========================================
+# 1. Prometheusコンテナが起動している状態で:
+#    docker cp prometheus.yml monitoring-lab-prometheus:/etc/prometheus/
+#
+# 2. 設定をリロード:
+#    curl -X POST http://localhost:9090/-/reload
+#    ※ --web.enable-lifecycle フラグが必要
+#
+# 3. または、Prometheusを再起動:
+#    docker restart monitoring-lab-prometheus
+#
+# 確認方法:
+# - Prometheus UI → Status → Configuration
+# - Prometheus UI → Status → Targets

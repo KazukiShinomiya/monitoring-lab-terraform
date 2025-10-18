@@ -1,0 +1,88 @@
+# ==========================================
+# Git Ignore Configuration
+# ==========================================
+
+# ----- Terraform関連 -----
+# Terraformのプラグインキャッシュ
+.terraform/
+.terraform.lock.hcl
+
+# Stateファイル（機密情報を含む可能性）
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform-state/
+
+# Terragruntのキャッシュ
+.terragrunt-cache/
+
+# 変数ファイル（機密情報を含む可能性）
+*.tfvars
+*.tfvars.json
+
+# ----- 環境変数ファイル -----
+.env
+.env.local
+.env.*.local
+
+# ----- IDE/エディタ設定 -----
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ----- OS関連 -----
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# ----- ログファイル -----
+*.log
+logs/
+*.log.*
+
+# ----- 一時ファイル -----
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ----- Docker関連 -----
+# docker-compose override（個人設定）
+docker-compose.override.yml
+
+# ----- その他 -----
+# Node modules（もし使用する場合）
+node_modules/
+
+# Python環境（もし使用する場合）
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# ----- 許可するファイル -----
+# テンプレートファイルは除外しない
+!.env.example
+!*.tfvars.example
