@@ -1,0 +1,109 @@
+# ==========================================
+# Terragrunt Development Environment
+# ==========================================
+# このDocker Composeファイルは、Terragruntを
+# コンテナ環境で実行するための開発環境を提供します。
+# (Terragruntイメージには既にTerraformが含まれています)
+
+services:
+  # ==========================================
+  # Terragrunt CLI Container (with Terraform)
+  # ==========================================
+  terragrunt:
+    # Alpine LinuxベースのTerragruntイメージ
+    image: alpine/terragrunt:latest
+
+    container_name: monitoring-lab-terragrunt
+
+    # コンテナを起動したままにする
+    entrypoint: /bin/sh
+    command: -c "tail -f /dev/null"
+
+    working_dir: /workspace
+
+    # ボリュームマウント（Terraformと同じ）
+    volumes:
+      - .:/workspace
+      - //./pipe/docker_engine://./pipe/docker_engine
+      - terraform-plugin-cache:/root/.terraform.d/plugin-cache
+      - terragrunt-cache:/root/.terragrunt-cache
+
+    # 環境変数
+    environment:
+      - TF_LOG=INFO
+      - TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache
+      - DOCKER_HOST=npipe:////./pipe/docker_engine
+      - TZ=Asia/Tokyo
+
+      # Terragrunt設定
+      - TERRAGRUNT_DOWNLOAD=/root/.terragrunt-cache
+      - TERRAGRUNT_NON_INTERACTIVE=true
+
+    networks:
+      - terraform-network
+
+    depends_on:
+      - vault-dev
+
+    labels:
+      - "project=monitoring-lab"
+      - "component=terragrunt"
+
+  # ==========================================
+  # Vault (Development Mode)
+  # ==========================================
+  # Terraform/TerragruntからVaultに接続するための開発用Vault
+  vault-dev:
+    image: hashicorp/vault:latest
+
+    container_name: monitoring-lab-vault-dev
+
+    # ポート公開
+    ports:
+      - "8200:8200"  # Vault API/UI
+
+    # 環境変数（開発モード）
+    environment:
+      # 開発モード有効化
+      - VAULT_DEV_ROOT_TOKEN_ID=root
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_LOG_LEVEL=info
+      - VAULT_ADDR=http://0.0.0.0:8200
+
+    # ヘルスチェック
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # キャパビリティ（IPC_LOCK）
+    cap_add:
+      - IPC_LOCK
+
+    networks:
+      - terraform-network
+
+    labels:
+      - "project=monitoring-lab"
+      - "component=vault"
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  terraform-network:
+    name: monitoring-lab-terraform-network
+    driver: bridge
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  # Terraformプラグインキャッシュ（永続化）
+  terraform-plugin-cache:
+    name: monitoring-lab-terraform-plugin-cache
+
+  # Terragruntキャッシュ（永続化）
+  terragrunt-cache:
+    name: monitoring-lab-terragrunt-cache

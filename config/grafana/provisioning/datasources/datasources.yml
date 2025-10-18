@@ -1,0 +1,99 @@
+# ==========================================
+# Grafana Datasource Provisioning
+# ==========================================
+# このファイルはGrafanaの起動時に自動的にデータソースを登録します。
+# 配置先: grafana_provisioning ボリューム内の datasources/datasources.yml
+
+apiVersion: 1
+
+# 既存のデータソースを削除するか（上書き動作）
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Zabbix
+    orgId: 1
+
+datasources:
+  # ==========================================
+  # Prometheus データソース
+  # ==========================================
+  - name: Prometheus
+    type: prometheus
+    access: proxy  # Grafanaサーバー経由でアクセス
+    url: http://prometheus:9090  # Docker Network内のホスト名
+    isDefault: true  # デフォルトのデータソースに設定
+    editable: true   # UI上で編集可能
+    version: 1
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s  # スクレイプ間隔（Prometheusの設定と一致させる）
+      queryTimeout: 60s
+      # カスタムHTTPヘッダー（必要に応じて）
+      # customQueryParameters: ''
+
+  # ==========================================
+  # Zabbix データソース
+  # ==========================================
+  # 注意: Zabbixプラグインのインストールが必要
+  # GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app
+  - name: Zabbix
+    type: alexanderzobnin-zabbix-datasource
+    access: proxy
+    url: http://zbx_web:8080/api_jsonrpc.php  # Zabbix API Endpoint
+    editable: true
+    version: 1
+    jsonData:
+      # Zabbix認証情報
+      username: Admin  # Zabbixのユーザー名
+
+      # パフォーマンス設定
+      trends: true         # トレンドデータの使用
+      trendsFrom: '7d'     # 7日以前はトレンドデータを使用
+      trendsRange: '4d'    # 4日以上の範囲ではトレンドデータを使用
+      cacheTTL: 60         # キャッシュ有効期間（秒）
+      timeout: 30          # タイムアウト（秒）
+
+      # ダイレクトDB接続（オプション・高速化）
+      # dbConnectionEnable: true
+      # dbConnectionDatasourceId: 2  # PostgreSQLデータソースのID
+
+    # 機密情報（UI上で非表示）
+    secureJsonData:
+      password: zabbix  # Zabbixのパスワード
+      # TODO: Vault連携実装後は以下のように変更
+      # password: ${ZABBIX_PASSWORD}  # 環境変数から取得
+
+  # ==========================================
+  # PostgreSQL データソース（オプション）
+  # ==========================================
+  # Zabbixのデータベースに直接アクセスする場合に使用
+  # - name: Zabbix-PostgreSQL
+  #   type: postgres
+  #   access: proxy
+  #   url: postgres:5432
+  #   database: zabbix
+  #   user: zabbix
+  #   editable: true
+  #   secureJsonData:
+  #     password: YOUR_POSTGRES_PASSWORD
+  #   jsonData:
+  #     sslmode: disable
+  #     postgresVersion: 1500  # PostgreSQL 15.x
+  #     timescaledb: false
+
+# ==========================================
+# 設定適用方法
+# ==========================================
+# 1. Grafanaコンテナが起動している状態で:
+#    docker cp datasources.yml monitoring-lab-grafana:/etc/grafana/provisioning/datasources/
+#
+# 2. Grafanaを再起動:
+#    docker restart monitoring-lab-grafana
+#
+# 3. または、初回デプロイ時にボリュームに配置:
+#    - grafana_provisioning ボリュームをマウント
+#    - このファイルを datasources/ ディレクトリに配置
+#
+# 確認方法:
+# - Grafana UI → Configuration → Data Sources
+# - Prometheus と Zabbix が自動登録されていることを確認
