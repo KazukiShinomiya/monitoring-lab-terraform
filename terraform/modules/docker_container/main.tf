@@ -4,32 +4,6 @@
 # このモジュールは、Docker環境でコンテナベースのサービスを
 # 統一的に管理するための共通モジュールです。
 
-terraform {
-  required_version = ">= 1.0"
-
-  required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
-    }
-  }
-}
-
-# ==========================================
-# Docker Network
-# ==========================================
-# 全サービスが通信するための専用ネットワークを作成
-resource "docker_network" "monitoring" {
-  name   = "${var.project_name}-network"
-  driver = "bridge"
-
-  # IPアドレス範囲を明示的に指定（デバッグ用）
-  ipam_config {
-    subnet  = "172.28.0.0/16"
-    gateway = "172.28.0.1"
-  }
-}
-
 # ==========================================
 # Docker Volumes
 # ==========================================
@@ -64,7 +38,7 @@ resource "docker_container" "service" {
 
   # ネットワーク設定
   networks_advanced {
-    name = docker_network.monitoring.name
+    name = var.network_name
     # サービス名でDNS解決できるようにエイリアスを設定
     aliases = [each.key]
   }
@@ -75,15 +49,8 @@ resource "docker_container" "service" {
     external = each.value.external_port
   }
 
-  # 環境変数の注入
-  dynamic "env" {
-    for_each = each.value.env
-    content {
-      # 環境変数を "KEY=VALUE" 形式から分解
-      name  = split("=", env.value)[0]
-      value = split("=", env.value)[1]
-    }
-  }
+  # 環境変数の注入（文字列リスト形式）
+  env = each.value.env
 
   # ボリュームマウント設定（Docker Volume）
   dynamic "volumes" {

@@ -13,8 +13,18 @@ terraform {
   source = "../../../modules/docker_container"
 }
 
+# ----- 依存関係 -----
+dependency "network" {
+  config_path = "../network"
+  mock_outputs = {
+    network_name = "monitoring-lab-network"
+  }
+}
+
 # ----- サービス固有の変数 -----
 inputs = {
+  network_name = dependency.network.outputs.network_name
+
   # 永続ボリュームの定義
   # 注意: 開発モードではボリュームを使用しない（メモリ内で動作）
   volumes = []

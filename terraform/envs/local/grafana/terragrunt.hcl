@@ -14,6 +14,13 @@ terraform {
 }
 
 # ----- 依存関係の定義 -----
+dependency "network" {
+  config_path = "../network"
+  mock_outputs = {
+    network_name = "monitoring-lab-network"
+  }
+}
+
 # PrometheusとZabbixが先に起動している必要がある
 dependency "prometheus" {
   config_path = "../prometheus"
@@ -33,6 +40,8 @@ dependency "zabbix" {
 
 # ----- サービス固有の変数 -----
 inputs = {
+  network_name = dependency.network.outputs.network_name
+
   # 永続ボリュームの定義
   volumes = [
     "grafana_data"         # Grafanaのデータベース（SQLite）
@@ -76,7 +85,7 @@ inputs = {
       # Bind マウント設定（リモートサーバーのファイル）
       bind_mounts = [
         {
-          source    = "/opt/monitoring-lab/grafana/provisioning"
+          source    = "/home/ubuntu/monitoring-lab/grafana/provisioning"
           target    = "/etc/grafana/provisioning"
           read_only = true
         }

@@ -13,8 +13,20 @@ terraform {
   source = "../../../modules/docker_container"
 }
 
+# ----- 依存関係 -----
+dependency "network" {
+  config_path = "../network"
+
+  mock_outputs = {
+    network_name = "monitoring-lab-network"
+  }
+}
+
 # ----- サービス固有の変数 -----
 inputs = {
+  # ネットワーク名（networkサービスから取得）
+  network_name = dependency.network.outputs.network_name
+
   # 永続ボリュームの定義
   volumes = [
     "postgres_data"  # PostgreSQLのデータディレクトリ用

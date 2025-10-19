@@ -14,6 +14,13 @@ terraform {
 }
 
 # ----- 依存関係の定義 -----
+dependency "network" {
+  config_path = "../network"
+  mock_outputs = {
+    network_name = "monitoring-lab-network"
+  }
+}
+
 # PostgreSQLが先に起動している必要がある
 dependency "postgres" {
   config_path = "../postgres"
@@ -26,6 +33,8 @@ dependency "postgres" {
 
 # ----- サービス固有の変数 -----
 inputs = {
+  network_name = dependency.network.outputs.network_name
+
   # 永続ボリュームの定義
   volumes = [
     "zbx_server_data",  # Zabbix Serverのデータディレクトリ
