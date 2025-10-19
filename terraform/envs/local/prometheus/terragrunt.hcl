@@ -13,8 +13,18 @@ terraform {
   source = "../../../modules/docker_container"
 }
 
+# ----- 依存関係 -----
+dependency "network" {
+  config_path = "../network"
+  mock_outputs = {
+    network_name = "monitoring-lab-network"
+  }
+}
+
 # ----- サービス固有の変数 -----
 inputs = {
+  network_name = dependency.network.outputs.network_name
+
   # 永続ボリュームの定義
   volumes = [
     "prometheus_data"   # 時系列データベース
@@ -54,7 +64,7 @@ inputs = {
       # Bind マウント設定（リモートサーバーのファイル）
       bind_mounts = [
         {
-          source    = "/opt/monitoring-lab/prometheus/prometheus.yml"
+          source    = "/home/ubuntu/monitoring-lab/prometheus/prometheus.yml"
           target    = "/etc/prometheus/prometheus.yml"
           read_only = true
         }

@@ -70,11 +70,14 @@ generate "provider" {
   contents = <<EOF
 provider "docker" {
   # SSH経由でリモートDockerに接続
-  # 環境変数 TARGET_HOST, TARGET_USER, TARGET_PORT を使用
-  host = "ssh://$${TARGET_USER}@$${TARGET_HOST}:$${TARGET_PORT}"
+  host = "ssh://${get_env("TARGET_USER", "ubuntu")}@${get_env("TARGET_HOST", "10.0.0.220")}:${get_env("TARGET_PORT", "22")}"
 
-  # SSH鍵は ~/.ssh/id_rsa または環境変数で指定
-  ssh_opts = ["-o", "StrictHostKeyChecking=no"]
+  # SSH鍵のパス指定 + StrictHostKeyCheckingを無効化
+  ssh_opts = [
+    "-i", "${get_env("SSH_PRIVATE_KEY", "/tmp/.ssh/id_rsa")}",
+    "-o", "StrictHostKeyChecking=no",
+    "-o", "UserKnownHostsFile=/dev/null"
+  ]
 }
 EOF
 }

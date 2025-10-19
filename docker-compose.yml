@@ -15,24 +15,37 @@ services:
 
     container_name: monitoring-lab-terragrunt
 
-    # コンテナを起動したままにする
+    # コンテナを起動したままにする + SSH鍵コピー
     entrypoint: /bin/sh
-    command: -c "tail -f /dev/null"
+    command:
+      - -c
+      - |
+        mkdir -p /root/.ssh
+        chmod 700 /root/.ssh
+        if [ -f /tmp/ssh-keys/id_rsa ]; then
+          cp /tmp/ssh-keys/id_rsa /root/.ssh/id_rsa
+          cp /tmp/ssh-keys/id_rsa.pub /root/.ssh/id_rsa.pub
+          chmod 600 /root/.ssh/id_rsa
+          chmod 644 /root/.ssh/id_rsa.pub
+          echo "SSH keys copied successfully"
+        fi
+        tail -f /dev/null
 
     working_dir: /workspace
 
     # ボリュームマウント（Terraformと同じ）
     volumes:
       - .:/workspace
-      - //./pipe/docker_engine://./pipe/docker_engine
       - terraform-plugin-cache:/root/.terraform.d/plugin-cache
       - terragrunt-cache:/root/.terragrunt-cache
+      - ${HOME}/.ssh:/tmp/ssh-keys:ro  # WSL2のSSH鍵を一時ディレクトリにマウント
 
     # 環境変数
+    env_file:
+      - .env  # .envファイルから環境変数を読み込み
     environment:
       - TF_LOG=INFO
       - TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache
-      - DOCKER_HOST=npipe:////./pipe/docker_engine
       - TZ=Asia/Tokyo
 
       # Terragrunt設定

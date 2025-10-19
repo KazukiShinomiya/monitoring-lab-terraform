@@ -12,6 +12,11 @@ variable "project_name" {
   }
 }
 
+variable "network_name" {
+  type        = string
+  description = "接続するDockerネットワークの名前"
+}
+
 variable "volumes" {
   type        = list(string)
   description = "作成する永続ボリュームの名前リスト（例: ['zbx_server_data', 'grafana_data']）"

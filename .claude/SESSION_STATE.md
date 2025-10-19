@@ -1,13 +1,117 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2025-10-19 01:30
+**最終更新**: 2025-10-19 16:20
 **プロジェクト**: Monitoring Lab - Terraform/Terragrunt監視基盤
+
+---
+
+## 💬 Claude Code作業時の必須ルール
+
+**重要**: すべての作業で以下を厳守してください:
+
+### 作業前の説明（必須）
+- ツール実行前に必ず「何を」「なぜ」「何を確認するか」を説明
+- コマンドだけを実行せず、目的と理由を明示
+- 複数ステップの場合は全体の流れを先に説明
+
+### 実行後の報告（必須）
+- 成功: 何が確認できたか
+- 失敗: 何が問題で、次にどうするか
+
+詳細は `CLAUDE.md` の「コミュニケーションガイドライン」セクションを参照
 
 ---
 
 ## 📌 現在のプロジェクト状態
 
 ### ✅ 完了した作業
+
+#### 2025-10-19 (5): ネットワークモジュール実装とデプロイ成功 🎉
+
+**実施内容**:
+1. ✅ **ネットワーク競合問題の解決**
+   - 問題: 各サービスが同時に `monitoring-lab-network` を作成しようとしてエラー
+   - 原因: `docker_container` モジュール内でネットワークリソースを定義していた
+   - 解決策: 専用の `network` モジュールを作成し、依存関係で制御
+
+2. ✅ **新規モジュール作成**
+   - `terraform/modules/network/` - Docker ネットワーク専用モジュール
+     - main.tf: docker_network リソース定義
+     - variables.tf: network_name, subnet, gateway パラメータ
+     - outputs.tf: network_name, network_id, subnet, gateway を出力
+   - `terraform/envs/local/network/terragrunt.hcl` - ネットワークサービス定義
+
+3. ✅ **docker_container モジュールの修正**
+   - `main.tf`: ネットワークリソース定義を削除（11-20行目）
+   - `variables.tf`: network_name 変数を追加
+   - `outputs.tf`: network_name, network_id 出力を削除
+
+4. ✅ **全サービス設定の更新**
+   - 各サービスに network 依存関係を追加:
+     - postgres/terragrunt.hcl
+     - prometheus/terragrunt.hcl
+     - vault/terragrunt.hcl
+     - zabbix/terragrunt.hcl
+     - grafana/terragrunt.hcl
+   - `network_name = dependency.network.outputs.network_name` を inputs に追加
+
+5. ✅ **デプロイ成功**
+   - `terragrunt run --all apply` が正常完了
+   - 起動順序: network → (postgres, prometheus, vault) → zabbix → grafana
+   - すべてのコンテナが正常起動
+   - ネットワーク接続確認完了
+
+**デプロイ結果**:
+```
+✅ monitoring-lab-network (172.28.0.0/16)
+✅ monitoring-lab-postgres (172.28.0.2)
+✅ monitoring-lab-vault (172.28.0.3)
+✅ monitoring-lab-prometheus (172.28.0.4)
+✅ monitoring-lab-zbx_server
+✅ monitoring-lab-zbx_web
+✅ monitoring-lab-grafana
+```
+
+**解決したエラー**:
+- ❌ → ✅ `network with name monitoring-lab-network already exists` (ネットワーク競合)
+- ❌ → ✅ 複数サービスによる同時ネットワーク作成の競合状態
+
+#### 2025-10-19 (4): Terragrunt設定の修正とリモートDocker環境のセットアップ
+
+**実施内容**:
+1. ✅ **バージョン確認と互換性検証**
+   - Terraform v1.13.3, Terragrunt v0.90.0 の動作確認
+   - Docker Provider 3.6.2 の互換性確認
+   - `terragrunt run --all` コマンド構文の確認
+
+2. ✅ **Terragrunt設定ファイルの修正**
+   - `terraform/modules/docker_container/main.tf`:
+     - `terraform {}` ブロック削除（重複定義エラー修正）
+     - `env` を動的ブロックから文字列リスト形式に変更
+   - `terraform/root.hcl`:
+     - Docker Provider の環境変数参照を `$${VAR}` から `get_env("VAR")` に修正
+   - `terraform/envs/local/prometheus/terragrunt.hcl`:
+     - bind_mounts パスを `/opt/monitoring-lab` → `/home/ubuntu/monitoring-lab` に修正
+   - `terraform/envs/local/grafana/terragrunt.hcl`:
+     - bind_mounts パスを `/opt/monitoring-lab` → `/home/ubuntu/monitoring-lab` に修正
+
+3. ✅ **リモートサーバーのDocker Engine セットアップ**
+   - `scripts/setup-docker-remote.sh` 作成
+   - Docker Engine インストール・起動・自動起動設定
+   - `ubuntu` ユーザーを `docker` グループに追加
+   - Docker 動作確認完了
+
+4. ✅ **docker-compose.yml の修正**
+   - SSH鍵マウント追加: `${HOME}/.ssh:/root/.ssh:ro`
+   - 環境変数ファイル読み込み: `env_file: - .env`
+
+**解決したエラー**:
+- ❌ → ✅ `Duplicate required providers configuration` (重複定義)
+- ❌ → ✅ `Unsupported block type "env"` (動的ブロック構文エラー)
+- ❌ → ✅ `Invalid reference` (環境変数参照エラー)
+- ❌ → ✅ bind_mounts パス不一致
+- ❌ → ✅ リモートサーバーに Docker Engine 未インストール
+- ⚠️ SSH鍵認証エラー（コンテナ再起動待ち）
 
 #### 2025-10-19 (3): リモートサーバーのセットアップ完了
 
@@ -83,19 +187,37 @@
 
 ## 🎯 プロジェクト概要
 
+### 実行方式 ⚠️ 重要
+
+**実行環境**: WSL2 (Ubuntu-24.04) 上のDocker Engine
+- **Docker Desktop は使用しない**
+- WSL2でdocker composeを実行
+- Terragruntコンテナ内から当プロジェクトのTerraformを実行
+- TerragruntコンテナはWSL2のDocker Engine上で動作
+
+**SSH鍵の配置**:
+- WSL2: `~/.ssh/id_rsa` (ubuntuユーザーのホームディレクトリ)
+- コンテナ起動時に自動的に `/root/.ssh/` にコピー (docker-compose.ymlのentrypointで実行)
+- コンテナ内から `/root/.ssh/id_rsa` を使用してリモートサーバーにSSH接続
+
 ### アーキテクチャ
 
-**構築方式**: Windows PC → SSH → リモートUbuntuサーバー (Docker Engine)
+**構築方式**: Windows PC (WSL2) → SSH → リモートUbuntuサーバー (Docker Engine)
 
 **構成**:
 ```
-[Windows PC]
-  ├─ Terragrunt開発コンテナ (alpine/terragrunt:latest)
-  └─ Vault開発サーバー (hashicorp/vault:latest) ※ローカル
+[Windows PC - WSL2]
+  ├─ Docker Engine (WSL2で実行)
+  │   ├─ Terragrunt開発コンテナ (alpine/terragrunt:latest)
+  │   │   └─ SSH鍵: /root/.ssh/id_rsa (起動時に自動コピー)
+  │   └─ Vault開発サーバー (hashicorp/vault:latest) ※ローカル
+  │
+  └─ SSH鍵: ~/.ssh/id_rsa (ubuntuユーザー)
 
-      ↓ SSH経由でDocker操作
+      ↓ Terragruntコンテナ内からSSH経由でDocker操作
 
 [リモートサーバー: 10.0.0.220]
+  ├─ Docker Engine
   ├─ PostgreSQL:5432      (Zabbixデータベース)
   ├─ Zabbix Server:10051  (監視バックエンド)
   ├─ Zabbix Web:8080      (Web UI)
@@ -112,10 +234,10 @@ TARGET_USER=ubuntu
 TARGET_PORT=22
 SSH_PRIVATE_KEY=~/.ssh/id_rsa
 
-# リモートディレクトリ
-REMOTE_BASE_DIR=/opt/zabbix
-POSTGRES_DATA_DIR=/opt/zabbix/postgres
-VAULT_DATA_DIR=/opt/vault/data
+# リモートディレクトリ（修正済み）
+REMOTE_BASE_DIR=~/monitoring-lab
+POSTGRES_DATA_DIR=~/monitoring-lab/postgres
+VAULT_DATA_DIR=~/monitoring-lab/vault
 
 # Vault (ローカル開発モード)
 VAULT_TOKEN=root
@@ -128,32 +250,39 @@ VAULT_ADDR=http://localhost:8200
 
 ### 優先度: 高 🔴
 
-#### 1. 開発コンテナの起動とTerragruntデプロイ
-**ステータス**: 準備完了、実行待ち
+#### 1. 監視基盤の動作確認
+**ステータス**: デプロイ完了、動作確認待ち
 
-**前提条件**: ✅ すべて完了
-- [x] SSH鍵設定
-- [x] リモートサーバー準備
-- [x] 設定ファイル配置
+**確認項目**:
+- [ ] Zabbix Web UIへのアクセス: http://10.0.0.220:8080
+  - デフォルト認証: User: Admin, Pass: zabbix
+  - 初回ログイン成功確認
+  - パスワード変更推奨
 
-**手順**:
+- [ ] Prometheus UIへのアクセス: http://10.0.0.220:9090
+  - Targetsページで自己監視確認
+  - 設定ファイルの反映確認
+
+- [ ] Grafana UIへのアクセス: http://10.0.0.220:3000
+  - デフォルト認証: User: admin, Pass: admin
+  - データソース接続確認（Prometheus, Zabbix）
+  - Zabbixプラグインのインストール確認
+
+**確認手順**:
 ```bash
-# 1. 開発コンテナ起動
-cd /mnt/e/work/labo
-docker compose up -d
+# コンテナ状態確認
+ssh ubuntu@10.0.0.220 "docker ps"
 
-# 2. Terragruntコンテナに接続
-docker compose exec terragrunt sh
+# 各サービスのログ確認
+ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-grafana"
+ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-prometheus"
+ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-zbx_server"
+ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-zbx_web"
 
-# 3. 初期化
-cd terraform/envs/local
-terragrunt run-all init
-
-# 4. 実行計画確認
-terragrunt run-all plan
-
-# 5. デプロイ
-terragrunt run-all apply
+# ブラウザでアクセステスト
+# - http://10.0.0.220:8080 (Zabbix)
+# - http://10.0.0.220:9090 (Prometheus)
+# - http://10.0.0.220:3000 (Grafana)
 ```
 
 ---
@@ -191,65 +320,71 @@ env = [
 
 ## 🐛 既知の問題・制約
 
-### 1. bind_mountsの制約
+### 1. SSH鍵認証（解決済み）✅
+**問題**: Terragruntコンテナ内から `monitoring_lab_key` でSSH接続できない
+**原因**: `/root/.ssh/` が空（マウント失敗）
+**解決策**: docker-compose.ymlのentrypointでWSL2の鍵を自動コピー
+**現状**: SSH接続成功、デプロイ完了
+
+### 2. bind_mountsの制約
 **問題**: Prometheus/Grafanaがリモートサーバーのファイルシステムを直接参照
 **影響**: 事前にリモートサーバーに設定ファイルを配置する必要がある
-**回避策**: 将来的にはdocker_containerモジュールに`upload`機能を追加
+**回避策**: ✅ setup-remote-config.sh で自動配置済み
 
-### 2. Vaultの開発モード
+### 3. Vaultの開発モード
 **問題**: Root Token固定、データ永続化なし
 **影響**: 本番環境では使用不可
 **移行パス**: config.hcl作成、TLS設定、Auto-unseal実装
-
-### 3. Docker Composeの起動状態
-**問題**: 現在docker composeサービスが停止中
-**確認方法**: `wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose ps"`
 
 ---
 
 ## 📁 重要なファイルパス
 
-### Terragrunt設定
+### 今セッションで修正したファイル (2025-10-19)
+```
+terraform/
+├── root.hcl                          # ✅ Docker Provider環境変数参照修正
+├── modules/docker_container/
+│   └── main.tf                      # ✅ terraform{}削除、env動的ブロック→文字列リスト
+├── envs/local/
+│   ├── prometheus/terragrunt.hcl    # ✅ bind_mountsパス修正
+│   └── grafana/terragrunt.hcl       # ✅ bind_mountsパス修正
+
+scripts/
+└── setup-docker-remote.sh           # ✅ 新規作成
+
+docker-compose.yml                    # ✅ SSH鍵マウント、env_file追加
+```
+
+### Terragrunt設定（全体）
 ```
 terraform/
 ├── root.hcl                          # 全環境共通設定（プロバイダー自動生成）
 ├── envs/local/
 │   ├── terragrunt.hcl               # 環境固有設定（SSH接続情報）
-│   ├── postgres/terragrunt.hcl      # ✅ 修正済み
-│   ├── vault/terragrunt.hcl         # ✅ 修正済み
-│   ├── zabbix/terragrunt.hcl        # ✅ 修正済み
-│   ├── prometheus/terragrunt.hcl    # ✅ 修正済み
-│   └── grafana/terragrunt.hcl       # ✅ 修正済み
+│   ├── postgres/terragrunt.hcl
+│   ├── vault/terragrunt.hcl
+│   ├── zabbix/terragrunt.hcl
+│   ├── prometheus/terragrunt.hcl
+│   └── grafana/terragrunt.hcl
 └── modules/
     ├── docker_container/
-    │   ├── main.tf                  # ✅ 修正済み (プロバイダー削除、command追加)
-    │   ├── variables.tf             # ✅ 修正済み (command追加)
+    │   ├── main.tf
+    │   ├── variables.tf
     │   └── outputs.tf
     └── vault_secret/                # 未使用（将来の拡張用）
 ```
 
-### 設定ファイル（ローカル）
-```
-config/
-├── prometheus/
-│   └── prometheus.yml               # サンプル設定（未使用）
-└── grafana/
-    └── provisioning/
-        └── datasources/
-            └── datasources.yml      # サンプル設定（未使用）
-```
-
 ### 設定ファイル（リモートサーバー上）
 ```
-/opt/monitoring-lab/
+/home/ubuntu/monitoring-lab/
 ├── prometheus/
-│   └── prometheus.yml               # ⚠️ 未配置
+│   └── prometheus.yml               # ✅ 配置済み
 └── grafana/
     └── provisioning/
         ├── datasources/
-        │   └── datasources.yml      # ⚠️ 未配置
-        └── dashboards/
-            └── dashboards.yml       # ⚠️ 未配置
+        │   └── datasources.yml      # ✅ 配置済み
+        └── dashboards/              # ✅ ディレクトリ作成済み
 ```
 
 ---

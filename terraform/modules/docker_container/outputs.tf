@@ -2,16 +2,6 @@
 # Outputs for Docker Container Module
 # ==========================================
 
-output "network_name" {
-  description = "作成されたDockerネットワーク名"
-  value       = docker_network.monitoring.name
-}
-
-output "network_id" {
-  description = "作成されたDockerネットワークID"
-  value       = docker_network.monitoring.id
-}
-
 output "container_ids" {
   description = "作成されたコンテナIDのマップ（サービス名 -> コンテナID）"
   value       = { for k, v in docker_container.service : k => v.id }
