@@ -44,13 +44,13 @@ services:
     env_file:
       - .env  # .envファイルから環境変数を読み込み
     environment:
-      - TF_LOG=INFO
+      # TF_LOGを設定しない（デバッグログを無効化）
       - TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache
       - TZ=Asia/Tokyo
 
       # Terragrunt設定
-      - TERRAGRUNT_DOWNLOAD=/root/.terragrunt-cache
-      - TERRAGRUNT_NON_INTERACTIVE=true
+      - TG_DOWNLOAD_DIR=/root/.terragrunt-cache
+      - TG_NON_INTERACTIVE=true
 
     networks:
       - terraform-network
