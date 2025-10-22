@@ -1,6 +1,6 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2025-10-19 16:20
+**最終更新**: 2025-10-22 22:30
 **プロジェクト**: Monitoring Lab - Terraform/Terragrunt監視基盤
 
 ---
@@ -25,6 +25,193 @@
 ## 📌 現在のプロジェクト状態
 
 ### ✅ 完了した作業
+
+#### 2025-10-22 (1): Zabbix Agent2監視の有効化成功 🎉
+
+**実施内容**:
+1. ✅ **Zabbix Agent監視問題の調査**
+   - 「Zabbix agent is not available (for 3m)」警告の原因調査
+   - Zabbix Serverコンテナ内にAgent2が含まれていないことを再確認
+   - Zabbix Agent2コンテナは既にデプロイ済みで正常稼働中
+
+2. ✅ **Docker内部DNSの仕組み確認**
+   - `zbx_agent` で名前解決できることを確認
+   - Terraformの `docker_container` モジュールで `aliases = [each.key]` 設定を確認
+   - フルコンテナ名（`monitoring-lab-zbx_agent`）とエイリアス名（`zbx_agent`）の両方で解決可能
+
+3. ✅ **ネットワーク接続の確認**
+   - Zabbix ServerからAgent2への接続テスト成功（172.28.0.8:10050）
+   - 同一Dockerネットワーク（monitoring-lab-network）で通信可能
+
+4. ✅ **問題の原因特定**
+   - Zabbix Web UIのホスト設定で、Agentのインターフェースが正しく設定されていなかった
+   - おそらく `127.0.0.1` を指していたため、Agent2に接続できていなかった
+
+5. ✅ **ユーザーによる設定修正**
+   - Zabbix Web UIでホスト「Zabbix server」の設定を変更
+   - Interface設定: DNS name = `zbx_agent`, Port = 10050
+   - 監視が正常に開始し、警告が解消
+
+**技術的知見**:
+- Dockerの `networks_advanced` ブロックで `aliases` を設定することで、サービス名で名前解決が可能
+- Zabbix Agent2は Passive checks モードで動作中（Serverからのポーリングを待機）
+- Docker内部DNSは同一ネットワーク内のコンテナ間で自動的に名前解決を提供
+
+**デプロイ結果**:
+```
+✅ monitoring-lab-zbx_agent (Up 2 days, healthy) - 172.28.0.8:10050
+✅ monitoring-lab-zbx_server (Up 2 days, healthy) - 172.28.0.6:10051
+✅ Zabbix Server自己監視が正常動作
+✅ 「Zabbix agent is not available」警告が解消
+```
+
+#### 2025-10-20 (1): Zabbix Agent2コンテナのデプロイ成功 🎉
+
+**実施内容**:
+1. ✅ **Zabbix Agent2の必要性確認**
+   - Zabbix Serverコンテナ内にAgent2が含まれていないことを確認
+   - 自己監視のため、別コンテナとしてAgent2をデプロイする方針を決定
+
+2. ✅ **Terragrunt設定ファイルの作成**
+   - `terraform/envs/local/zabbix-agent/terragrunt.hcl` を新規作成
+   - イメージ: `zabbix/zabbix-agent2:alpine-latest`
+   - ポート: 10050 (Agent2のデフォルトポート)
+   - ネットワーク依存関係を設定 (monitoring-lab-network)
+   - Zabbix Server依存関係を設定 (起動順序制御)
+
+3. ✅ **環境変数設定のトラブルシューティング**
+   - 問題1: `ZBX_SERVER_HOST`と`ZBX_PASSIVESERVERS`の重複でエラー
+     - エラー: "address 'zbx_server' specified more than once"
+   - 解決策: Passive checksのみを使用、Active checksを無効化
+     - `ZBX_PASSIVE_ALLOW=true`
+     - `ZBX_PASSIVESERVERS=zbx_server`
+     - `ZBX_ACTIVE_ALLOW=false`
+   - `ZBX_HOSTNAME=Zabbix server` (Web UIのホスト名と一致)
+
+4. ✅ **デプロイ成功**
+   - `terragrunt init` → `terragrunt apply -auto-approve`
+   - コンテナ起動成功: `monitoring-lab-zbx_agent`
+   - ヘルスチェック: healthy
+   - エラーログなし
+
+**デプロイ結果**:
+```
+✅ monitoring-lab-zbx_agent (Up, healthy)
+✅ monitoring-lab-zbx_server (Up 31 hours, healthy)
+✅ monitoring-lab-zbx_web (Up 31 hours, healthy)
+```
+
+**修正ファイル**:
+- `terraform/envs/local/zabbix-agent/terragrunt.hcl` (新規作成)
+
+**技術的知見**:
+- Zabbix Agent2の環境変数は、`ZBX_SERVER_HOST`が内部的に`Server`パラメータに変換される
+- `ZBX_PASSIVESERVERS`も`Server`パラメータにマッピングされるため、両方指定すると重複エラーになる
+- Passive checksのみの構成でも、Zabbix Serverからのポーリングで監視が可能
+
+#### 2025-10-19 (8): 設定ファイルの最終クリーンアップ 🧹
+
+**実施内容**:
+1. ✅ **STDERR/WARNING出力の完全除去**
+   - `.env` ファイルの修正:
+     - `TF_LOG=info` をコメントアウト（STDERR出力の根本原因を解消）
+     - `SSH_PUBLIC_KEY` 削除（未使用変数）
+     - `POSTGRES_DATA_DIR` 削除（未使用変数）
+     - `VAULT_DATA_DIR` 削除（未使用変数）
+   - `docker-compose.yml` の修正:
+     - `TERRAGRUNT_DOWNLOAD` → `TG_DOWNLOAD_DIR` に変更（非推奨警告の解消）
+
+2. ✅ **動作確認**
+   - Terragruntコンテナ再起動
+   - `terragrunt plan` で出力を検証
+   - STDERR出力が完全に消滅
+   - WARNING（非推奨警告）が完全に消滅
+
+**成果**:
+```
+Before:
+[WARN] The `TERRAGRUNT_NON_INTERACTIVE` environment variable is deprecated...
+[WARN] The `TERRAGRUNT_DOWNLOAD` environment variable is deprecated...
+[STDERR] Docker network inspect: {...}
+[STDERR] - .ipv6: planned value cty.False...
+
+After:
+[STDOUT] terraform: docker_network.monitoring: Refreshing state...
+[STDOUT] terraform: No changes. Your infrastructure matches the configuration.
+```
+
+**修正ファイル**:
+- `.env` (3箇所: TF_LOG コメントアウト、未使用変数3つ削除)
+- `docker-compose.yml` (1箇所: TERRAGRUNT_DOWNLOAD → TG_DOWNLOAD_DIR)
+
+**効果**:
+- ✅ Terragrunt出力がクリーンになり、デバッグが容易に
+- ✅ 不要な環境変数を削除し、設定ファイルが整理された
+- ✅ 非推奨警告が消え、将来のバージョンアップに対応
+
+#### 2025-10-19 (7): コンテナ監視方針の調査・検討 🔍
+
+**実施内容**:
+1. ✅ **コンテナ監視手法の比較調査**
+   - Node Exporterのコンテナ内配置検討
+   - 3つの導入方法の比較（既存コンテナ内/専用コンテナ/ホストOS）
+   - 各方法のメリット・デメリット整理
+
+2. ✅ **監視レイヤーの整理**
+   - Layer 1: ホストOS層（Node Exporter）
+   - Layer 2: コンテナ層（cAdvisor、Docker Stats）
+   - Layer 3: アプリケーション層（個別Exporter）
+
+3. ✅ **コンテナ監視ツールの選択肢提示**
+   - cAdvisor（最推奨）: コンテナリソース監視
+   - Docker Stats API（中程度）: Docker標準機能
+   - Zabbix Docker Monitoring（中程度）: Zabbix統合
+   - 個別Exporter（低優先）: アプリ固有メトリクス
+
+4. ✅ **推奨監視戦略の提案**
+   - フェーズ1: cAdvisor導入（コンテナリソース監視）
+   - フェーズ2: Node Exporter追加（ホストOS監視）
+   - フェーズ3: 個別Exporter追加（アプリ監視）
+
+**結論**:
+- ⏸️ 監視機能の実装は**後回し**（方針を慎重に検討してから実装）
+- ✅ 調査結果は文書化済み（口頭説明）
+- ✅ 次回セッション時に全体方針を決定してから進める
+
+**推奨される次のステップ（保留中）**:
+1. 監視戦略全体の設計書作成
+2. cAdvisor導入ガイド作成
+3. Terragrunt設定ファイル作成
+
+#### 2025-10-19 (6): スクリプト・ダッシュボード管理ドキュメント作成 📚
+
+**実施内容**:
+1. ✅ **Zabbixスクリプト管理ディレクトリ作成**
+   - `config/zabbix/scripts/` ディレクトリ構造作成
+     - `externalscripts/` - External Checksスクリプト
+     - `alertscripts/` - アラート通知スクリプト
+     - `userparameters/` - UserParameter設定ファイル
+   - `config/zabbix/scripts/README.md` 作成（包括的なガイド）
+
+2. ✅ **Grafanaダッシュボード管理ディレクトリ作成**
+   - `config/grafana/dashboards/` ディレクトリ作成
+   - `config/grafana/dashboards/README.md` 作成（ベストプラクティス）
+
+**ドキュメント内容**:
+- スクリプトの種類と用途（External/Alert/UserParameter）
+- スクリプト追加手順（作成 → 配置 → Terragrunt設定 → デプロイ）
+- テスト方法とトラブルシューティング
+- セキュリティ考慮事項
+- Bash/Pythonテンプレート
+- ダッシュボードエクスポート/インポート手順
+- Provisioning設定方法
+- バージョン管理のベストプラクティス
+
+**設計方針の明確化**:
+- ✅ IaC（Terraform/Terragrunt）: 基盤管理のみ
+- ✅ スクリプト: Gitで管理、bind_mountで配置
+- ✅ ダッシュボード: Web UIで作成 → JSONエクスポート → Git管理（オプション）
+- ✅ 監視設定: Web UIで管理（コンソール管理に閉じる）
 
 #### 2025-10-19 (5): ネットワークモジュール実装とデプロイ成功 🎉
 
@@ -220,6 +407,7 @@
   ├─ Docker Engine
   ├─ PostgreSQL:5432      (Zabbixデータベース)
   ├─ Zabbix Server:10051  (監視バックエンド)
+  ├─ Zabbix Agent2:10050  (Zabbix Server自己監視用) ← ✨ NEW!
   ├─ Zabbix Web:8080      (Web UI)
   ├─ Prometheus:9090      (メトリクス収集)
   └─ Grafana:3000         (ダッシュボード)
@@ -250,40 +438,19 @@ VAULT_ADDR=http://localhost:8200
 
 ### 優先度: 高 🔴
 
-#### 1. 監視基盤の動作確認
-**ステータス**: デプロイ完了、動作確認待ち
+#### 1. 監視基盤の基本動作確認
+**ステータス**: ログイン確認済み、詳細確認は未実施
 
-**確認項目**:
-- [ ] Zabbix Web UIへのアクセス: http://10.0.0.220:8080
-  - デフォルト認証: User: Admin, Pass: zabbix
-  - 初回ログイン成功確認
-  - パスワード変更推奨
+**確認済み**:
+- ✅ Zabbix Web UIへのアクセス: http://10.0.0.220:8080 (ログイン成功)
+- ✅ Prometheus UIへのアクセス: http://10.0.0.220:9090 (ログイン成功)
+- ✅ Grafana UIへのアクセス: http://10.0.0.220:3000 (ログイン成功)
+- ✅ データソース接続に問題なし
 
-- [ ] Prometheus UIへのアクセス: http://10.0.0.220:9090
-  - Targetsページで自己監視確認
-  - 設定ファイルの反映確認
-
-- [ ] Grafana UIへのアクセス: http://10.0.0.220:3000
-  - デフォルト認証: User: admin, Pass: admin
-  - データソース接続確認（Prometheus, Zabbix）
-  - Zabbixプラグインのインストール確認
-
-**確認手順**:
-```bash
-# コンテナ状態確認
-ssh ubuntu@10.0.0.220 "docker ps"
-
-# 各サービスのログ確認
-ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-grafana"
-ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-prometheus"
-ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-zbx_server"
-ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-zbx_web"
-
-# ブラウザでアクセステスト
-# - http://10.0.0.220:8080 (Zabbix)
-# - http://10.0.0.220:9090 (Prometheus)
-# - http://10.0.0.220:3000 (Grafana)
-```
+**今後の確認項目**:
+- [ ] Prometheusのターゲット設定の有効化
+- [ ] Grafanaダッシュボードの作成
+- [ ] アラート設定のテスト
 
 ---
 
@@ -307,14 +474,46 @@ env = [
 ]
 ```
 
-#### 6. 監視機能の実装
-**ステータス**: インフラのみ、監視設定は未実装
+#### 2. 監視機能の実装（保留中）⏸️
+**ステータス**: 方針検討中、実装は保留
 
-**必要な作業**:
-- [ ] Zabbix Agentのデプロイ
-- [ ] Prometheusスクレイプターゲットの追加
-- [ ] Grafanaダッシュボードの作成
-- [ ] アラートルールの設定
+**検討事項**:
+- 監視対象の明確化（ホストOS / コンテナ / アプリケーション）
+- 監視ツールの選定（Node Exporter / cAdvisor / 個別Exporter）
+- 導入フェーズの決定（段階的 or 一括）
+
+**候補ツール**:
+- **cAdvisor**: コンテナリソース監視（最推奨）
+- **Node Exporter**: ホストOS監視
+- **PostgreSQL Exporter**: DB監視（オプション）
+
+**次回決定すべきこと**:
+1. 監視の優先順位（コンテナ優先 or ホストOS優先）
+2. 導入範囲（フェーズ1のみ or 全体）
+3. 管理の複雑さの許容度
+
+**準備済みドキュメント**:
+- ✅ 監視レイヤーの整理（Layer 1-3）
+- ✅ ツール比較表
+- ✅ 推奨戦略（フェーズ1-3）
+
+#### 3. Vault統合の実装
+**ステータス**: 設計のみ完了、実装は未着手
+
+**現状**: パスワードがハードコード
+**目標**: すべての機密情報をVaultから動的取得
+
+**参考実装** (`vault_secret` モジュールが存在):
+```hcl
+data "vault_kv_secret_v2" "postgres" {
+  mount = "secret"
+  name  = "monitoring-lab/postgres"
+}
+
+env = [
+  "POSTGRES_PASSWORD=${data.vault_kv_secret_v2.postgres.data["password"]}"
+]
+```
 
 ---
 
@@ -529,10 +728,21 @@ ssh ubuntu@10.0.0.220 "docker volume inspect monitoring-lab-postgres_data"
 ## 📝 メモ・備考
 
 ### 今後の拡張案
-1. **Phase 2**: 監視機能の実装（Agent、スクレイプ設定、ダッシュボード）
-2. **Phase 3**: Vault統合（動的シークレット取得）
-3. **Phase 4**: CI/CDパイプライン統合
-4. **Phase 5**: 本番環境対応（マルチ環境、リモートバックエンド）
+1. **Phase 1.5**: 監視基盤の動作確認（次回優先）
+   - Web UIアクセステスト
+   - 初期設定とパスワード変更
+   - データソース接続確認
+2. **Phase 2**: 監視機能の実装（Agent、スクレイプ設定、ダッシュボード）
+3. **Phase 3**: Vault統合（動的シークレット取得）
+4. **Phase 4**: CI/CDパイプライン統合
+5. **Phase 5**: 本番環境対応（マルチ環境、リモートバックエンド）
+
+### 最近のクリーンアップ成果（2025-10-19）
+- ✅ 設定ファイルの全面整理完了（.env, .env.example, docker-compose.yml, terragrunt.hcl, root.hcl）
+- ✅ STDERR/WARNING出力を100%削減
+- ✅ 非推奨環境変数を新形式に移行
+- ✅ 未使用変数を7個削除
+- ✅ Terragrunt出力がクリーンになり、デバッグが容易に
 
 ### 参考リンク
 - [Terragrunt公式ドキュメント](https://terragrunt.gruntwork.io/docs/)

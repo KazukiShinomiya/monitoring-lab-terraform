@@ -21,12 +21,9 @@ locals {
   target_user        = get_env("TARGET_USER", "ubuntu")
   target_port        = get_env("TARGET_PORT", "22")
   ssh_private_key    = get_env("SSH_PRIVATE_KEY", "~/.ssh/id_rsa")
-  ssh_public_key     = get_env("SSH_PUBLIC_KEY", "~/.ssh/id_rsa.pub")
 
   # リモートサーバー上の配置先ディレクトリ
-  remote_base_dir    = get_env("REMOTE_BASE_DIR", "/opt/zabbix")
-  postgres_data_dir  = get_env("POSTGRES_DATA_DIR", "/opt/zabbix/postgres")
-  vault_data_dir     = get_env("VAULT_DATA_DIR", "/opt/vault/data")
+  remote_base_dir    = get_env("REMOTE_BASE_DIR", "/home/ubuntu/monitoring-lab")
 
   # 注意: 本来は環境変数やシークレット管理ツールから取得すべき
   # 例: vault_token = get_env("VAULT_TOKEN")
@@ -45,11 +42,8 @@ inputs = merge(
     target_user        = local.target_user
     target_port        = local.target_port
     ssh_private_key    = local.ssh_private_key
-    ssh_public_key     = local.ssh_public_key
 
     # リモート配置ディレクトリ
     remote_base_dir    = local.remote_base_dir
-    postgres_data_dir  = local.postgres_data_dir
-    vault_data_dir     = local.vault_data_dir
   }
 )
