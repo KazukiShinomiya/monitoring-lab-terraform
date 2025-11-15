@@ -20,6 +20,15 @@
 *.tfvars
 *.tfvars.json
 
+# HCP Terraform / Terraform Cloud
+# 認証情報ファイル（絶対にコミットしない）
+.terraform.d/credentials.tfrc.json
+.terraformrc
+credentials.tfrc.json
+
+# Terraform CLI設定（個人設定を含む可能性）
+terraform.rc
+
 # ----- 環境変数ファイル -----
 .env
 .env.local
@@ -69,6 +78,17 @@ logs/
 # ----- Docker関連 -----
 # docker-compose override（個人設定）
 docker-compose.override.yml
+
+# ----- GitHub Actions関連 -----
+# ローカルテスト用ワークフローファイル
+.github/workflows/*.local.yml
+
+# act（GitHub Actionsローカル実行ツール）の設定
+.actrc
+.secrets
+
+# GitHub Actions実行時の一時ファイル
+.runner/
 
 # ----- その他 -----
 # Node modules（もし使用する場合）
