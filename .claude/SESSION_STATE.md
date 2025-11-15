@@ -1,6 +1,6 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2025-10-22 22:30
+**最終更新**: 2025-11-16 22:00
 **プロジェクト**: Monitoring Lab - Terraform/Terragrunt監視基盤
 
 ---
@@ -25,6 +25,588 @@
 ## 📌 現在のプロジェクト状態
 
 ### ✅ 完了した作業
+
+#### 2025-11-16 (1): 運用改善計画の策定とPhase 0完了 🚀
+
+**実施内容**:
+1. ✅ **運用面の脆弱性分析**
+   - 8つの脆弱性領域を特定:
+     1. データ管理・永続化（バックアップ戦略未定義）
+     2. アラート・通知（通知先未設定）
+     3. セキュリティ（パスワードハードコード、TLS未設定）
+     4. 障害対応・DR（Runbook未整備）
+     5. ログ管理（ローテーション設定なし）
+     6. メンテナンス・更新（イメージ更新戦略なし）
+     7. ドキュメント（運用マニュアル未整備）
+     8. 監視カバレッジ（閾値未設定、ダッシュボード未作成）
+
+2. ✅ **HCP Terraform + Agent + GitHub + GHA構成の評価**
+   - **総合スコア: 9.5/10** ⭐⭐⭐⭐⭐
+   - 8領域中7領域を根本的に解決する優れた提案と評価
+   - 無料プランで実現可能（学習用途に最適）
+   - 本番環境への移行パスが明確
+   - 現代的なIaC運用のベストプラクティス
+
+3. ✅ **段階的導入計画の策定**
+   - 15個の独立したタスクに分割（各15-30分）
+   - 4つのPhaseで構成（Phase 0-4）
+   - 総所要時間: 8-12時間（複数日に分散可能）
+
+4. ✅ **Phase 0-1: Git管理の準備完了**
+   - `.gitignore`にHCP Terraform認証情報の除外ルール追加
+   - `.gitignore`にGitHub Actions関連ファイルの除外ルール追加
+   - 機密情報の除外確認（.env, .tfstate）
+   - コミット完了（コミットID: 4564157）
+
+**技術的知見**:
+- **運用の堅牢性**: IaCだけでなく、State管理、変更管理、監査ログが重要
+- **HCP Terraform Free プラン**: 500 states まで無料、学習用途に十分
+- **GitHub Actions**: 2,000分/月 無料（Public repoは無制限）
+- **Terraform Agent**: Self-hosted Agentは無料（プライベートネットワーク内実行）
+- **セキュリティ**: `.terraform.d/credentials.tfrc.json` は絶対にコミットしない
+
+**追加された.gitignore保護機能**:
+```gitignore
+# HCP Terraform / Terraform Cloud
+.terraform.d/credentials.tfrc.json
+.terraformrc
+credentials.tfrc.json
+terraform.rc
+
+# GitHub Actions関連
+.github/workflows/*.local.yml
+.actrc
+.secrets
+.runner/
+```
+
+**次回のアクション（Phase 1-1）**:
+- [ ] HCP Terraformアカウント作成（所要時間: 15分）
+  - https://app.terraform.io/signup/account にアクセス
+  - メールアドレス、ユーザー名、パスワードを入力
+  - メール認証
+  - 無料プラン（Free）を選択
+
+**全体ロードマップ**:
+```
+Phase 0: 準備 ✅ 完了
+Phase 1: HCP Terraform導入（5タスク、2-3時間）← 次回ここから
+Phase 2: GitHub連携（3タスク、1-2時間）
+Phase 3: GitHub Actions導入（4タスク、2-3時間）
+Phase 4: Terraform Agent導入（2タスク、2-3時間）
+```
+
+**修正ファイル**:
+- `.gitignore` (HCP Terraform/GHA対応)
+
+**評価**:
+- ✅ 運用の問題を正しく認識
+- ✅ HCP Terraform + Agent + GitHub + GHAの組み合わせは最適解
+- ✅ 段階的アプローチで学習負荷を軽減
+- ✅ 無料で実現可能
+- ✅ 本番環境にも適用可能な設計
+
+---
+
+#### 2025-11-03 (1): SwitchBot外部スクリプト監視のZabbixアイテム設定完了 🎉
+
+**実施内容**:
+1. ✅ **全4台のSwitchBotデバイスのアイテム作成**
+   - 温湿度計Pro 2F (B0E9FEEDD228): 親アイテム + 依存アイテム3つ（温度、湿度、バッテリー）
+   - Hub 3 (2E) (B0E9FE8AEC2E): 親アイテム + 依存アイテム4つ（温度、湿度、照度、人感）
+   - ベランダ (D40E84864C41): 親アイテム + 依存アイテム3つ（温度、湿度、バッテリー）
+   - 防水温湿度計 外 (F2B200461F1A): 親アイテム + 依存アイテム3つ（温度、湿度、バッテリー）
+   - **合計17アイテム**（親4 + 依存13）
+
+2. ✅ **親アイテム（External Check）の設定**
+   - Type: External check
+   - Key: `check_switchbot.py[デバイスID]`
+   - Type of information: Text（JSON全体を保存）
+   - Update interval: 5m（APIレート制限対策）
+
+3. ✅ **依存アイテム（Dependent Items）の設定**
+   - 一意のキー命名規則: `switchbot.メトリクス名[デバイスID]`
+   - JSONPath Preprocessingで個別メトリクスを抽出
+   - 温度: Numeric (float), Units: °C
+   - 湿度: Numeric (unsigned), Units: %
+   - バッテリー: Numeric (unsigned), Units: %
+   - 照度: Numeric (unsigned), Units: lux（Hub 3のみ）
+   - 人感: Numeric (unsigned), 0/1（Hub 3のみ）
+
+4. ✅ **Hub 3人感センサーのBoolean型対応**
+   - 問題: `moveDetected` が `true`/`false` 文字列で返される
+   - エラー: "Value of type "string" is not suitable for value type "Numeric (unsigned)""
+   - 解決策: Preprocessing に "Boolean to decimal" ステップを追加
+   - 結果: `true` → `1`, `false` → `0` に自動変換
+
+5. ✅ **全アイテムの動作確認**
+   - Latest dataで全17アイテムのデータ取得成功
+   - グラフ表示正常動作
+   - ダッシュボード表示確認完了
+   - エラーなし
+
+**技術的知見**:
+- **Zabbixアイテム設計パターン**: 親アイテム（External Check, Text型）+ 依存アイテム（Dependent Items, Numeric型）
+- **キーの一意性**: ホスト内で一意である必要があるため、`switchbot.メトリクス名[デバイスID]` 形式を採用
+- **Boolean型変換**: ZabbixはBoolean型を直接サポートしないため、Preprocessing "Boolean to decimal" で数値変換が必須
+- **APIレート制限**: SwitchBot APIは10,000回/日の制限があるため、Update interval 5分以上を推奨
+  - 4台の場合: 288回/日/台 × 4台 = 1,152回/日（制限内）
+
+**設定完了アイテム一覧**:
+```
+【温湿度計Pro 2F】
+- check_switchbot.py[B0E9FEEDD228]
+- switchbot.temperature[B0E9FEEDD228]
+- switchbot.humidity[B0E9FEEDD228]
+- switchbot.battery[B0E9FEEDD228]
+
+【Hub 3 (2E)】
+- check_switchbot.py[B0E9FE8AEC2E]
+- switchbot.temperature[B0E9FE8AEC2E]
+- switchbot.humidity[B0E9FE8AEC2E]
+- switchbot.lightlevel[B0E9FE8AEC2E]
+- switchbot.movedetected[B0E9FE8AEC2E]
+
+【ベランダ】
+- check_switchbot.py[D40E84864C41]
+- switchbot.temperature[D40E84864C41]
+- switchbot.humidity[D40E84864C41]
+- switchbot.battery[D40E84864C41]
+
+【防水温湿度計 外】
+- check_switchbot.py[F2B200461F1A]
+- switchbot.temperature[F2B200461F1A]
+- switchbot.humidity[F2B200461F1A]
+- switchbot.battery[F2B200461F1A]
+```
+
+**動作確認結果**:
+```
+✅ 全4台の親アイテムが正常動作（5分間隔でデータ取得）
+✅ 全13個の依存アイテムが正常動作（JSONPathで抽出成功）
+✅ Latest dataで全メトリクス表示確認
+✅ グラフ表示正常（温度、湿度、バッテリー、照度、人感）
+✅ ダッシュボードで各値の表示確認
+✅ エラー・警告なし
+```
+
+**次回のアクション**:
+- [ ] トリガー設定（温度/湿度の閾値アラート、バッテリー低下アラート）
+  - 例: 温度30°C以上で高温警告、5°C以下で低温警告
+  - 例: 湿度80%以上で高湿度警告
+  - 例: バッテリー20%以下でバッテリー交換警告
+- [ ] ダッシュボードのカスタマイズ
+  - 全デバイスの温度を1つのグラフで比較
+  - 室内 vs 屋外の温度差グラフ
+  - バッテリー残量の一覧表示
+- [ ] アラート通知の設定（メール、Slack、Webhook等）
+- [ ] Prometheusターゲット設定の有効化
+- [ ] Grafanaダッシュボードの作成
+
+**関連ドキュメント**:
+- `config/zabbix/scripts/externalscripts/README_SWITCHBOT.md` - セットアップ手順
+- Zabbix Web UI設定は手動管理（IaCの対象外）
+
+#### 2025-11-02 (1): New Relic Infrastructure Agent統合完了 🎉
+
+**実施内容**:
+1. ✅ **docker_containerモジュールの拡張**
+   - `terraform/modules/docker_container/variables.tf` に以下のパラメータを追加:
+     - `privileged` (bool): 特権モード設定（デフォルト: false）
+     - `network_mode` (string): ネットワークモード設定（host/bridge/none）
+   - `terraform/modules/docker_container/main.tf` でパラメータの適用を実装:
+     - `privileged = each.value.privileged`
+     - `network_mode = each.value.network_mode`
+     - `networks_advanced` と `ports` を動的ブロック化（network_mode="host"時は不要）
+
+2. ✅ **New Relic用Terragrunt設定の作成**
+   - `terraform/envs/local/newrelic/terragrunt.hcl` を新規作成
+   - Infrastructure Agent設定:
+     - イメージ: `newrelic/infrastructure:latest`
+     - 特権モード: `privileged = true` (ホストメトリクス取得に必須)
+     - ネットワークモード: `network_mode = "host"` (ホストレベル監視に推奨)
+     - Bind mounts: `/proc`, `/sys`, `/etc`, `/var/log`, `/var/run/docker.sock`
+     - 環境変数: `NRIA_LICENSE_KEY`, `NRIA_DISPLAY_NAME`, `NRIA_LOG_LEVEL`
+
+3. ✅ **環境変数設定の追加**
+   - `.env.example` に New Relic設定を追加:
+     - `NEW_RELIC_LICENSE_KEY`: Ingest License Key
+     - `NEW_RELIC_ACCOUNT_ID`: アカウントID（オプション）
+     - `NEW_RELIC_REGION`: リージョン設定（US/EU）
+     - `NEW_RELIC_DISPLAY_NAME`: エージェント表示名
+   - `docker-compose.yml` に環境変数を追加（Terragruntコンテナ用）
+
+4. ✅ **デプロイとトラブルシューティング**
+   - 問題1: ライセンスキー認証エラー（401 Unauthorized）
+     - 原因: 環境変数がコンテナに反映されていなかった
+     - 解決策: terragrunt.hclに直接ライセンスキーを設定
+   - 問題2: 最初のライセンスキーが無効
+     - 原因: User API Keyを使用していた（Ingest License Keyが必要）
+     - 解決策: 正しいIngest License Keyを取得・設定
+   - デプロイ成功: `terragrunt apply -auto-approve`
+
+5. ✅ **動作確認**
+   - コンテナ起動: `monitoring-lab-newrelic-infra` (Up, healthy)
+   - New Relic接続成功: `agent-id=3045931572010061140`
+   - ログにエラーなし、正常にメトリクス送信開始
+   - 既存の監視基盤（Zabbix、Prometheus、Grafana）との共存確認
+
+**技術的知見**:
+- New Relic Infrastructure Agentには**Ingest License Key**が必要（User API Keyではない）
+- 特権モード(`privileged: true`)がないとホストメトリクスを取得できない
+- `network_mode: host`を使用することで、ホストレベルの詳細な監視が可能
+- Docker Socketをマウントすることで、コンテナ監視も同時に実現
+- `/proc`, `/sys`, `/etc`のマウントにより、ホストOSの詳細情報を取得
+
+**デプロイ結果**:
+```
+✅ monitoring-lab-newrelic-infra (Up, healthy)
+✅ New Relic Platform接続成功 (agent-id: 3045931572010061140)
+✅ ホストメトリクス収集開始
+✅ Dockerコンテナ監視機能有効化
+✅ 既存監視基盤（Zabbix、Prometheus、Grafana）との共存確認
+```
+
+**修正・新規作成ファイル**:
+- `terraform/modules/docker_container/variables.tf` (修正: privileged, network_mode追加)
+- `terraform/modules/docker_container/main.tf` (修正: 動的ブロック化)
+- `terraform/envs/local/newrelic/terragrunt.hcl` (新規作成)
+- `.env.example` (修正: New Relic設定追加)
+- `docker-compose.yml` (修正: 環境変数追加)
+
+**次回のアクション**:
+- [x] Dockerコンテナ監視ダッシュボード確認 ✅ (2025-11-02 (2)で解決)
+- [ ] New Relic UIでホストメトリクス確認（CPU、メモリ、ディスク、ネットワーク）
+- [ ] アラート設定の検討（しきい値ベースアラート）
+- [ ] APM統合の検討（アプリケーション監視が必要な場合）
+
+#### 2025-11-02 (2): New Relic Docker統合の完全解決 🎉
+
+**実施内容**:
+
+**第1フェーズ: Docker統合フィーチャーフラグの追加**
+1. ✅ **初期問題の調査**
+   - ユーザー報告: 「エージェント以外のコンテナのメトリクスの情報はすべて０になっています」
+   - New Relic UIでエージェントコンテナのみメトリクス収集、他のコンテナは0
+   - 監視対象: Zabbix、Prometheus、Grafana、PostgreSQL、Vault等の8コンテナ
+
+2. ✅ **第1の原因特定**
+   - コンテナログ分析: `Integration feature not enabled, skipping execution`
+   - Docker統合のフィーチャーフラグ `NRIA_FEATURE_docker_enabled=true` が欠けていた
+
+3. ✅ **第1の修正実施**
+   - `terraform/envs/local/newrelic/terragrunt.hcl` に環境変数追加:
+     ```hcl
+     "NRIA_FEATURE_docker_enabled=true"
+     ```
+   - コンテナ再作成、統合ヘルスチェック成功を確認
+
+**第2フェーズ: cgroup v2問題の解決（根本原因）**
+4. ✅ **継続する問題の発見**
+   - ユーザー報告: 「よく見たらmonitoring-lab-newrelic-infra以外は今も０でした」
+   - nri-dockerバイナリを直接実行してテスト
+   - エラー発見: `fetching metrics for container: no such file or directory`
+   - cgroupパス問題を特定: `/host/sys/fs/docker-*.scope/cgroup.controllers`
+
+5. ✅ **根本原因の特定**
+   - リモートサーバーがcgroup v2 + systemd cgroupドライバーを使用
+   - cgroupパスが `/sys/fs/cgroup/system.slice/docker-*.scope/` に存在
+   - New Relicコンテナがcgroup namespaceで分離されており、ホストのcgroupにアクセス不可
+   - **公式要件**: cgroup v2環境では `--cgroupns=host` フラグが必須
+
+6. ✅ **docker_containerモジュールの拡張**
+   - `terraform/modules/docker_container/variables.tf` を修正:
+     ```hcl
+     cgroupns_mode = optional(string, "")  # Cgroup Namespaceモード（host/private）
+     ```
+   - `terraform/modules/docker_container/main.tf` を修正:
+     ```hcl
+     cgroupns_mode = each.value.cgroupns_mode != "" ? each.value.cgroupns_mode : null
+     ```
+
+7. ✅ **New Relic設定の修正**
+   - `terraform/envs/local/newrelic/terragrunt.hcl` を修正:
+     ```hcl
+     # Cgroup Namespaceモード: cgroup v2でホストのcgroupにアクセスするために必須
+     cgroupns_mode = "host"
+     ```
+
+8. ✅ **最終デプロイと動作確認**
+   - コンテナ削除: `terragrunt destroy -auto-approve`
+   - 新設定でコンテナ作成: `terragrunt apply -auto-approve`
+   - cgroupns_mode=hostの設定確認: `docker inspect` で検証
+   - nri-dockerの直接実行テスト:
+     - エラーメッセージ完全消滅
+     - 全コンテナのメトリクス収集成功
+   - ユーザー最終確認: **「無事にすべてのコンテナのメトリクスが確認できました」**
+
+**技術的知見**:
+- New Relic Infrastructure Agent v1.71.0のDocker統合には3つの設定が必要:
+  1. `NRIA_ENABLE_PROCESS_METRICS=true` - プロセスメトリクス有効化
+  2. `NRIA_FEATURE_docker_enabled=true` - Docker統合フィーチャーフラグ
+  3. `cgroupns_mode = "host"` - **cgroup v2環境で必須**（最重要！）
+- cgroup v2 + systemd cgroupドライバーの組み合わせでは、cgroupパスが `/sys/fs/cgroup/system.slice/` 配下に配置される
+- デフォルトのcgroup namespace分離では、コンテナはホストのcgroupにアクセスできない
+- `--cgroupns=host`（Terraformでは`cgroupns_mode = "host"`）により、コンテナがホストのcgroup namespaceを使用
+- この設定により、nri-dockerが `/sys/fs/cgroup/system.slice/docker-*.scope/` のメトリクスにアクセス可能に
+
+**デプロイ結果**:
+```
+✅ monitoring-lab-newrelic-infra (Up, healthy)
+✅ cgroupns_mode=host 設定成功
+✅ Docker統合が正常動作 (nri-docker integration health check success)
+✅ 全8コンテナのメトリクス収集成功:
+   - monitoring-lab-newrelic-infra
+   - monitoring-lab-zbx_server (CPU, メモリ, ネットワーク, スレッド数 すべて収集)
+   - monitoring-lab-zbx_web
+   - monitoring-lab-zbx_agent
+   - monitoring-lab-grafana
+   - monitoring-lab-prometheus
+   - monitoring-lab-vault
+   - monitoring-lab-postgres
+✅ New Relic UIですべてのコンテナが表示され、実際のメトリクス値を確認
+```
+
+**修正ファイル**:
+- `terraform/modules/docker_container/variables.tf` (新規: cgroupns_modeパラメータ追加)
+- `terraform/modules/docker_container/main.tf` (新規: cgroupns_mode適用)
+- `terraform/envs/local/newrelic/terragrunt.hcl` (修正: NRIA_FEATURE_docker_enabled=true追加、cgroupns_mode="host"設定)
+
+**次回のアクション**:
+- [x] すべてのコンテナ（8台）がNew Relic UIに表示されるか最終確認 ✅ 完了
+- [x] 各コンテナのCPU、メモリ、ネットワークメトリクスを確認 ✅ 完了
+- [ ] New Relic UIでのダッシュボード作成・カスタマイズ（オプション）
+- [ ] アラート設定の検討（オプション）
+
+#### 2025-10-30 (2): SwitchBot外部スクリプト監視の設定準備完了 🎯
+
+**実施内容**:
+1. ✅ **SwitchBotデバイス一覧の取得**
+   - APIを使用して全デバイスを確認
+   - 監視対象デバイス: 4台
+     - 温湿度計Pro 2F (B0E9FEEDD228) - MeterPro
+     - Hub 3 (2E) (B0E9FE8AEC2E) - Hub 3（温湿度センサー内蔵）
+     - ベランダ (D40E84864C41) - WoIOSensor
+     - 防水温湿度計 外 (F2B200461F1A) - WoIOSensor
+
+2. ✅ **check_switchbot.py スクリプトのHub 3対応修正**
+   - 問題: Hub 3にはbatteryフィールドがない（AC電源駆動）
+   - 解決策: スクリプトを修正して以下を実装
+     - `battery` フィールドをオプショナルに変更
+     - `lightLevel` フィールドを追加（Hub 3の照度センサー）
+     - `moveDetected` フィールドを追加（Hub 3の人感センサー）
+     - `device_type` フィールドを追加（デバイス識別用）
+   - 修正箇所: 101-128行目（必須フィールドチェックとオプショナルフィールド処理）
+
+3. ✅ **全4台でのデータ取得テスト成功**
+   - 温湿度計Pro 2F: 温度21.7°C, 湿度51%, バッテリー100%
+   - Hub 3 (2E): 温度25.6°C, 湿度55%, 照度4, 人感検知中
+   - ベランダ: 温度15.4°C, 湿度68%, バッテリー60%
+   - 防水温湿度計 外: 温度9°C, 湿度93%, バッテリー60%
+
+4. ✅ **Zabbix Web UIでの基本設定**
+   - ホストグループ `SwitchBot` を作成
+   - ホスト `SwitchBot Devices` を作成
+   - アイテム設計の理解確認（親アイテム + 依存アイテム構造）
+
+**技術的知見**:
+- Zabbixのアイテム設計: 親アイテム（External Check, Text型）+ 依存アイテム（Dependent Items, Numeric型）
+- 親アイテム: JSONデータを丸ごと取得（1回のAPI呼び出し）
+- 依存アイテム: JSONから個別の値を抽出してグラフ化・アラート設定
+- Hub 3はAC電源駆動のため、batteryフィールドが存在しない
+- Hub 3には温湿度センサーに加えて照度センサー・人感センサーも内蔵
+
+**修正ファイル**:
+- `config/zabbix/scripts/externalscripts/check_switchbot.py` (修正)
+
+**次回のアクション**:
+- [ ] External Checkアイテムを作成（温湿度計Pro 2Fから開始）
+  - Name: `SwitchBot Raw Data [温湿度計Pro 2F]`
+  - Type: External check
+  - Key: `check_switchbot.py[B0E9FEEDD228]`
+  - Type of information: Text
+  - Update interval: 5m
+- [ ] Dependent Items作成（温湿度計Pro 2F用）
+  - 温度 (temperature) - Numeric (float)
+  - 湿度 (humidity) - Numeric (unsigned)
+  - バッテリー (battery) - Numeric (unsigned)
+- [ ] 1台目のデータ取得確認とグラフ表示テスト
+- [ ] 残り3台も同様に設定
+  - Hub 3: 温度、湿度、照度、人感の4つの依存アイテム
+  - ベランダ: 温度、湿度、バッテリーの3つの依存アイテム
+  - 防水温湿度計 外: 温度、湿度、バッテリーの3つの依存アイテム
+- [ ] トリガー設定（温度/湿度の閾値アラート、バッテリー低下アラート）
+
+**デバイス一覧（参考）**:
+```
+1. 温湿度計Pro 2F - B0E9FEEDD228 (MeterPro)
+2. Hub 3 (2E) - B0E9FE8AEC2E (Hub 3)
+3. ベランダ - D40E84864C41 (WoIOSensor)
+4. 防水温湿度計 外 - F2B200461F1A (WoIOSensor)
+```
+
+#### 2025-10-30 (1): Zabbix Serverデータベース接続問題の完全解決 🎉
+
+**実施内容**:
+1. ✅ **問題の診断**
+   - Zabbix Serverにログインできるがメトリクスが取得できない問題を調査
+   - ログ確認により、PostgreSQLデータベース接続エラーを発見
+   - エラー内容: `connection to database 'dummy_db_name' failed`
+
+2. ✅ **根本原因の特定**
+   - 原因1: 環境変数 `ZBX_DB_NAME` が未設定
+     - `POSTGRES_DB=zabbix` は設定されていたが、Zabbix Server自身が参照する `ZBX_DB_NAME` が欠けていた
+     - デフォルト値 `dummy_db_name` で接続しようとして失敗
+   - 原因2: カスタムエントリーポイントの実装ミス
+     - 初期化スクリプトが直接 `zabbix_server` を起動していた
+     - 公式エントリーポイント処理（環境変数→設定ファイル反映）がスキップされていた
+
+3. ✅ **Terragrunt設定の修正**
+   - `terraform/envs/local/zabbix/terragrunt.hcl` を修正:
+     - Zabbix Server用環境変数に `ZBX_DB_NAME=zabbix` を追加
+     - Zabbix Web用環境変数に `ZBX_DB_NAME=zabbix` を追加
+
+4. ✅ **エントリーポイントスクリプトの修正**
+   - `/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh` を修正:
+     - 修正前: `exec /usr/sbin/zabbix_server --foreground -c /etc/zabbix/zabbix_server.conf`
+     - 修正後: `exec /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_server --foreground -c /etc/zabbix/zabbix_server.conf`
+   - 公式エントリーポイント経由で起動することで、環境変数が正しく反映されるように変更
+
+5. ✅ **デプロイと動作確認**
+   - Zabbix Serverコンテナの再作成成功
+   - PostgreSQL接続成功を確認
+   - 全59個のサーバープロセスが正常起動
+   - Zabbix Agentからのメトリクス収集開始を確認
+   - Web UIでリアルタイムデータ表示を確認（CPU使用率、メモリ使用量など）
+
+**技術的知見**:
+- Zabbix Serverの環境変数:
+  - `POSTGRES_DB`: PostgreSQL側の設定
+  - `ZBX_DB_NAME`: Zabbix Server自身が使用するデータベース名（**必須**）
+- 公式Dockerイメージのエントリーポイント:
+  - `/usr/bin/docker-entrypoint.sh` が環境変数を設定ファイルに反映する処理を行う
+  - カスタム初期化処理を行う場合でも、最終的には公式エントリーポイントを呼び出す必要がある
+
+**デプロイ結果**:
+```
+✅ Zabbix Serverが正常にPostgreSQLに接続
+✅ 全59個のサーバープロセスが起動
+✅ Zabbix Agentからのメトリクス収集が開始
+✅ Web UIでリアルタイムデータ表示を確認
+✅ 監視基盤が完全に稼働
+```
+
+**次回のアクション**:
+- [ ] SwitchBot外部スクリプト監視のアイテム設定（Zabbix Web UI）
+- [ ] Prometheusターゲット設定の有効化
+- [ ] Grafanaダッシュボードの作成
+
+**関連ファイル**:
+- `terraform/envs/local/zabbix/terragrunt.hcl` (修正)
+- `/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh` (修正)
+
+#### 2025-10-26 (1): SwitchBot外部スクリプト監視のセットアップ完了 🎉
+
+**実施内容**:
+1. ✅ **SwitchBot温湿度計監視スクリプトの作成**
+   - `config/zabbix/scripts/externalscripts/check_switchbot.py` を作成
+   - SwitchBot API (v1.1) を使用した温度・湿度・バッテリー取得
+   - JSON形式でのデータ出力（Zabbix Dependent Items対応）
+   - エラーハンドリングと終了コード実装 (0=成功, 1=エラー, 2=設定エラー, 3=APIエラー)
+
+2. ✅ **Zabbix Server初期化スクリプトの作成**
+   - `config/zabbix/scripts/init-zabbix-server.sh` を作成
+   - Python3とpip3の自動インストール
+   - requestsライブラリの自動インストール
+   - 外部スクリプトの実行権限設定
+
+3. ✅ **Dockerモジュールの拡張**
+   - `terraform/modules/docker_container/variables.tf` に `entrypoint` と `user` パラメータを追加
+   - `terraform/modules/docker_container/main.tf` で entrypoint と user の適用を実装
+
+4. ✅ **Terragrunt設定の更新**
+   - `terraform/envs/local/zabbix/terragrunt.hcl`:
+     - entrypoint設定: `/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh`
+     - user設定: `root` (パッケージインストールのため)
+     - 環境変数追加: `SWITCHBOT_TOKEN`, `SWITCHBOT_SECRET`, `SWITCHBOT_TIMEOUT`
+     - bind_mount設定:
+       - init-zabbix-server.sh (read-only)
+       - externalscripts/ (read-write)
+       - alertscripts/ (read-write)
+   - `terraform/root.hcl`:
+     - 環境変数注入: `SWITCHBOT_TOKEN`, `SWITCHBOT_SECRET` を get_env() で取得
+
+5. ✅ **リモート配置スクリプトの更新**
+   - `scripts/setup-remote-config.sh` を更新:
+     - Zabbix外部スクリプト用ディレクトリ作成 (externalscripts/, alertscripts/, userparameters/)
+     - check_switchbot.py の自動転送
+     - init-zabbix-server.sh の自動転送
+     - 実行権限の自動付与
+
+6. ✅ **環境変数設定の追加**
+   - `.env.example` に SwitchBot API認証情報を追加
+   - `.env` ファイルの作成と確認
+
+7. ✅ **デプロイとトラブルシューティング**
+   - 問題1: Terragrunt変数参照エラー (`${SWITCHBOT_TOKEN}`)
+     - 解決策: `get_env("SWITCHBOT_TOKEN", "default")` に修正
+   - 問題2: 権限エラー (apk add が Permission denied)
+     - 解決策: Zabbix Serverコンテナを `user = "root"` で起動
+   - Zabbix Serverコンテナの再作成成功
+   - Python3/requests の自動インストール成功
+   - Zabbix Serverの正常起動確認
+
+8. ✅ **ドキュメント作成**
+   - `config/zabbix/scripts/externalscripts/README_SWITCHBOT.md` を作成
+     - セットアップ手順の詳細
+     - Zabbix Web UIでの設定方法
+     - トラブルシューティングガイド
+     - 終了コード一覧
+     - パフォーマンス考慮事項（APIレート制限）
+
+**技術的知見**:
+- Zabbix External Checksは `/usr/lib/zabbix/externalscripts/` にスクリプトを配置
+- Python依存関係のインストールにはroot権限が必要（`apk add`, `pip3 install`）
+- Terragruntの環境変数参照は `get_env()` 関数を使用（`${VAR}` は不可）
+- Alpine LinuxのPython3.12では `--break-system-packages` オプションが必要
+- Dockerモジュールの `entrypoint` と `user` パラメータで初期化スクリプトを実行可能
+
+**デプロイ結果**:
+```
+✅ check_switchbot.py → /home/ubuntu/monitoring-lab/zabbix/scripts/externalscripts/
+✅ init-zabbix-server.sh → /home/ubuntu/monitoring-lab/zabbix/scripts/
+✅ Python3 + pip3 自動インストール成功
+✅ requests パッケージ自動インストール成功
+✅ Zabbix Serverコンテナ正常起動
+✅ 環境変数 (SWITCHBOT_TOKEN/SECRET) 正常注入
+```
+
+**動作確認結果**:
+- ✅ スクリプト配置確認完了
+- ✅ Python環境確認完了（Python 3.12.12 + requests 2.32.5）
+- ✅ 環境変数確認完了（SWITCHBOT_TOKEN, SWITCHBOT_SECRET, SWITCHBOT_TIMEOUT）
+- ✅ 2台の温湿度計からデータ取得成功:
+  - 温湿度計Pro 2F (B0E9FEEDD228): 温度23.1°C, 湿度60%, バッテリー100%
+  - 防水温湿度計 外 (F2B200461F1A): 温度15.8°C, 湿度96%, バッテリー60%
+
+**次回のアクション**:
+- [ ] Zabbix Web UIで External Check アイテム作成
+  - デバイスID: B0E9FEEDD228（温湿度計Pro 2F）
+  - デバイスID: F2B200461F1A（防水温湿度計 外）
+- [ ] Dependent Items で温度・湿度・バッテリーを個別取得
+- [ ] トリガー設定（温度/湿度の閾値アラート）
+- [ ] 更新間隔の調整（APIレート制限を考慮: 推奨5分以上）
+
+**関連ファイル**:
+- `config/zabbix/scripts/externalscripts/check_switchbot.py` (新規作成)
+- `config/zabbix/scripts/init-zabbix-server.sh` (新規作成)
+- `config/zabbix/scripts/externalscripts/README_SWITCHBOT.md` (新規作成)
+- `terraform/modules/docker_container/variables.tf` (修正)
+- `terraform/modules/docker_container/main.tf` (修正)
+- `terraform/envs/local/zabbix/terragrunt.hcl` (修正)
+- `terraform/root.hcl` (修正)
+- `scripts/setup-remote-config.sh` (修正)
+- `.env.example` (修正)
 
 #### 2025-10-22 (1): Zabbix Agent2監視の有効化成功 🎉
 
@@ -405,12 +987,13 @@ After:
 
 [リモートサーバー: 10.0.0.220]
   ├─ Docker Engine
-  ├─ PostgreSQL:5432      (Zabbixデータベース)
-  ├─ Zabbix Server:10051  (監視バックエンド)
-  ├─ Zabbix Agent2:10050  (Zabbix Server自己監視用) ← ✨ NEW!
-  ├─ Zabbix Web:8080      (Web UI)
-  ├─ Prometheus:9090      (メトリクス収集)
-  └─ Grafana:3000         (ダッシュボード)
+  ├─ PostgreSQL:5432          (Zabbixデータベース)
+  ├─ Zabbix Server:10051      (監視バックエンド)
+  ├─ Zabbix Agent2:10050      (Zabbix Server自己監視用)
+  ├─ Zabbix Web:8080          (Web UI)
+  ├─ Prometheus:9090          (メトリクス収集)
+  ├─ Grafana:3000             (ダッシュボード)
+  └─ New Relic Infra Agent    (統合監視プラットフォーム) ← ✨ NEW!
 ```
 
 ### 重要な環境変数 (.env)
