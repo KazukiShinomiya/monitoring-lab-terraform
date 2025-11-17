@@ -52,6 +52,12 @@ services:
       - TG_DOWNLOAD_DIR=/root/.terragrunt-cache
       - TG_NON_INTERACTIVE=true
 
+      # New Relic設定
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID}
+      - NEW_RELIC_REGION=${NEW_RELIC_REGION}
+      - NEW_RELIC_DISPLAY_NAME=${NEW_RELIC_DISPLAY_NAME}
+
     networks:
       - terraform-network
 

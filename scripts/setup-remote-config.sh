@@ -62,7 +62,7 @@ echo ""
 
 # ========== STEP 2: リモートディレクトリ作成 ==========
 step "2/4: リモートディレクトリ作成..."
-ssh ${TARGET_USER}@${TARGET_HOST} "mkdir -p ${REMOTE_BASE_DIR}/{prometheus,grafana/provisioning/{datasources,dashboards}} && \
+ssh ${TARGET_USER}@${TARGET_HOST} "mkdir -p ${REMOTE_BASE_DIR}/{prometheus,grafana/provisioning/{datasources,dashboards},zabbix/scripts/{externalscripts,alertscripts,userparameters}} && \
 chmod -R 755 ${REMOTE_BASE_DIR}"
 info "✓ ディレクトリ作成完了: ${REMOTE_BASE_DIR}"
 echo ""
@@ -98,6 +98,28 @@ datasources:
     editable: true
 EOF"
 info "✓ datasources.yml created"
+
+# Zabbix外部スクリプトの転送
+info "Transferring Zabbix external scripts..."
+# ローカルの外部スクリプトディレクトリからリモートへコピー
+if [ -d "config/zabbix/scripts/externalscripts" ]; then
+    scp -r config/zabbix/scripts/externalscripts/* ${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/
+    info "✓ External scripts transferred"
+else
+    warn "config/zabbix/scripts/externalscripts not found, skipping script transfer"
+fi
+
+# 初期化スクリプトの転送
+if [ -f "config/zabbix/scripts/init-zabbix-server.sh" ]; then
+    scp config/zabbix/scripts/init-zabbix-server.sh ${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE_DIR}/zabbix/scripts/
+    info "✓ Init script transferred"
+else
+    warn "config/zabbix/scripts/init-zabbix-server.sh not found"
+fi
+
+# 実行権限を付与
+ssh ${TARGET_USER}@${TARGET_HOST} "chmod +x ${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/*.py ${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/*.sh ${REMOTE_BASE_DIR}/zabbix/scripts/init-zabbix-server.sh 2>/dev/null || true"
+info "✓ Script permissions set"
 
 echo ""
 

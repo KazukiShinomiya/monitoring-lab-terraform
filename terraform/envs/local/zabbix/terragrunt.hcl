@@ -53,6 +53,12 @@ inputs = {
       internal_port = 10051
       external_port = 10051  # Zabbix AgentやZabbix Proxyからの接続用
 
+      # エントリーポイント（Python依存関係インストール + Zabbix Server起動）
+      entrypoint = ["/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh"]
+
+      # rootユーザーで起動（パッケージインストールのため）
+      user = "root"
+
       # 環境変数設定
       env = [
         "DB_SERVER_HOST=postgres",
@@ -60,6 +66,7 @@ inputs = {
         "POSTGRES_USER=zabbix",
         "POSTGRES_PASSWORD=YOUR_POSTGRES_PASSWORD",
         "POSTGRES_DB=zabbix",
+        "ZBX_DB_NAME=zabbix",
         "ZBX_CACHESIZE=128M",
         "ZBX_HISTORYCACHESIZE=64M",
         "ZBX_TRENDCACHESIZE=32M",
@@ -67,7 +74,11 @@ inputs = {
         "ZBX_STARTPOLLERS=10",
         "ZBX_STARTPINGERS=5",
         "ZBX_STARTDISCOVERERS=3",
-        "PHP_TZ=Asia/Tokyo"
+        "PHP_TZ=Asia/Tokyo",
+        # 外部スクリプト用環境変数
+        "SWITCHBOT_TOKEN=${get_env("SWITCHBOT_TOKEN", "YOUR_SWITCHBOT_TOKEN")}",
+        "SWITCHBOT_SECRET=${get_env("SWITCHBOT_SECRET", "YOUR_SWITCHBOT_SECRET")}",
+        "SWITCHBOT_TIMEOUT=10"
       ]
 
       # ボリュームマウント設定
@@ -79,7 +90,23 @@ inputs = {
       ]
 
       # Bind マウント設定
-      bind_mounts = []
+      bind_mounts = [
+        {
+          source    = "/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh"
+          target    = "/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh"
+          read_only = true
+        },
+        {
+          source    = "/home/ubuntu/monitoring-lab/zabbix/scripts/externalscripts"
+          target    = "/usr/lib/zabbix/externalscripts"
+          read_only = false  # スクリプトからのログ出力等を考慮
+        },
+        {
+          source    = "/home/ubuntu/monitoring-lab/zabbix/scripts/alertscripts"
+          target    = "/usr/lib/zabbix/alertscripts"
+          read_only = false
+        }
+      ]
     }
 
     # ----- Zabbix Web UI -----
@@ -101,6 +128,7 @@ inputs = {
         "POSTGRES_USER=zabbix",
         "POSTGRES_PASSWORD=YOUR_POSTGRES_PASSWORD",
         "POSTGRES_DB=zabbix",
+        "ZBX_DB_NAME=zabbix",
         "PHP_TZ=Asia/Tokyo",
         "ZBX_SERVER_NAME=Monitoring Lab",
         "ZBX_MAXEXECUTIONTIME=600",

@@ -4,13 +4,25 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 
 ## 📦 構成要素
 
+### 監視基盤サービス
+
 | コンポーネント | 用途 | アクセスURL |
 |-------------|------|-----------|
-| **Zabbix Server** | メトリクス収集・監視対象管理 | `http://localhost:8080` |
-| **Prometheus** | 時系列メトリクス収集 | `http://localhost:9090` |
-| **Grafana** | 可視化ダッシュボード | `http://localhost:3000` |
-| **PostgreSQL** | Zabbixの永続ストレージ | `localhost:5432` |
+| **Zabbix Server** | メトリクス収集・監視対象管理 | `http://YOUR_SERVER_IP:8080` |
+| **Zabbix Agent2** | Zabbix Server自己監視 | `YOUR_SERVER_IP:10050` |
+| **Prometheus** | 時系列メトリクス収集 | `http://YOUR_SERVER_IP:9090` |
+| **Grafana** | 可視化ダッシュボード | `http://YOUR_SERVER_IP:3000` |
+| **PostgreSQL** | Zabbixの永続ストレージ | `YOUR_SERVER_IP:5432` |
 | **Vault** | 機密情報管理（開発モード） | `http://localhost:8200` |
+| **New Relic** | 統合監視プラットフォーム | `https://one.newrelic.com/` |
+
+### 監視対象
+
+| 対象 | 監視方法 | 監視項目 |
+|------|---------|---------|
+| **SwitchBot温湿度計 × 4** | Zabbix External Check | 温度、湿度、バッテリー、照度、人感 |
+| **Dockerコンテナ × 8** | New Relic Docker統合 | CPU、メモリ、ネットワーク、I/O |
+| **ホストOS** | New Relic Infrastructure | CPU、メモリ、ディスク、ネットワーク |
 
 ---
 
@@ -26,33 +38,43 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 
 ```
 monitoring-lab/
-├── docker/                          # 元のCompose環境（参照用）
-│   └── docker-compose.yml
+├── .claude/                         # Claude Code設定
+│   ├── SESSION_STATE.md            # セッション状態管理
+│   └── commands/                    # カスタムスラッシュコマンド
+├── config/                          # サービス設定ファイル
+│   ├── prometheus/
+│   │   └── prometheus.yml          # Prometheusスクレイプ設定
+│   ├── grafana/
+│   │   └── provisioning/           # Grafanaプロビジョニング設定
+│   └── zabbix/
+│       └── scripts/
+│           └── externalscripts/    # Zabbix外部スクリプト
+│               └── check_switchbot.py
 ├── terraform/
-│   ├── terragrunt.hcl               # ルート設定（全環境共通）
+│   ├── root.hcl                     # ルート設定（全環境共通）
 │   ├── envs/
 │   │   └── local/                   # ローカル環境設定
 │   │       ├── terragrunt.hcl       # 環境固有設定
-│   │       ├── postgres/
-│   │       │   └── terragrunt.hcl   # PostgreSQL設定
-│   │       ├── vault/
-│   │       │   └── terragrunt.hcl   # Vault設定
-│   │       ├── zabbix/
-│   │       │   └── terragrunt.hcl   # Zabbix Server/Web設定
-│   │       ├── prometheus/
-│   │       │   └── terragrunt.hcl   # Prometheus設定
-│   │       └── grafana/
-│   │           └── terragrunt.hcl   # Grafana設定
+│   │       ├── network/             # Dockerネットワーク
+│   │       ├── postgres/            # PostgreSQL
+│   │       ├── vault/               # Vault
+│   │       ├── zabbix/              # Zabbix Server/Web
+│   │       ├── zabbix-agent/        # Zabbix Agent2
+│   │       ├── prometheus/          # Prometheus
+│   │       ├── grafana/             # Grafana
+│   │       └── newrelic/            # New Relic Infrastructure
 │   └── modules/
 │       ├── docker_container/        # 共通Dockerコンテナモジュール
-│       │   ├── main.tf
-│       │   ├── variables.tf
-│       │   └── outputs.tf
+│       ├── network/                 # Dockerネットワークモジュール
 │       └── vault_secret/            # Vaultシークレット管理モジュール
-│           ├── main.tf
-│           ├── variables.tf
-│           └── outputs.tf
-└── README.md
+├── scripts/                         # ヘルパースクリプト
+│   ├── setup-remote-config.sh      # リモートサーバー初期設定
+│   ├── container-setup.sh          # 開発コンテナセットアップ
+│   └── tg.sh / tg.bat              # Terragruntラッパー
+├── docker-compose.yml               # 開発環境（Terragrunt/Vault）
+├── .env.example                     # 環境変数テンプレート
+├── CLAUDE.md                        # Claude Code用プロジェクト概要
+└── README.md                        # このファイル
 ```
 
 ---
