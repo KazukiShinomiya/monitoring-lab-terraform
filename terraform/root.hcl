@@ -91,6 +91,10 @@ inputs = {
   # 環境名
   environment = local.environment
 
+  # SwitchBot API認証情報（環境変数から取得）
+  SWITCHBOT_TOKEN  = get_env("SWITCHBOT_TOKEN", "YOUR_SWITCHBOT_TOKEN")
+  SWITCHBOT_SECRET = get_env("SWITCHBOT_SECRET", "YOUR_SWITCHBOT_SECRET")
+
   # タグ情報（リソース識別用）
   common_tags = {
     Project     = local.project_name
