@@ -33,20 +33,41 @@ resource "docker_container" "service" {
   # コマンド引数（オプション）
   command = length(each.value.command) > 0 ? each.value.command : null
 
+  # エントリーポイント上書き（オプション）
+  entrypoint = length(each.value.entrypoint) > 0 ? each.value.entrypoint : null
+
+  # 実行ユーザー（オプション）
+  user = each.value.user != "" ? each.value.user : null
+
+  # 特権モード（オプション）
+  privileged = each.value.privileged
+
+  # ネットワークモード（オプション）
+  network_mode = each.value.network_mode != "" ? each.value.network_mode : null
+
+  # Cgroup Namespaceモード（オプション）
+  cgroupns_mode = each.value.cgroupns_mode != "" ? each.value.cgroupns_mode : null
+
   # コンテナを常時稼働させる設定
   restart = "unless-stopped"
 
-  # ネットワーク設定
-  networks_advanced {
-    name = var.network_name
-    # サービス名でDNS解決できるようにエイリアスを設定
-    aliases = [each.key]
+  # ネットワーク設定（network_mode="host"の場合は使用しない）
+  dynamic "networks_advanced" {
+    for_each = each.value.network_mode != "host" ? [1] : []
+    content {
+      name = var.network_name
+      # サービス名でDNS解決できるようにエイリアスを設定
+      aliases = [each.key]
+    }
   }
 
-  # ポートマッピング（ホスト:コンテナ）
-  ports {
-    internal = each.value.internal_port
-    external = each.value.external_port
+  # ポートマッピング（network_mode="host"の場合は不要）
+  dynamic "ports" {
+    for_each = each.value.network_mode != "host" ? [1] : []
+    content {
+      internal = each.value.internal_port
+      external = each.value.external_port
+    }
   }
 
   # 環境変数の注入（文字列リスト形式）

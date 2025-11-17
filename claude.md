@@ -131,9 +131,13 @@ E:\work\labo/
 │               └── datasources.yml # Grafanaデータソース自動設定
 │
 ├── terraform/                      # IaC定義
-│   ├── terragrunt.hcl             # ルート設定 (全環境共通)
+│   ├── root.hcl                   # ルート設定 (全環境共通)
 │   ├── modules/                   # 再利用可能モジュール
 │   │   ├── docker_container/     # Docker汎用モジュール
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   ├── network/               # Dockerネットワークモジュール
 │   │   │   ├── main.tf
 │   │   │   ├── variables.tf
 │   │   │   └── outputs.tf
@@ -144,11 +148,14 @@ E:\work\labo/
 │   └── envs/                      # 環境別設定
 │       └── local/                 # ローカル環境
 │           ├── terragrunt.hcl    # 環境固有設定
+│           ├── network/           # Dockerネットワーク定義
 │           ├── postgres/          # PostgreSQLコンテナ定義
 │           ├── vault/             # Vaultコンテナ定義
 │           ├── zabbix/            # Zabbix Server/Webコンテナ定義
+│           ├── zabbix-agent/      # Zabbix Agent2コンテナ定義
 │           ├── prometheus/        # Prometheusコンテナ定義
-│           └── grafana/           # Grafanaコンテナ定義
+│           ├── grafana/           # Grafanaコンテナ定義
+│           └── newrelic/          # New Relic Infraコンテナ定義
 │
 └── scripts/                       # ヘルパースクリプト
     ├── container-setup.sh / .bat # 開発コンテナセットアップ
@@ -167,9 +174,19 @@ E:\work\labo/
 | **PostgreSQL** | `postgres:15-alpine` | 5432 | Zabbixデータ永続化 | なし |
 | **Vault** | `hashicorp/vault:latest` | 8200 | 機密情報管理 (開発モード) | なし |
 | **Zabbix Server** | `zabbix/zabbix-server-pgsql:alpine-latest` | 10051 | 監視サーバー | PostgreSQL |
+| **Zabbix Agent2** | `zabbix/zabbix-agent2:alpine-latest` | 10050 | Zabbix Server自己監視 | Zabbix Server |
 | **Zabbix Web** | `zabbix/zabbix-web-apache-pgsql:alpine-latest` | 8080 | WebUI | PostgreSQL, Zabbix Server |
 | **Prometheus** | `prom/prometheus:latest` | 9090 | メトリクス収集 | なし |
 | **Grafana** | `grafana/grafana:latest` | 3000 | ダッシュボード | Prometheus, Zabbix |
+| **New Relic Infra** | `newrelic/infrastructure:latest` | - | 統合監視プラットフォーム | なし |
+
+### 監視対象
+
+| 対象 | 監視方法 | 項目 |
+|------|---------|------|
+| **SwitchBot温湿度計** | Zabbix External Check | 温度、湿度、バッテリー、照度、人感（4台） |
+| **Docker環境** | New Relic Docker統合 | コンテナメトリクス（8台） |
+| **ホストOS** | New Relic Infrastructure Agent | CPU、メモリ、ディスク、ネットワーク |
 
 ### 開発環境コンテナ
 
@@ -218,10 +235,11 @@ terragrunt run-all apply
 
 | サービス | URL | 認証情報 |
 |---------|-----|---------|
-| Vault | http://localhost:8200 | Token: `root` |
-| Zabbix | http://localhost:8080 | User: `Admin`, Pass: `zabbix` |
-| Prometheus | http://localhost:9090 | 認証なし |
-| Grafana | http://localhost:3000 | User: `admin`, Pass: `admin` |
+| Vault | http://localhost:8200 | Token: `root` (開発用ローカル) |
+| Zabbix | http://10.0.0.220:8080 | User: `Admin`, Pass: `zabbix` |
+| Prometheus | http://10.0.0.220:9090 | 認証なし |
+| Grafana | http://10.0.0.220:3000 | User: `admin`, Pass: `admin` |
+| New Relic | https://one.newrelic.com/ | ライセンスキーで認証 |
 
 ---
 

@@ -1,7 +1,8 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2025-11-16 22:00
+**最終更新**: 2025-11-16 23:30
 **プロジェクト**: Monitoring Lab - Terraform/Terragrunt監視基盤
+**現在のフェーズ**: HCP Terraform + GitHub Actions 完全移行計画を策定完了
 
 ---
 
@@ -25,6 +26,129 @@
 ## 📌 現在のプロジェクト状態
 
 ### ✅ 完了した作業
+
+#### 2025-11-16 (2): HCP Terraform + GitHub Actions 完全移行計画の策定 🎯
+
+**実施内容**:
+1. ✅ **HCP Terraform無料プランの確認**
+   - 月間500リソースまで無料管理可能
+   - 現在のプロジェクト（約20リソース未満）は無料枠で十分運用可能
+   - State管理、リモート実行、VCS連携すべて無料
+
+2. ✅ **Self-hosted Runner + Terraform Agentによる完全無料運用の決定**
+   - **GitHub Actions**: Private repoでもSelf-hosted Runnerなら完全無料
+   - **Terraform Agent**: プライベートネットワーク内で無料実行
+   - **合計運用コスト: $0/月** ⭐
+
+3. ✅ **アーキテクチャ設計の完成**
+   ```
+   GitHub (クラウド) → GitHub Actions Webhook
+       ↓
+   自宅ネットワーク (10.0.0.0/24)
+       ├─ WSL2 (Windows PC)
+       │   ├─ GitHub Actions Self-hosted Runner
+       │   └─ HCP Terraform Agent
+       │       └─ SSH → リモートサーバー (10.0.0.220)
+       │                   └─ Docker Engine (監視基盤)
+       └─ HCP Terraform (State管理)
+   ```
+
+4. ✅ **詳細な10フェーズ移行計画の策定**
+   - Phase 0: 準備とバックアップ（15分）
+   - Phase 1: GitHubリポジトリセットアップ（30分）
+   - Phase 2: HCP Terraform セットアップ（20分）
+   - Phase 3-A: Terraform Agent セットアップ（WSL2）（1-2時間）
+   - Phase 3-B: GitHub Actions Self-hosted Runner セットアップ（45分）
+   - Phase 4: HCP Terraform Workspace作成（30分）
+   - Phase 5: 基本的なGitHub Actions ワークフロー作成（30分）
+   - Phase 6: 1サービス（network）でbackend移行テスト（1時間）
+   - Phase 7: 全サービスのbackend移行（1-2時間）
+   - Phase 8: GitHub Actions自動Plan/Applyワークフロー追加（1時間）
+
+5. ✅ **推奨スケジュールの決定（5日間で完了）**
+   - Day 1: Phase 0-1（バックアップ＋GitHub） - 45分
+   - Day 2: Phase 2-3A（HCP Terraform＋Terraform Agent） - 2-3時間
+   - Day 3: Phase 3B-4（GitHub Runner＋Workspace作成） - 1.5時間
+   - Day 4: Phase 5-6（基本ワークフロー＋テスト移行） - 1.5時間
+   - Day 5: Phase 7-8（全サービス移行＋自動化） - 2-3時間
+   - **合計**: 約8-10時間（5日間で完了）
+
+6. ✅ **Agent/Runner実行場所の決定**
+   - **推奨**: 両方をリモートサーバー（10.0.0.220）で実行
+     - 理由: 常時稼働、本番環境に近い、リソース分離
+   - **初期**: まずWSL2で開始、安定後にリモートへ移行
+     - 理由: 設定が簡単、SSH鍵が既に配置済み
+
+7. ✅ **GitHub Actions活用方法の策定**
+   - PR時の自動Terraform Plan + コメント
+   - mainブランチマージ時の自動Apply
+   - Terraform Format/Validateチェック
+   - tfsecセキュリティスキャン
+   - 週次ドリフト検出
+   - 依存関係自動更新
+   - terraform-docsによるドキュメント自動生成
+
+**技術的知見**:
+- **Self-hosted Runnerのメリット**:
+  - Private repoでも完全無料（GitHub-hostedは2,000分/月制限）
+  - プライベートネットワークへのアクセス可能
+  - 同時実行数の制限なし
+  - 実行環境を自由に設定可能
+
+- **Terraform Agentの必要性**:
+  - HCP Terraformクラウドからプライベート10.0.0.220への直接アクセスは不可
+  - Agentがプライベートネットワーク内で実行し、HCP Terraformと橋渡し
+  - Agent Poolsで複数Agentの管理が可能（無料）
+
+- **完全無料運用の実現**:
+  - HCP Terraform Free: 500リソースまで無料（現在20未満）
+  - GitHub Actions: Self-hosted Runnerは完全無料
+  - Terraform Agent: 無料（Enterpriseプランの機能だが、Agent自体は無料）
+  - 合計月額コスト: **$0**
+
+**得られるメリット**:
+1. **完全自動化**: PR作成→自動Plan→レビュー→マージ→自動Apply
+2. **変更管理**: GitHubに全変更履歴、HCP Terraformに全実行履歴
+3. **セキュリティ強化**: tfsecで脆弱性自動検出、ドリフト検出で不正変更発見
+4. **運用効率化**: 手動実行ミス削減、ドキュメント自動更新
+5. **監査ログ**: 誰が・いつ・何を変更したか完全トレーサビリティ
+6. **学習効果**: 本番環境レベルの最新IaC運用プラクティス習得
+
+**詳細手順書の作成完了**:
+- 各Phaseごとの詳細なコマンド・設定ファイル例を提供
+- ロールバック手順も含めた安全な移行計画
+- systemdサービス化によるAgent/Runnerの永続化方法
+- GitHub Actions ワークフローのサンプルコード
+
+**次回のアクション（Phase 0から開始）**:
+- [ ] Phase 0: 現状のStateファイルをバックアップ（15分）
+  ```bash
+  cd /mnt/e/work/labo
+  tar -czf ~/terraform-state-backup-$(date +%Y%m%d-%H%M%S).tar.gz terraform/.terraform-state/
+  ```
+
+**全体ロードマップ（更新版）**:
+```
+Phase 0: 準備とバックアップ ← 次回ここから開始
+Phase 1: GitHubリポジトリセットアップ
+Phase 2: HCP Terraform セットアップ
+Phase 3-A: Terraform Agent セットアップ（WSL2）
+Phase 3-B: GitHub Actions Self-hosted Runner セットアップ
+Phase 4: HCP Terraform Workspace作成
+Phase 5: 基本的なGitHub Actions ワークフロー作成
+Phase 6: 1サービス（network）でbackend移行テスト
+Phase 7: 全サービスのbackend移行
+Phase 8: GitHub Actions自動Plan/Applyワークフロー追加
+```
+
+**評価**:
+- ✅ プライベートネットワークでの運用課題を完全解決
+- ✅ 完全無料で本番レベルの自動化を実現
+- ✅ 段階的アプローチで学習負荷を軽減
+- ✅ ロールバック可能な安全な移行計画
+- ✅ 最新のIaC運用ベストプラクティスを網羅
+
+---
 
 #### 2025-11-16 (1): 運用改善計画の策定とPhase 0完了 🚀
 
@@ -1019,9 +1143,116 @@ VAULT_ADDR=http://localhost:8200
 
 ## 🚧 未完了・次のステップ
 
+### 優先度: 最高 🔴🔴🔴 HCP Terraform + GitHub Actions 完全移行
+
+**目的**: ローカルState管理から、クラウドベースの自動化環境へ完全移行
+
+**推奨スケジュール**: 5日間（合計8-10時間）
+- Day 1: Phase 0-1（45分）
+- Day 2: Phase 2-3A（2-3時間）
+- Day 3: Phase 3B-4（1.5時間）
+- Day 4: Phase 5-6（1.5時間）
+- Day 5: Phase 7-8（2-3時間）
+
+#### 詳細タスク一覧
+
+**Phase 0: 準備とバックアップ** ⏱️ 15分
+- [ ] 現状のStateファイルをバックアップ
+  ```bash
+  cd /mnt/e/work/labo
+  tar -czf ~/terraform-state-backup-$(date +%Y%m%d-%H%M%S).tar.gz terraform/.terraform-state/
+  ls -lh ~/terraform-state-backup-*.tar.gz
+  ```
+- [ ] 現在の動作確認（`terragrunt run-all plan` が成功すること）
+
+**Phase 1: GitHubリポジトリセットアップ** ⏱️ 30分
+- [ ] GitHubでPrivateリポジトリ作成（`monitoring-lab-terraform`）
+- [ ] リモートリポジトリ追加（`git remote add origin`）
+- [ ] 機密情報の最終チェック（`.env`, `.terraform-state/` が除外されているか）
+- [ ] プッシュ（`git push -u origin master`）
+
+**Phase 2: HCP Terraform セットアップ** ⏱️ 20分
+- [ ] HCP Terraformアカウント作成
+- [ ] Organization作成（`monitoring-lab`）
+- [ ] API Token生成・保存
+
+**Phase 3-A: Terraform Agent セットアップ（WSL2）** ⏱️ 1-2時間
+- [ ] HCP Terraform UIでAgent Pool作成（`homelab-agent-pool`）
+- [ ] Agent Token生成・保存
+- [ ] WSL2でAgentバイナリダウンロード・解凍
+- [ ] Agent設定ファイル作成（`agent.hcl`）
+- [ ] Agent起動テスト（フォアグラウンド）
+- [ ] HCP Terraform UIで接続確認（Status: Connected）
+- [ ] systemdサービス化（`/etc/systemd/system/tfc-agent.service`）
+- [ ] 自動起動設定完了
+
+**Phase 3-B: GitHub Actions Self-hosted Runner セットアップ** ⏱️ 45分
+- [ ] GitHub UIでRunner追加
+- [ ] WSL2でRunnerバイナリダウンロード・解凍
+- [ ] Runner設定（`./config.sh`）
+- [ ] Runner起動テスト（フォアグラウンド）
+- [ ] GitHub UIで接続確認（Status: Idle）
+- [ ] systemdサービス化（`./svc.sh install && start`）
+- [ ] 自動起動設定完了
+
+**Phase 4: HCP Terraform Workspace作成** ⏱️ 30分
+- [ ] HCP Terraform認証情報設定（`~/.terraformrc`）
+- [ ] 8個のWorkspace作成（CLI経由）
+  - `monitoring-lab-local-network`
+  - `monitoring-lab-local-postgres`
+  - `monitoring-lab-local-vault`
+  - `monitoring-lab-local-zabbix`
+  - `monitoring-lab-local-zabbix-agent`
+  - `monitoring-lab-local-prometheus`
+  - `monitoring-lab-local-grafana`
+  - `monitoring-lab-local-newrelic`
+- [ ] 各Workspaceの実行モードをAgentに設定
+- [ ] Agent Poolを `homelab-agent-pool` に設定
+
+**Phase 5: 基本的なGitHub Actions ワークフロー作成** ⏱️ 30分
+- [ ] `.github/workflows/terraform-check.yml` 作成
+- [ ] Terraform Format Checkワークフロー実装
+- [ ] コミット・プッシュ
+- [ ] GitHub ActionsでSelf-hosted Runnerでの実行確認
+
+**Phase 6: 1サービス（network）でbackend移行テスト** ⏱️ 1時間
+- [ ] `backend_override.tf` 作成（network用）
+- [ ] Terragrunt経由でState移行（`terragrunt init`）
+- [ ] HCP Terraform UIでState確認
+- [ ] `terragrunt plan` で動作確認（No changes）
+- [ ] ロールバック手順の確認
+
+**Phase 7: 全サービスのbackend移行** ⏱️ 1-2時間
+- [ ] `terraform/root.hcl` のbackend設定変更
+- [ ] `credentials.tfrc.json` 作成・docker-compose.ymlマウント設定
+- [ ] コンテナ再起動
+- [ ] 依存順序で全サービス移行（network → postgres/vault/prometheus → zabbix → zabbix-agent → grafana → newrelic）
+- [ ] `terragrunt run-all plan` で全体確認
+
+**Phase 8: GitHub Actions自動Plan/Applyワークフロー追加** ⏱️ 1時間
+- [ ] `.github/workflows/terraform-plan.yml` 作成（PR時の自動Plan）
+- [ ] `.github/workflows/terraform-apply.yml` 作成（マージ時の自動Apply）
+- [ ] GitHub Secretsに `TFC_TOKEN` 設定
+- [ ] コミット・プッシュ
+- [ ] PRテストで動作確認
+
+**完了条件**:
+- ✅ 全8サービスがHCP Terraformで管理されている
+- ✅ PR作成時に自動Planが実行される
+- ✅ mainブランチマージ時に自動Applyが実行される
+- ✅ Self-hosted RunnerとTerraform Agentが安定稼働
+- ✅ 完全無料で運用できている（月額 $0）
+
+**ロールバック計画**:
+- Phase 6以前: いつでも中断可能（既存環境に影響なし）
+- Phase 6以降: `backend_override.tf` 削除 + `terraform init -reconfigure` でローカルに戻せる
+- 最終手段: Phase 0のバックアップから復元
+
+---
+
 ### 優先度: 高 🔴
 
-#### 1. 監視基盤の基本動作確認
+#### 1. 監視基盤の基本動作確認（移行完了後）
 **ステータス**: ログイン確認済み、詳細確認は未実施
 
 **確認済み**:
@@ -1335,3 +1566,124 @@ ssh ubuntu@10.0.0.220 "docker volume inspect monitoring-lab-postgres_data"
 ---
 
 **このファイルは自動的に更新されます。セッション開始時に必ず確認してください。**
+
+---
+
+## 📅 2025-11-16 (3): Phase 0完了 - HCP Terraform移行準備完了
+
+**最終更新**: 2025-11-16 11:35
+**セッション時間**: 11:00-11:35 (35分)
+**実施フェーズ**: Phase 0 - 準備とバックアップ
+
+### ✅ 完了した作業
+
+#### 1. Stateファイルのバックアップ作成
+- ✅ バックアップファイル作成完了
+  - パス: `/root/terraform-state-backup-20251116-105359.tar.gz`
+  - サイズ: 7.0KB
+  - 内容: 全8サービスのTerraform Stateファイル
+  ```bash
+  tar -czf ~/terraform-state-backup-$(date +%Y%m%d-%H%M%S).tar.gz terraform/.terraform-state/
+  ```
+
+#### 2. 現在の動作確認（全サービス検証）
+- ✅ 全8サービスの状態検証完了
+  - コマンド: `terragrunt run --all plan`
+  - 実行時間: 約3秒（並列実行）
+
+**検証結果サマリー**:
+```
+✅ network:       No changes
+✅ postgres:      No changes
+✅ vault:         No changes
+✅ prometheus:    No changes
+✅ newrelic:      No changes
+✅ zabbix-agent:  No changes
+✅ grafana:       No changes
+⚠️  zabbix:       Plan: 0 to add, 1 to change, 0 to destroy
+```
+
+#### 3. zabbixサービスの変更内容確認
+**検出された差分**:
+```hcl
+# docker_container.service["zbx_web"] will be updated in-place
+~ healthcheck {
+  ~ start_interval = "5s" -> "0s"
+  ~ start_period   = "40s" -> "0s"
+}
+```
+
+**原因分析**:
+- Dockerプロバイダーの既知の挙動
+- Terraform設定で `start_interval`/`start_period` が未指定
+- Docker Engine側がデフォルト値（5s/40s）を自動設定
+- Terraformは未指定を `0s` として認識し差分検出
+
+**影響評価**:
+- ❌ 実質的な問題なし
+- ❌ コンテナの動作に影響なし
+- ❌ ヘルスチェックは正常稼働中
+- ✅ HCP Terraform移行には影響しない
+
+### 🎯 Phase 0完了判定
+
+**判定**: ✅ **Phase 0完了**
+
+**理由**:
+1. ✅ Stateファイルバックアップ完了（7.0KB）
+2. ✅ 7/8サービスが完全一致
+3. ✅ 1サービスの差分は無害（ヘルスチェックのデフォルト値）
+4. ✅ 実環境は正常稼働中
+5. ✅ Phase 0の目的「破損チェック」を達成
+
+### 📊 効率化ポイント
+
+**今回使用した効率的なコマンド**:
+```bash
+# 全サービス一括検証 + 結果のみ抽出
+cd /workspace/terraform/envs/local && \
+terragrunt run --all plan 2>&1 | grep -E "(STDOUT.*No changes|Error|Plan:|Apply)"
+```
+
+**メリット**:
+- 並列実行で検証時間を大幅短縮（個別実行の1/8）
+- デバッグログを除外し、重要な結果のみ表示
+- エラー検出が容易
+
+### 🔍 学習ポイント
+
+1. **STDERRの理解**
+   - Dockerプロバイダーのデバッグログは `STDERR` に出力される
+   - `"Error": ""` はDockerのJSONレスポンスの一部（実際のエラーではない）
+   - 最終結果の `STDOUT` のみ確認すればOK
+
+2. **Terragrunt並列実行**
+   - `run --all` は依存関係を考慮して並列実行
+   - 大幅な時間短縮が可能
+   - grepでフィルタリングして見やすく
+
+3. **バックアップの重要性**
+   - 移行前の必須作業
+   - ロールバック時の保険
+   - 7.0KBと非常に軽量
+
+### 📝 次のステップ: Phase 1
+
+**Phase 1: GitHubプライベートリポジトリ作成と機密情報チェック（30分）**
+
+**タスク内容**:
+1. GitHubでPrivateリポジトリ作成（`monitoring-lab-terraform`）
+2. リモートリポジトリ追加（`git remote add origin`）
+3. 機密情報の最終チェック（`.env`, `.terraform-state/` が除外されているか）
+4. プッシュ（`git push -u origin master`）
+
+**前提条件**: ✅ すべてクリア
+- ✅ `.gitignore` 設定済み（HCP Terraform認証情報も保護）
+- ✅ `.env` は除外設定済み
+- ✅ `.terraform-state/` は除外設定済み
+- ✅ Stateファイルバックアップ完了
+
+**推定時間**: 30分
+**難易度**: ⭐ (簡単)
+
+---

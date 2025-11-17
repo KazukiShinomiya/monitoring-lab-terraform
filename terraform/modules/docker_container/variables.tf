@@ -30,6 +30,11 @@ variable "services" {
     external_port  = number           # ホスト側公開ポート（例: 10051）
     env            = list(string)     # 環境変数リスト（"KEY=VALUE"形式）
     command        = optional(list(string), []) # コンテナ起動コマンド（オプション）
+    entrypoint     = optional(list(string), []) # エントリーポイント上書き（オプション）
+    user           = optional(string, "")       # 実行ユーザー（オプション）
+    privileged     = optional(bool, false)      # 特権モード（ホストアクセスが必要な場合、デフォルト: false）
+    network_mode   = optional(string, "")       # ネットワークモード（host/bridge/none、デフォルト: bridge）
+    cgroupns_mode  = optional(string, "")       # Cgroup Namespaceモード（host/private、デフォルト: private）
     volumes = list(object({
       source = string                 # ボリューム名（var.volumesで定義したもの）
       target = string                 # コンテナ内マウントパス（例: "/var/lib/zabbix"）
