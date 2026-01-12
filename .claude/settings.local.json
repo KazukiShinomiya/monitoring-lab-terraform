@@ -167,7 +167,11 @@
       "Bash(powershell.exe -Command \"Get-Content ''C:\\\\work\\\\repos\\\\monitoring-lab-terraform\\\\.claude\\\\SESSION_STATE.md'' | Select-Object -Last 200\")",
       "Bash(where:*)",
       "Bash(powershell.exe -Command \"Test-Path ''$env:APPDATA\\\\GitHub CLI\\\\hosts.yml''\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(powershell.exe -Command \"& ''C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe'' auth status\")",
+      "Bash(powershell.exe -Command \"Get-Content ''E:\\\\work\\\\labo\\\\.claude\\\\SESSION_STATE.md'' | Select-Object -Last 10\")",
+      "Bash(powershell.exe -Command \"Add-Content -Path ''E:\\\\work\\\\labo\\\\.claude\\\\SESSION_STATE.md'' -Value @''\n\n## 📅 2026-01-11: Phase 1再開 - GitHub CLI認証（元のPC）\n\n**最終更新**: 2026-01-11 14:30\n**実施フェーズ**: Phase 1 - GitHub Private Repository作成と機密情報チェック\n**環境**: 元のPC（別PCから戻ってきた）\n\n### ✅ 完了した作業\n\n#### 1. GitHub CLI \\(gh\\) のインストール\n- ✅ wingetを使用してGitHub CLI v2.83.2をインストール完了\n  - インストールパス: C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\n  - インストール時間: 約2分\n\n#### 2. GitHub CLIの動作確認\n- ✅ フルパスで動作確認完了\n  - 結果: gh version 2.83.2 \\(2025-12-10\\)\n\n**問題と解決**:\n- 問題: PATH環境変数が現在のVS Codeセッションに反映されていない\n- 解決: VS Codeを再起動してPATHを再読み込み\n\n### 🚧 次のステップ（VS Code再起動後）\n\n#### ステップ1: GitHub認証\ngh auth login\n\n選択肢: GitHub.com → HTTPS → Login with a web browser\n\n#### ステップ2: 機密情報チェック\ngit status --ignored\n\n#### ステップ3: GitHubリポジトリ作成\ngh repo create monitoring-lab-terraform --private\n\n#### ステップ4: リモート追加とプッシュ\ngit push -u origin master\n\n### 📊 Phase 1進捗: 2/6完了 \\(33%\\)\n\n- ✅ GitHub CLIインストール\n- ✅ GitHub CLI動作確認\n- ⏳ GitHub認証 ← 次のステップ\n- ⏳ 機密情報チェック\n- ⏳ リポジトリ作成\n- ⏳ 初回プッシュ\n\n**残り時間**: 約15分\n\n---\n''@\")",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

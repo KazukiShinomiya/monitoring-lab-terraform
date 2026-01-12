@@ -1831,3 +1831,53 @@ See 'git help git' for an overview of the system.: GitƒRƒ}ƒ“ƒhiWindows‘¤‚ÉƒCƒ“ƒ
 - VCS˜AŒgİ’è
 
 ---
+
+## ?? 2026-01-11: Phase 1ÄŠJ - GitHub CLI”FØiŒ³‚ÌPCj
+
+**ÅIXV**: 2026-01-11 14:30
+**À{ƒtƒF[ƒY**: Phase 1 - GitHub Private Repositoryì¬‚Æ‹@–§î•ñƒ`ƒFƒbƒN
+**ŠÂ‹«**: Œ³‚ÌPCi•ÊPC‚©‚ç–ß‚Á‚Ä‚«‚½j
+
+### ? Š®—¹‚µ‚½ì‹Æ
+
+#### 1. GitHub CLI (gh) ‚ÌƒCƒ“ƒXƒg[ƒ‹
+- ? winget‚ğg—p‚µ‚ÄGitHub CLI v2.83.2‚ğƒCƒ“ƒXƒg[ƒ‹Š®—¹
+  - ƒCƒ“ƒXƒg[ƒ‹ƒpƒX: C:\Program Files\GitHub CLI\gh.exe
+  - ƒCƒ“ƒXƒg[ƒ‹ŠÔ: –ñ2•ª
+
+#### 2. GitHub CLI‚Ì“®ìŠm”F
+- ? ƒtƒ‹ƒpƒX‚Å“®ìŠm”FŠ®—¹
+  - Œ‹‰Ê: gh version 2.83.2 (2025-12-10)
+
+**–â‘è‚Æ‰ğŒˆ**:
+- –â‘è: PATHŠÂ‹«•Ï”‚ªŒ»İ‚ÌVS CodeƒZƒbƒVƒ‡ƒ“‚É”½‰f‚³‚ê‚Ä‚¢‚È‚¢
+- ‰ğŒˆ: VS Code‚ğÄ‹N“®‚µ‚ÄPATH‚ğÄ“Ç‚İ‚İ
+
+### ?? Ÿ‚ÌƒXƒeƒbƒviVS CodeÄ‹N“®Œãj
+
+#### ƒXƒeƒbƒv1: GitHub”FØ
+gh auth login
+
+‘I‘ğˆ: GitHub.com ¨ HTTPS ¨ Login with a web browser
+
+#### ƒXƒeƒbƒv2: ‹@–§î•ñƒ`ƒFƒbƒN
+git status --ignored
+
+#### ƒXƒeƒbƒv3: GitHubƒŠƒ|ƒWƒgƒŠì¬
+gh repo create monitoring-lab-terraform --private
+
+#### ƒXƒeƒbƒv4: ƒŠƒ‚[ƒg’Ç‰Á‚ÆƒvƒbƒVƒ…
+git push -u origin master
+
+### ?? Phase 1i’»: 2/6Š®—¹ (33%)
+
+- ? GitHub CLIƒCƒ“ƒXƒg[ƒ‹
+- ? GitHub CLI“®ìŠm”F
+- ? GitHub”FØ © Ÿ‚ÌƒXƒeƒbƒv
+- ? ‹@–§î•ñƒ`ƒFƒbƒN
+- ? ƒŠƒ|ƒWƒgƒŠì¬
+- ? ‰‰ñƒvƒbƒVƒ…
+
+**c‚èŠÔ**: –ñ15•ª
+
+---
