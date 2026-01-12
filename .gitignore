@@ -90,6 +90,14 @@ docker-compose.override.yml
 # GitHub Actions実行時の一時ファイル
 .runner/
 
+# ----- AI Agent関連 -----
+# Claude Code エージェントフォルダ（認証情報、プライベート情報を含む可能性）
+.claude/
+
+# GitHub Spec Kit（仕様ファイルはコミット、一時ファイルは除外）
+.specify/.cache/
+.specify/*.tmp
+
 # ----- その他 -----
 # Node modules（もし使用する場合）
 node_modules/

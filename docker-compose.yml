@@ -22,12 +22,26 @@ services:
       - |
         mkdir -p /root/.ssh
         chmod 700 /root/.ssh
+        # RSA鍵のコピー
         if [ -f /tmp/ssh-keys/id_rsa ]; then
           cp /tmp/ssh-keys/id_rsa /root/.ssh/id_rsa
           cp /tmp/ssh-keys/id_rsa.pub /root/.ssh/id_rsa.pub
           chmod 600 /root/.ssh/id_rsa
           chmod 644 /root/.ssh/id_rsa.pub
-          echo "SSH keys copied successfully"
+          echo "SSH RSA keys copied successfully"
+        fi
+        # Ed25519鍵のコピー
+        if [ -f /tmp/ssh-keys/id_ed25519 ]; then
+          cp /tmp/ssh-keys/id_ed25519 /root/.ssh/id_ed25519
+          cp /tmp/ssh-keys/id_ed25519.pub /root/.ssh/id_ed25519.pub
+          chmod 600 /root/.ssh/id_ed25519
+          chmod 644 /root/.ssh/id_ed25519.pub
+          echo "SSH Ed25519 keys copied successfully"
+        fi
+        # known_hostsがあればコピー
+        if [ -f /tmp/ssh-keys/known_hosts ]; then
+          cp /tmp/ssh-keys/known_hosts /root/.ssh/known_hosts
+          chmod 644 /root/.ssh/known_hosts
         fi
         tail -f /dev/null
 
@@ -38,7 +52,7 @@ services:
       - .:/workspace
       - terraform-plugin-cache:/root/.terraform.d/plugin-cache
       - terragrunt-cache:/root/.terragrunt-cache
-      - ${HOME}/.ssh:/tmp/ssh-keys:ro  # WSL2のSSH鍵を一時ディレクトリにマウント
+      - ${SSH_KEYS_DIR}:/tmp/ssh-keys:ro  # SSH鍵を一時ディレクトリにマウント
 
     # 環境変数
     env_file:
@@ -51,6 +65,11 @@ services:
       # Terragrunt設定
       - TG_DOWNLOAD_DIR=/root/.terragrunt-cache
       - TG_NON_INTERACTIVE=true
+
+      # HCP Terraform設定
+      - TF_TOKEN_app_terraform_io=${TF_TOKEN_app_terraform_io}
+      - TF_CLOUD_ORGANIZATION=${TF_CLOUD_ORGANIZATION}
+      - TF_CLOUD_WORKSPACE=${TF_CLOUD_WORKSPACE}
 
       # New Relic設定
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
