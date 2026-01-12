@@ -23,21 +23,32 @@ locals {
 }
 
 # ----- Terraform Backend設定 -----
-# ローカル環境では local backend を使用
-# 本番環境では S3 や Terraform Cloud への変更を推奨
-remote_state {
-  backend = "local"
+# HCP Terraform (remote backend) を使用
+# 各サービスごとに個別のWorkspaceを自動作成
+generate "backend" {
+  path      = "backend.tf"
+  if_exists = "overwrite"
 
-  config = {
-    # Stateファイルのパス
-    # 例: .terraform-state/local/zabbix/terraform.tfstate
-    path = "${local.state_file_dir}/${path_relative_to_include()}/terraform.tfstate"
-  }
+  contents = <<EOF
+terraform {
+  cloud {
+    organization = "${get_env("TF_CLOUD_ORGANIZATION", "k1981-learning-lab")}"
 
-  generate = {
-    path      = "backend.tf"
-    if_exists = "overwrite"
+    workspaces {
+      name = "${local.project_name}-${local.environment}-${basename(get_terragrunt_dir())}"
+    }
+
+    # ローカル実行モード（Stateのみクラウドに保存）
+    # プライベートネットワークのリソースにアクセスするために必要
+    hostname = "app.terraform.io"
   }
+}
+
+# ローカル実行を強制
+locals {
+  execution_mode = "local"
+}
+EOF
 }
 
 # ----- Terraform設定の自動生成 -----
@@ -102,15 +113,3 @@ inputs = {
     ManagedBy   = "Terragrunt"
   }
 }
-
-# ----- エラーハンドリング -----
-# リトライ設定（ネットワークエラーなどの一時的な障害に対応）
-retryable_errors = [
-  "(?s).*Failed to load state.*",
-  "(?s).*Error acquiring the state lock.*",
-  "(?s).*connection refused.*"
-]
-
-# リトライ回数と待機時間
-retry_max_attempts       = 3
-retry_sleep_interval_sec = 5

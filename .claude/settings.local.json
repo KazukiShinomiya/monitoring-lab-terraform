@@ -167,7 +167,13 @@
       "Bash(powershell.exe -Command \"Get-Content ''C:\\\\work\\\\repos\\\\monitoring-lab-terraform\\\\.claude\\\\SESSION_STATE.md'' | Select-Object -Last 200\")",
       "Bash(where:*)",
       "Bash(powershell.exe -Command \"Test-Path ''$env:APPDATA\\\\GitHub CLI\\\\hosts.yml''\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(powershell.exe -Command \"Get-Content ''C:\\\\work\\\\repos\\\\monitoring-lab-terraform\\\\.claude\\\\SESSION_STATE.md'' | Select-Object -Last 50\")",
+      "Bash(cp:*)",
+      "Bash(powershell.exe -Command \"Copy-Item ''C:\\\\work\\\\repos\\\\monitoring-lab-terraform\\\\.env.example'' ''C:\\\\work\\\\repos\\\\monitoring-lab-terraform\\\\.env''\")",
+      "Bash(wsl:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

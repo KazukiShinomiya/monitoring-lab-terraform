@@ -1,1833 +1,327 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2025-11-16 23:30
-**プロジェクト**: Monitoring Lab - Terraform/Terragrunt監視基盤
-**現在のフェーズ**: HCP Terraform + GitHub Actions 完全移行計画を策定完了
+**最終更新**: 2026-01-01 15:00
 
 ---
 
-## 💬 Claude Code作業時の必須ルール
+## 📊 現在の進捗状況
 
-**重要**: すべての作業で以下を厳守してください:
-
-### 作業前の説明（必須）
-- ツール実行前に必ず「何を」「なぜ」「何を確認するか」を説明
-- コマンドだけを実行せず、目的と理由を明示
-- 複数ステップの場合は全体の流れを先に説明
-
-### 実行後の報告（必須）
-- 成功: 何が確認できたか
-- 失敗: 何が問題で、次にどうするか
-
-詳細は `CLAUDE.md` の「コミュニケーションガイドライン」セクションを参照
+```
+Phase 0: ✅ 完了（State破損チェックとGitHub連携）
+Phase 1: ✅ 完了（GitHubリポジトリ作成とpush）
+Phase 2: ✅ 完了（HCP Terraform State移行）
+  ✅ HCP Terraform Organization作成
+  ✅ Workspace作成（8個）
+  ✅ API Token取得
+  ✅ Backend設定変更（root.hcl）
+  ✅ WSL2環境構築
+  ✅ Docker Engine インストール
+  ✅ Docker Composeでコンテナ起動
+  ✅ State移行実施（全8サービス完了）
+Phase 2.5: ✅ 完了（Spec Kit導入と仕様化）
+  ✅ uv + specify-cli インストール
+  ✅ Constitution作成（5つの核心原則）
+  ✅ 既存インフラの仕様化
+  ✅ Phase 3要件定義
+  ✅ Constitution検証（/speckit.constitution実行）
+  ✅ Phase 3実装計画作成（/speckit.plan実行）
+Phase 3: 📅 実装準備完了（監視機能拡充 - 次回タスク分解から開始）
+Phase 4: 📅 未着手（運用改善）
+```
 
 ---
 
-## 📌 現在のプロジェクト状態
+## ✅ 最近完了した作業（直近3セッション）
 
-### ✅ 完了した作業
+### 📅 2026-01-01: Spec Kit導入完了（Phase 2.5完了） 🎉
 
-#### 2025-11-16 (2): HCP Terraform + GitHub Actions 完全移行計画の策定 🎯
+**🎯 Spec-Driven Development基盤の確立**
 
-**実施内容**:
-1. ✅ **HCP Terraform無料プランの確認**
-   - 月間500リソースまで無料管理可能
-   - 現在のプロジェクト（約20リソース未満）は無料枠で十分運用可能
-   - State管理、リモート実行、VCS連携すべて無料
+- ✅ **Spec Kit環境構築**
+  - `uv` v0.9.21 インストール（WSL2 Ubuntu）
+  - `specify-cli` v0.0.22 インストール
+  - プロジェクト初期化（`specify init . --ai claude --force`）
+  - `.specify/` ディレクトリ構造作成（memory/, scripts/, templates/）
 
-2. ✅ **Self-hosted Runner + Terraform Agentによる完全無料運用の決定**
-   - **GitHub Actions**: Private repoでもSelf-hosted Runnerなら完全無料
-   - **Terraform Agent**: プライベートネットワーク内で無料実行
-   - **合計運用コスト: $0/月** ⭐
+- ✅ **Constitution（憲法）作成**
+  - プロジェクトの5つの核心原則を定義:
+    1. Infrastructure as Code (IaC) - NON-NEGOTIABLE
+    2. セキュリティファースト（段階的アプローチ）
+    3. ドキュメント駆動開発
+    4. モジュール化とDRY原則
+    5. 監視の可観測性（Self-Monitoring）
+  - 技術スタック制約、開発ワークフロー、ガバナンスルールを明記
+  - Version 1.0.0 として批准（2026-01-01）
 
-3. ✅ **アーキテクチャ設計の完成**
+- ✅ **既存インフラの仕様化**
+  - `existing-infrastructure.md` 作成
+  - 9つのコンポーネント（Network, PostgreSQL, Vault, Zabbix x3, Prometheus, Grafana, New Relic）の完全仕様
+  - アーキテクチャ図、データフロー図、HCP Terraform構成の文書化
+  - 成功基準（Phase 0-2）と技術的負債の明確化
+
+- ✅ **Phase 3要件定義**
+  - `phase3-monitoring-enhancement.md` 作成
+  - 4つの優先順位付きユーザーストーリー:
+    - P1: コンテナメトリクス収集
+    - P1: Grafanaダッシュボード作成
+    - P2: 基本的なアラートルール
+    - P3: Zabbix統合ダッシュボード
+  - 機能要件（FR-001〜FR-014）と非機能要件を定義
+  - 成功基準、リスク分析、スコープ外項目を明確化
+
+- ✅ **セキュリティ強化**
+  - `.gitignore` に `.claude/` を追加（機密情報保護）
+  - `.specify/.cache/` と `.specify/*.tmp` も除外設定
+
+- ✅ **Spec Kit動作確認**
+  - `/speckit.constitution` コマンドでConstitution検証実行
+  - 全プレースホルダー埋め済み確認
+  - 5つの原則の明確性検証
+  - 依存テンプレートとの整合性確認
+  - 検証結果: すべて合格 ✅
+
+- ✅ **Phase 3実装計画作成**
+  - `/speckit.plan` コマンドでPhase 3詳細設計を作成
+  - `phase3-implementation-plan.md` (約600行) を生成
+  - cAdvisor導入決定（Docker Metrics APIより優位）
+  - 5ステップのデプロイ戦略策定
+  - Constitution Checkで全原則準拠確認
+
+**📁 作成ファイル一覧**:
+- `.specify/memory/constitution.md`
+- `.specify/memory/specs/existing-infrastructure.md`
+- `.specify/memory/specs/phase3-monitoring-enhancement.md`
+- `.specify/memory/plans/phase3-implementation-plan.md` ← **本日追加**
+- `.gitignore` (更新)
+
+**🎓 学習成果**:
+- Spec-Driven Developmentのワークフローを理解
+- 仕様ファーストのアプローチで、実装前に要件を明確化
+- Constitutionによるプロジェクト原則の確立
+- **スラッシュコマンドの実践**（/speckit.constitution、/speckit.plan）
+- **Spec-Drivenの4フェーズ**: Specify → Plan → Tasks → Implement
+
+### 📅 2025-12-31: HCP Terraform State移行完了（Phase 2完了）
+
+- ✅ **全8サービスのState移行完了**（インポート → Apply → 差分確認）
+  1. network - Dockerネットワーク
+  2. postgres - PostgreSQLデータベース（ボリューム1個）
+  3. vault - Vault開発モード
+  4. prometheus - メトリクス収集（ボリューム1個）
+  5. newrelic - New Relic Infrastructure Agent
+  6. zabbix - Zabbix Server + Web UI（ボリューム2個）
+  7. zabbix-agent - Zabbix Agent2
+  8. grafana - ダッシュボード（ボリューム1個）
+
+- ✅ **HCP Terraform Workspace作成**（8個すべて）
+  - 全WorkspaceでExecution Modeを"Local"に設定
+  - 各Workspaceで`terraform plan`実行し差分なしを確認
+
+- ✅ **重要な修正実施**
+  - `terraform/modules/docker_container/main.tf`のhealthcheckブロックをコメントアウト
+  - 理由: Dockerイメージ本来のhealthcheck設定を使用するため
+  - 効果: 全サービスで完全に差分がなくなった
+
+- ✅ **SSH接続確立**（WSL2 → リモートサーバー 10.0.0.220）
+  - Ed25519鍵をWSL2に配置
+  - リモートサーバーの既存リソースを確認・インポート
+
+### 📅 2025-12-30: HCP Terraform連携とWSL2環境構築
+**詳細**: [sessions/2025-12-30_hcp_wsl2.md](sessions/2025-12-30_hcp_wsl2.md)
+
+- ✅ HCP Terraformアカウント作成（app.terraform.io）
+- ✅ Organization作成: `k1981-learning-lab`
+- ✅ Workspace作成: `monitoring-lab-local` (ID: ws-sQDecKC5tm3BRJu3)
+- ✅ API Token発行と`.env`設定
+- ✅ Terragrunt backend設定を`local`→`cloud`に変更
+- ✅ 各サービスごとに個別Workspaceを自動作成する設計を採用
+- ✅ WSL2 (Ubuntu) インストール
+- ✅ Docker Engine 29.1.3 インストール
+- ✅ Docker Compose v5.0.0 セットアップ
+
+### 📅 2025-12-29: HCP Terraform準備（計画段階）
+- Organization名の検討: `k1981-learning-lab`に決定
+- Workspace設計の方針決定
+- API Token取得の計画
+
+---
+
+## 🚧 次回セッションでやること
+
+**Phase 2.5完了！Phase 3実装計画完成！次回: タスク分解から開始**
+
+### 🎯 Phase 3: 監視機能拡充（次のステップ）
+
+**前提**:
+- ✅ `.specify/memory/specs/phase3-monitoring-enhancement.md` （要件定義完了）
+- ✅ `.specify/memory/plans/phase3-implementation-plan.md` （実装計画完了）
+
+#### ステップ1: Tasks（タスク分解） ← **次回ここから開始**
+
+**推奨コマンド**: `/speckit.tasks Phase 3をタスクに分解してください`
+
+3. **実装タスクに分解** - `.specify/memory/tasks/phase3-tasks.md`
+   - [ ] P1-1: Prometheusスクレイプ設定追加
+   - [ ] P1-2: Prometheus設定リロード
+   - [ ] P1-3: Grafanaダッシュボード作成
+   - [ ] P1-4: Grafanaプロビジョニング設定
+   - [ ] P2-1: アラートルール定義
+   - [ ] P2-2: アラートルールテスト
+
+#### ステップ3: Implement（実装）
+
+4. **Spec-Drivenで実装**
+   - [ ] 各タスクをTerraform/Terragruntで実装
+   - [ ] `terragrunt plan` で差分確認
+   - [ ] `terragrunt apply` でデプロイ
+   - [ ] 成功基準（SC-001〜SC-006）の検証
+
+#### ステップ4: Validate（検証）
+
+5. **Phase 3完了基準の確認**
+   - [ ] Prometheusで全コンテナのメトリクス収集確認
+   - [ ] Grafanaダッシュボードの表示確認
+   - [ ] アラートルールの動作確認
+   - [ ] Git管理とHCP Terraform差分なし確認
+
+**推奨**: 各ステップで `/speckit.plan`、`/speckit.tasks`、`/speckit.implement` スラッシュコマンドを活用
+
+**参考ドキュメント**:
+- [Phase 3 仕様書](.specify/memory/specs/phase3-monitoring-enhancement.md)
+- [既存インフラ仕様](.specify/memory/specs/existing-infrastructure.md)
+- [Constitution](.specify/memory/constitution.md)
+
+---
+
+### その後の選択肢
+
+**Phase 3**: 監視機能拡充（Spec-Drivenで実施）
+**Phase 4**: 運用改善（GitHub Actions、ドキュメント整備）
+**セキュリティ強化**: Vault本番モード、TLS設定
+
+### 準備: 次回セッション開始時の確認事項
+
+1. **WSL2とDockerの起動**
+   ```bash
+   # WSL2起動
+   wsl -d Ubuntu
+
+   # Dockerサービス起動
+   sudo service docker start
+
+   # プロジェクトディレクトリに移動
+   cd /mnt/c/work/repos/monitoring-lab-terraform
+
+   # 開発コンテナ起動
+   docker compose up -d
    ```
-   GitHub (クラウド) → GitHub Actions Webhook
-       ↓
-   自宅ネットワーク (10.0.0.0/24)
-       ├─ WSL2 (Windows PC)
-       │   ├─ GitHub Actions Self-hosted Runner
-       │   └─ HCP Terraform Agent
-       │       └─ SSH → リモートサーバー (10.0.0.220)
-       │                   └─ Docker Engine (監視基盤)
-       └─ HCP Terraform (State管理)
+
+2. **リモートサーバーの状態確認**
+   ```bash
+   # リモートサーバーのコンテナ確認
+   ssh ubuntu@10.0.0.220 "docker ps"
    ```
 
-4. ✅ **詳細な10フェーズ移行計画の策定**
-   - Phase 0: 準備とバックアップ（15分）
-   - Phase 1: GitHubリポジトリセットアップ（30分）
-   - Phase 2: HCP Terraform セットアップ（20分）
-   - Phase 3-A: Terraform Agent セットアップ（WSL2）（1-2時間）
-   - Phase 3-B: GitHub Actions Self-hosted Runner セットアップ（45分）
-   - Phase 4: HCP Terraform Workspace作成（30分）
-   - Phase 5: 基本的なGitHub Actions ワークフロー作成（30分）
-   - Phase 6: 1サービス（network）でbackend移行テスト（1時間）
-   - Phase 7: 全サービスのbackend移行（1-2時間）
-   - Phase 8: GitHub Actions自動Plan/Applyワークフロー追加（1時間）
-
-5. ✅ **推奨スケジュールの決定（5日間で完了）**
-   - Day 1: Phase 0-1（バックアップ＋GitHub） - 45分
-   - Day 2: Phase 2-3A（HCP Terraform＋Terraform Agent） - 2-3時間
-   - Day 3: Phase 3B-4（GitHub Runner＋Workspace作成） - 1.5時間
-   - Day 4: Phase 5-6（基本ワークフロー＋テスト移行） - 1.5時間
-   - Day 5: Phase 7-8（全サービス移行＋自動化） - 2-3時間
-   - **合計**: 約8-10時間（5日間で完了）
-
-6. ✅ **Agent/Runner実行場所の決定**
-   - **推奨**: 両方をリモートサーバー（10.0.0.220）で実行
-     - 理由: 常時稼働、本番環境に近い、リソース分離
-   - **初期**: まずWSL2で開始、安定後にリモートへ移行
-     - 理由: 設定が簡単、SSH鍵が既に配置済み
-
-7. ✅ **GitHub Actions活用方法の策定**
-   - PR時の自動Terraform Plan + コメント
-   - mainブランチマージ時の自動Apply
-   - Terraform Format/Validateチェック
-   - tfsecセキュリティスキャン
-   - 週次ドリフト検出
-   - 依存関係自動更新
-   - terraform-docsによるドキュメント自動生成
-
-**技術的知見**:
-- **Self-hosted Runnerのメリット**:
-  - Private repoでも完全無料（GitHub-hostedは2,000分/月制限）
-  - プライベートネットワークへのアクセス可能
-  - 同時実行数の制限なし
-  - 実行環境を自由に設定可能
-
-- **Terraform Agentの必要性**:
-  - HCP Terraformクラウドからプライベート10.0.0.220への直接アクセスは不可
-  - Agentがプライベートネットワーク内で実行し、HCP Terraformと橋渡し
-  - Agent Poolsで複数Agentの管理が可能（無料）
-
-- **完全無料運用の実現**:
-  - HCP Terraform Free: 500リソースまで無料（現在20未満）
-  - GitHub Actions: Self-hosted Runnerは完全無料
-  - Terraform Agent: 無料（Enterpriseプランの機能だが、Agent自体は無料）
-  - 合計月額コスト: **$0**
-
-**得られるメリット**:
-1. **完全自動化**: PR作成→自動Plan→レビュー→マージ→自動Apply
-2. **変更管理**: GitHubに全変更履歴、HCP Terraformに全実行履歴
-3. **セキュリティ強化**: tfsecで脆弱性自動検出、ドリフト検出で不正変更発見
-4. **運用効率化**: 手動実行ミス削減、ドキュメント自動更新
-5. **監査ログ**: 誰が・いつ・何を変更したか完全トレーサビリティ
-6. **学習効果**: 本番環境レベルの最新IaC運用プラクティス習得
-
-**詳細手順書の作成完了**:
-- 各Phaseごとの詳細なコマンド・設定ファイル例を提供
-- ロールバック手順も含めた安全な移行計画
-- systemdサービス化によるAgent/Runnerの永続化方法
-- GitHub Actions ワークフローのサンプルコード
-
-**次回のアクション（Phase 0から開始）**:
-- [ ] Phase 0: 現状のStateファイルをバックアップ（15分）
-  ```bash
-  cd /mnt/e/work/labo
-  tar -czf ~/terraform-state-backup-$(date +%Y%m%d-%H%M%S).tar.gz terraform/.terraform-state/
-  ```
-
-**全体ロードマップ（更新版）**:
-```
-Phase 0: 準備とバックアップ ← 次回ここから開始
-Phase 1: GitHubリポジトリセットアップ
-Phase 2: HCP Terraform セットアップ
-Phase 3-A: Terraform Agent セットアップ（WSL2）
-Phase 3-B: GitHub Actions Self-hosted Runner セットアップ
-Phase 4: HCP Terraform Workspace作成
-Phase 5: 基本的なGitHub Actions ワークフロー作成
-Phase 6: 1サービス（network）でbackend移行テスト
-Phase 7: 全サービスのbackend移行
-Phase 8: GitHub Actions自動Plan/Applyワークフロー追加
-```
-
-**評価**:
-- ✅ プライベートネットワークでの運用課題を完全解決
-- ✅ 完全無料で本番レベルの自動化を実現
-- ✅ 段階的アプローチで学習負荷を軽減
-- ✅ ロールバック可能な安全な移行計画
-- ✅ 最新のIaC運用ベストプラクティスを網羅
-
----
-
-#### 2025-11-16 (1): 運用改善計画の策定とPhase 0完了 🚀
-
-**実施内容**:
-1. ✅ **運用面の脆弱性分析**
-   - 8つの脆弱性領域を特定:
-     1. データ管理・永続化（バックアップ戦略未定義）
-     2. アラート・通知（通知先未設定）
-     3. セキュリティ（パスワードハードコード、TLS未設定）
-     4. 障害対応・DR（Runbook未整備）
-     5. ログ管理（ローテーション設定なし）
-     6. メンテナンス・更新（イメージ更新戦略なし）
-     7. ドキュメント（運用マニュアル未整備）
-     8. 監視カバレッジ（閾値未設定、ダッシュボード未作成）
-
-2. ✅ **HCP Terraform + Agent + GitHub + GHA構成の評価**
-   - **総合スコア: 9.5/10** ⭐⭐⭐⭐⭐
-   - 8領域中7領域を根本的に解決する優れた提案と評価
-   - 無料プランで実現可能（学習用途に最適）
-   - 本番環境への移行パスが明確
-   - 現代的なIaC運用のベストプラクティス
-
-3. ✅ **段階的導入計画の策定**
-   - 15個の独立したタスクに分割（各15-30分）
-   - 4つのPhaseで構成（Phase 0-4）
-   - 総所要時間: 8-12時間（複数日に分散可能）
-
-4. ✅ **Phase 0-1: Git管理の準備完了**
-   - `.gitignore`にHCP Terraform認証情報の除外ルール追加
-   - `.gitignore`にGitHub Actions関連ファイルの除外ルール追加
-   - 機密情報の除外確認（.env, .tfstate）
-   - コミット完了（コミットID: 4564157）
-
-**技術的知見**:
-- **運用の堅牢性**: IaCだけでなく、State管理、変更管理、監査ログが重要
-- **HCP Terraform Free プラン**: 500 states まで無料、学習用途に十分
-- **GitHub Actions**: 2,000分/月 無料（Public repoは無制限）
-- **Terraform Agent**: Self-hosted Agentは無料（プライベートネットワーク内実行）
-- **セキュリティ**: `.terraform.d/credentials.tfrc.json` は絶対にコミットしない
-
-**追加された.gitignore保護機能**:
-```gitignore
-# HCP Terraform / Terraform Cloud
-.terraform.d/credentials.tfrc.json
-.terraformrc
-credentials.tfrc.json
-terraform.rc
-
-# GitHub Actions関連
-.github/workflows/*.local.yml
-.actrc
-.secrets
-.runner/
-```
-
-**次回のアクション（Phase 1-1）**:
-- [ ] HCP Terraformアカウント作成（所要時間: 15分）
-  - https://app.terraform.io/signup/account にアクセス
-  - メールアドレス、ユーザー名、パスワードを入力
-  - メール認証
-  - 無料プラン（Free）を選択
-
-**全体ロードマップ**:
-```
-Phase 0: 準備 ✅ 完了
-Phase 1: HCP Terraform導入（5タスク、2-3時間）← 次回ここから
-Phase 2: GitHub連携（3タスク、1-2時間）
-Phase 3: GitHub Actions導入（4タスク、2-3時間）
-Phase 4: Terraform Agent導入（2タスク、2-3時間）
-```
-
-**修正ファイル**:
-- `.gitignore` (HCP Terraform/GHA対応)
-
-**評価**:
-- ✅ 運用の問題を正しく認識
-- ✅ HCP Terraform + Agent + GitHub + GHAの組み合わせは最適解
-- ✅ 段階的アプローチで学習負荷を軽減
-- ✅ 無料で実現可能
-- ✅ 本番環境にも適用可能な設計
-
----
-
-#### 2025-11-03 (1): SwitchBot外部スクリプト監視のZabbixアイテム設定完了 🎉
-
-**実施内容**:
-1. ✅ **全4台のSwitchBotデバイスのアイテム作成**
-   - 温湿度計Pro 2F (B0E9FEEDD228): 親アイテム + 依存アイテム3つ（温度、湿度、バッテリー）
-   - Hub 3 (2E) (B0E9FE8AEC2E): 親アイテム + 依存アイテム4つ（温度、湿度、照度、人感）
-   - ベランダ (D40E84864C41): 親アイテム + 依存アイテム3つ（温度、湿度、バッテリー）
-   - 防水温湿度計 外 (F2B200461F1A): 親アイテム + 依存アイテム3つ（温度、湿度、バッテリー）
-   - **合計17アイテム**（親4 + 依存13）
-
-2. ✅ **親アイテム（External Check）の設定**
-   - Type: External check
-   - Key: `check_switchbot.py[デバイスID]`
-   - Type of information: Text（JSON全体を保存）
-   - Update interval: 5m（APIレート制限対策）
-
-3. ✅ **依存アイテム（Dependent Items）の設定**
-   - 一意のキー命名規則: `switchbot.メトリクス名[デバイスID]`
-   - JSONPath Preprocessingで個別メトリクスを抽出
-   - 温度: Numeric (float), Units: °C
-   - 湿度: Numeric (unsigned), Units: %
-   - バッテリー: Numeric (unsigned), Units: %
-   - 照度: Numeric (unsigned), Units: lux（Hub 3のみ）
-   - 人感: Numeric (unsigned), 0/1（Hub 3のみ）
-
-4. ✅ **Hub 3人感センサーのBoolean型対応**
-   - 問題: `moveDetected` が `true`/`false` 文字列で返される
-   - エラー: "Value of type "string" is not suitable for value type "Numeric (unsigned)""
-   - 解決策: Preprocessing に "Boolean to decimal" ステップを追加
-   - 結果: `true` → `1`, `false` → `0` に自動変換
-
-5. ✅ **全アイテムの動作確認**
-   - Latest dataで全17アイテムのデータ取得成功
-   - グラフ表示正常動作
-   - ダッシュボード表示確認完了
-   - エラーなし
-
-**技術的知見**:
-- **Zabbixアイテム設計パターン**: 親アイテム（External Check, Text型）+ 依存アイテム（Dependent Items, Numeric型）
-- **キーの一意性**: ホスト内で一意である必要があるため、`switchbot.メトリクス名[デバイスID]` 形式を採用
-- **Boolean型変換**: ZabbixはBoolean型を直接サポートしないため、Preprocessing "Boolean to decimal" で数値変換が必須
-- **APIレート制限**: SwitchBot APIは10,000回/日の制限があるため、Update interval 5分以上を推奨
-  - 4台の場合: 288回/日/台 × 4台 = 1,152回/日（制限内）
-
-**設定完了アイテム一覧**:
-```
-【温湿度計Pro 2F】
-- check_switchbot.py[B0E9FEEDD228]
-- switchbot.temperature[B0E9FEEDD228]
-- switchbot.humidity[B0E9FEEDD228]
-- switchbot.battery[B0E9FEEDD228]
-
-【Hub 3 (2E)】
-- check_switchbot.py[B0E9FE8AEC2E]
-- switchbot.temperature[B0E9FE8AEC2E]
-- switchbot.humidity[B0E9FE8AEC2E]
-- switchbot.lightlevel[B0E9FE8AEC2E]
-- switchbot.movedetected[B0E9FE8AEC2E]
-
-【ベランダ】
-- check_switchbot.py[D40E84864C41]
-- switchbot.temperature[D40E84864C41]
-- switchbot.humidity[D40E84864C41]
-- switchbot.battery[D40E84864C41]
-
-【防水温湿度計 外】
-- check_switchbot.py[F2B200461F1A]
-- switchbot.temperature[F2B200461F1A]
-- switchbot.humidity[F2B200461F1A]
-- switchbot.battery[F2B200461F1A]
-```
-
-**動作確認結果**:
-```
-✅ 全4台の親アイテムが正常動作（5分間隔でデータ取得）
-✅ 全13個の依存アイテムが正常動作（JSONPathで抽出成功）
-✅ Latest dataで全メトリクス表示確認
-✅ グラフ表示正常（温度、湿度、バッテリー、照度、人感）
-✅ ダッシュボードで各値の表示確認
-✅ エラー・警告なし
-```
-
-**次回のアクション**:
-- [ ] トリガー設定（温度/湿度の閾値アラート、バッテリー低下アラート）
-  - 例: 温度30°C以上で高温警告、5°C以下で低温警告
-  - 例: 湿度80%以上で高湿度警告
-  - 例: バッテリー20%以下でバッテリー交換警告
-- [ ] ダッシュボードのカスタマイズ
-  - 全デバイスの温度を1つのグラフで比較
-  - 室内 vs 屋外の温度差グラフ
-  - バッテリー残量の一覧表示
-- [ ] アラート通知の設定（メール、Slack、Webhook等）
-- [ ] Prometheusターゲット設定の有効化
-- [ ] Grafanaダッシュボードの作成
-
-**関連ドキュメント**:
-- `config/zabbix/scripts/externalscripts/README_SWITCHBOT.md` - セットアップ手順
-- Zabbix Web UI設定は手動管理（IaCの対象外）
-
-#### 2025-11-02 (1): New Relic Infrastructure Agent統合完了 🎉
-
-**実施内容**:
-1. ✅ **docker_containerモジュールの拡張**
-   - `terraform/modules/docker_container/variables.tf` に以下のパラメータを追加:
-     - `privileged` (bool): 特権モード設定（デフォルト: false）
-     - `network_mode` (string): ネットワークモード設定（host/bridge/none）
-   - `terraform/modules/docker_container/main.tf` でパラメータの適用を実装:
-     - `privileged = each.value.privileged`
-     - `network_mode = each.value.network_mode`
-     - `networks_advanced` と `ports` を動的ブロック化（network_mode="host"時は不要）
-
-2. ✅ **New Relic用Terragrunt設定の作成**
-   - `terraform/envs/local/newrelic/terragrunt.hcl` を新規作成
-   - Infrastructure Agent設定:
-     - イメージ: `newrelic/infrastructure:latest`
-     - 特権モード: `privileged = true` (ホストメトリクス取得に必須)
-     - ネットワークモード: `network_mode = "host"` (ホストレベル監視に推奨)
-     - Bind mounts: `/proc`, `/sys`, `/etc`, `/var/log`, `/var/run/docker.sock`
-     - 環境変数: `NRIA_LICENSE_KEY`, `NRIA_DISPLAY_NAME`, `NRIA_LOG_LEVEL`
-
-3. ✅ **環境変数設定の追加**
-   - `.env.example` に New Relic設定を追加:
-     - `NEW_RELIC_LICENSE_KEY`: Ingest License Key
-     - `NEW_RELIC_ACCOUNT_ID`: アカウントID（オプション）
-     - `NEW_RELIC_REGION`: リージョン設定（US/EU）
-     - `NEW_RELIC_DISPLAY_NAME`: エージェント表示名
-   - `docker-compose.yml` に環境変数を追加（Terragruntコンテナ用）
-
-4. ✅ **デプロイとトラブルシューティング**
-   - 問題1: ライセンスキー認証エラー（401 Unauthorized）
-     - 原因: 環境変数がコンテナに反映されていなかった
-     - 解決策: terragrunt.hclに直接ライセンスキーを設定
-   - 問題2: 最初のライセンスキーが無効
-     - 原因: User API Keyを使用していた（Ingest License Keyが必要）
-     - 解決策: 正しいIngest License Keyを取得・設定
-   - デプロイ成功: `terragrunt apply -auto-approve`
-
-5. ✅ **動作確認**
-   - コンテナ起動: `monitoring-lab-newrelic-infra` (Up, healthy)
-   - New Relic接続成功: `agent-id=3045931572010061140`
-   - ログにエラーなし、正常にメトリクス送信開始
-   - 既存の監視基盤（Zabbix、Prometheus、Grafana）との共存確認
-
-**技術的知見**:
-- New Relic Infrastructure Agentには**Ingest License Key**が必要（User API Keyではない）
-- 特権モード(`privileged: true`)がないとホストメトリクスを取得できない
-- `network_mode: host`を使用することで、ホストレベルの詳細な監視が可能
-- Docker Socketをマウントすることで、コンテナ監視も同時に実現
-- `/proc`, `/sys`, `/etc`のマウントにより、ホストOSの詳細情報を取得
-
-**デプロイ結果**:
-```
-✅ monitoring-lab-newrelic-infra (Up, healthy)
-✅ New Relic Platform接続成功 (agent-id: 3045931572010061140)
-✅ ホストメトリクス収集開始
-✅ Dockerコンテナ監視機能有効化
-✅ 既存監視基盤（Zabbix、Prometheus、Grafana）との共存確認
-```
-
-**修正・新規作成ファイル**:
-- `terraform/modules/docker_container/variables.tf` (修正: privileged, network_mode追加)
-- `terraform/modules/docker_container/main.tf` (修正: 動的ブロック化)
-- `terraform/envs/local/newrelic/terragrunt.hcl` (新規作成)
-- `.env.example` (修正: New Relic設定追加)
-- `docker-compose.yml` (修正: 環境変数追加)
-
-**次回のアクション**:
-- [x] Dockerコンテナ監視ダッシュボード確認 ✅ (2025-11-02 (2)で解決)
-- [ ] New Relic UIでホストメトリクス確認（CPU、メモリ、ディスク、ネットワーク）
-- [ ] アラート設定の検討（しきい値ベースアラート）
-- [ ] APM統合の検討（アプリケーション監視が必要な場合）
-
-#### 2025-11-02 (2): New Relic Docker統合の完全解決 🎉
-
-**実施内容**:
-
-**第1フェーズ: Docker統合フィーチャーフラグの追加**
-1. ✅ **初期問題の調査**
-   - ユーザー報告: 「エージェント以外のコンテナのメトリクスの情報はすべて０になっています」
-   - New Relic UIでエージェントコンテナのみメトリクス収集、他のコンテナは0
-   - 監視対象: Zabbix、Prometheus、Grafana、PostgreSQL、Vault等の8コンテナ
-
-2. ✅ **第1の原因特定**
-   - コンテナログ分析: `Integration feature not enabled, skipping execution`
-   - Docker統合のフィーチャーフラグ `NRIA_FEATURE_docker_enabled=true` が欠けていた
-
-3. ✅ **第1の修正実施**
-   - `terraform/envs/local/newrelic/terragrunt.hcl` に環境変数追加:
-     ```hcl
-     "NRIA_FEATURE_docker_enabled=true"
-     ```
-   - コンテナ再作成、統合ヘルスチェック成功を確認
-
-**第2フェーズ: cgroup v2問題の解決（根本原因）**
-4. ✅ **継続する問題の発見**
-   - ユーザー報告: 「よく見たらmonitoring-lab-newrelic-infra以外は今も０でした」
-   - nri-dockerバイナリを直接実行してテスト
-   - エラー発見: `fetching metrics for container: no such file or directory`
-   - cgroupパス問題を特定: `/host/sys/fs/docker-*.scope/cgroup.controllers`
-
-5. ✅ **根本原因の特定**
-   - リモートサーバーがcgroup v2 + systemd cgroupドライバーを使用
-   - cgroupパスが `/sys/fs/cgroup/system.slice/docker-*.scope/` に存在
-   - New Relicコンテナがcgroup namespaceで分離されており、ホストのcgroupにアクセス不可
-   - **公式要件**: cgroup v2環境では `--cgroupns=host` フラグが必須
-
-6. ✅ **docker_containerモジュールの拡張**
-   - `terraform/modules/docker_container/variables.tf` を修正:
-     ```hcl
-     cgroupns_mode = optional(string, "")  # Cgroup Namespaceモード（host/private）
-     ```
-   - `terraform/modules/docker_container/main.tf` を修正:
-     ```hcl
-     cgroupns_mode = each.value.cgroupns_mode != "" ? each.value.cgroupns_mode : null
-     ```
-
-7. ✅ **New Relic設定の修正**
-   - `terraform/envs/local/newrelic/terragrunt.hcl` を修正:
-     ```hcl
-     # Cgroup Namespaceモード: cgroup v2でホストのcgroupにアクセスするために必須
-     cgroupns_mode = "host"
-     ```
-
-8. ✅ **最終デプロイと動作確認**
-   - コンテナ削除: `terragrunt destroy -auto-approve`
-   - 新設定でコンテナ作成: `terragrunt apply -auto-approve`
-   - cgroupns_mode=hostの設定確認: `docker inspect` で検証
-   - nri-dockerの直接実行テスト:
-     - エラーメッセージ完全消滅
-     - 全コンテナのメトリクス収集成功
-   - ユーザー最終確認: **「無事にすべてのコンテナのメトリクスが確認できました」**
-
-**技術的知見**:
-- New Relic Infrastructure Agent v1.71.0のDocker統合には3つの設定が必要:
-  1. `NRIA_ENABLE_PROCESS_METRICS=true` - プロセスメトリクス有効化
-  2. `NRIA_FEATURE_docker_enabled=true` - Docker統合フィーチャーフラグ
-  3. `cgroupns_mode = "host"` - **cgroup v2環境で必須**（最重要！）
-- cgroup v2 + systemd cgroupドライバーの組み合わせでは、cgroupパスが `/sys/fs/cgroup/system.slice/` 配下に配置される
-- デフォルトのcgroup namespace分離では、コンテナはホストのcgroupにアクセスできない
-- `--cgroupns=host`（Terraformでは`cgroupns_mode = "host"`）により、コンテナがホストのcgroup namespaceを使用
-- この設定により、nri-dockerが `/sys/fs/cgroup/system.slice/docker-*.scope/` のメトリクスにアクセス可能に
-
-**デプロイ結果**:
-```
-✅ monitoring-lab-newrelic-infra (Up, healthy)
-✅ cgroupns_mode=host 設定成功
-✅ Docker統合が正常動作 (nri-docker integration health check success)
-✅ 全8コンテナのメトリクス収集成功:
-   - monitoring-lab-newrelic-infra
-   - monitoring-lab-zbx_server (CPU, メモリ, ネットワーク, スレッド数 すべて収集)
-   - monitoring-lab-zbx_web
-   - monitoring-lab-zbx_agent
-   - monitoring-lab-grafana
-   - monitoring-lab-prometheus
-   - monitoring-lab-vault
-   - monitoring-lab-postgres
-✅ New Relic UIですべてのコンテナが表示され、実際のメトリクス値を確認
-```
-
-**修正ファイル**:
-- `terraform/modules/docker_container/variables.tf` (新規: cgroupns_modeパラメータ追加)
-- `terraform/modules/docker_container/main.tf` (新規: cgroupns_mode適用)
-- `terraform/envs/local/newrelic/terragrunt.hcl` (修正: NRIA_FEATURE_docker_enabled=true追加、cgroupns_mode="host"設定)
-
-**次回のアクション**:
-- [x] すべてのコンテナ（8台）がNew Relic UIに表示されるか最終確認 ✅ 完了
-- [x] 各コンテナのCPU、メモリ、ネットワークメトリクスを確認 ✅ 完了
-- [ ] New Relic UIでのダッシュボード作成・カスタマイズ（オプション）
-- [ ] アラート設定の検討（オプション）
-
-#### 2025-10-30 (2): SwitchBot外部スクリプト監視の設定準備完了 🎯
-
-**実施内容**:
-1. ✅ **SwitchBotデバイス一覧の取得**
-   - APIを使用して全デバイスを確認
-   - 監視対象デバイス: 4台
-     - 温湿度計Pro 2F (B0E9FEEDD228) - MeterPro
-     - Hub 3 (2E) (B0E9FE8AEC2E) - Hub 3（温湿度センサー内蔵）
-     - ベランダ (D40E84864C41) - WoIOSensor
-     - 防水温湿度計 外 (F2B200461F1A) - WoIOSensor
-
-2. ✅ **check_switchbot.py スクリプトのHub 3対応修正**
-   - 問題: Hub 3にはbatteryフィールドがない（AC電源駆動）
-   - 解決策: スクリプトを修正して以下を実装
-     - `battery` フィールドをオプショナルに変更
-     - `lightLevel` フィールドを追加（Hub 3の照度センサー）
-     - `moveDetected` フィールドを追加（Hub 3の人感センサー）
-     - `device_type` フィールドを追加（デバイス識別用）
-   - 修正箇所: 101-128行目（必須フィールドチェックとオプショナルフィールド処理）
-
-3. ✅ **全4台でのデータ取得テスト成功**
-   - 温湿度計Pro 2F: 温度21.7°C, 湿度51%, バッテリー100%
-   - Hub 3 (2E): 温度25.6°C, 湿度55%, 照度4, 人感検知中
-   - ベランダ: 温度15.4°C, 湿度68%, バッテリー60%
-   - 防水温湿度計 外: 温度9°C, 湿度93%, バッテリー60%
-
-4. ✅ **Zabbix Web UIでの基本設定**
-   - ホストグループ `SwitchBot` を作成
-   - ホスト `SwitchBot Devices` を作成
-   - アイテム設計の理解確認（親アイテム + 依存アイテム構造）
-
-**技術的知見**:
-- Zabbixのアイテム設計: 親アイテム（External Check, Text型）+ 依存アイテム（Dependent Items, Numeric型）
-- 親アイテム: JSONデータを丸ごと取得（1回のAPI呼び出し）
-- 依存アイテム: JSONから個別の値を抽出してグラフ化・アラート設定
-- Hub 3はAC電源駆動のため、batteryフィールドが存在しない
-- Hub 3には温湿度センサーに加えて照度センサー・人感センサーも内蔵
-
-**修正ファイル**:
-- `config/zabbix/scripts/externalscripts/check_switchbot.py` (修正)
-
-**次回のアクション**:
-- [ ] External Checkアイテムを作成（温湿度計Pro 2Fから開始）
-  - Name: `SwitchBot Raw Data [温湿度計Pro 2F]`
-  - Type: External check
-  - Key: `check_switchbot.py[B0E9FEEDD228]`
-  - Type of information: Text
-  - Update interval: 5m
-- [ ] Dependent Items作成（温湿度計Pro 2F用）
-  - 温度 (temperature) - Numeric (float)
-  - 湿度 (humidity) - Numeric (unsigned)
-  - バッテリー (battery) - Numeric (unsigned)
-- [ ] 1台目のデータ取得確認とグラフ表示テスト
-- [ ] 残り3台も同様に設定
-  - Hub 3: 温度、湿度、照度、人感の4つの依存アイテム
-  - ベランダ: 温度、湿度、バッテリーの3つの依存アイテム
-  - 防水温湿度計 外: 温度、湿度、バッテリーの3つの依存アイテム
-- [ ] トリガー設定（温度/湿度の閾値アラート、バッテリー低下アラート）
-
-**デバイス一覧（参考）**:
-```
-1. 温湿度計Pro 2F - B0E9FEEDD228 (MeterPro)
-2. Hub 3 (2E) - B0E9FE8AEC2E (Hub 3)
-3. ベランダ - D40E84864C41 (WoIOSensor)
-4. 防水温湿度計 外 - F2B200461F1A (WoIOSensor)
-```
-
-#### 2025-10-30 (1): Zabbix Serverデータベース接続問題の完全解決 🎉
-
-**実施内容**:
-1. ✅ **問題の診断**
-   - Zabbix Serverにログインできるがメトリクスが取得できない問題を調査
-   - ログ確認により、PostgreSQLデータベース接続エラーを発見
-   - エラー内容: `connection to database 'dummy_db_name' failed`
-
-2. ✅ **根本原因の特定**
-   - 原因1: 環境変数 `ZBX_DB_NAME` が未設定
-     - `POSTGRES_DB=zabbix` は設定されていたが、Zabbix Server自身が参照する `ZBX_DB_NAME` が欠けていた
-     - デフォルト値 `dummy_db_name` で接続しようとして失敗
-   - 原因2: カスタムエントリーポイントの実装ミス
-     - 初期化スクリプトが直接 `zabbix_server` を起動していた
-     - 公式エントリーポイント処理（環境変数→設定ファイル反映）がスキップされていた
-
-3. ✅ **Terragrunt設定の修正**
-   - `terraform/envs/local/zabbix/terragrunt.hcl` を修正:
-     - Zabbix Server用環境変数に `ZBX_DB_NAME=zabbix` を追加
-     - Zabbix Web用環境変数に `ZBX_DB_NAME=zabbix` を追加
-
-4. ✅ **エントリーポイントスクリプトの修正**
-   - `/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh` を修正:
-     - 修正前: `exec /usr/sbin/zabbix_server --foreground -c /etc/zabbix/zabbix_server.conf`
-     - 修正後: `exec /usr/bin/docker-entrypoint.sh /usr/sbin/zabbix_server --foreground -c /etc/zabbix/zabbix_server.conf`
-   - 公式エントリーポイント経由で起動することで、環境変数が正しく反映されるように変更
-
-5. ✅ **デプロイと動作確認**
-   - Zabbix Serverコンテナの再作成成功
-   - PostgreSQL接続成功を確認
-   - 全59個のサーバープロセスが正常起動
-   - Zabbix Agentからのメトリクス収集開始を確認
-   - Web UIでリアルタイムデータ表示を確認（CPU使用率、メモリ使用量など）
-
-**技術的知見**:
-- Zabbix Serverの環境変数:
-  - `POSTGRES_DB`: PostgreSQL側の設定
-  - `ZBX_DB_NAME`: Zabbix Server自身が使用するデータベース名（**必須**）
-- 公式Dockerイメージのエントリーポイント:
-  - `/usr/bin/docker-entrypoint.sh` が環境変数を設定ファイルに反映する処理を行う
-  - カスタム初期化処理を行う場合でも、最終的には公式エントリーポイントを呼び出す必要がある
-
-**デプロイ結果**:
-```
-✅ Zabbix Serverが正常にPostgreSQLに接続
-✅ 全59個のサーバープロセスが起動
-✅ Zabbix Agentからのメトリクス収集が開始
-✅ Web UIでリアルタイムデータ表示を確認
-✅ 監視基盤が完全に稼働
-```
-
-**次回のアクション**:
-- [ ] SwitchBot外部スクリプト監視のアイテム設定（Zabbix Web UI）
-- [ ] Prometheusターゲット設定の有効化
-- [ ] Grafanaダッシュボードの作成
-
-**関連ファイル**:
-- `terraform/envs/local/zabbix/terragrunt.hcl` (修正)
-- `/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh` (修正)
-
-#### 2025-10-26 (1): SwitchBot外部スクリプト監視のセットアップ完了 🎉
-
-**実施内容**:
-1. ✅ **SwitchBot温湿度計監視スクリプトの作成**
-   - `config/zabbix/scripts/externalscripts/check_switchbot.py` を作成
-   - SwitchBot API (v1.1) を使用した温度・湿度・バッテリー取得
-   - JSON形式でのデータ出力（Zabbix Dependent Items対応）
-   - エラーハンドリングと終了コード実装 (0=成功, 1=エラー, 2=設定エラー, 3=APIエラー)
-
-2. ✅ **Zabbix Server初期化スクリプトの作成**
-   - `config/zabbix/scripts/init-zabbix-server.sh` を作成
-   - Python3とpip3の自動インストール
-   - requestsライブラリの自動インストール
-   - 外部スクリプトの実行権限設定
-
-3. ✅ **Dockerモジュールの拡張**
-   - `terraform/modules/docker_container/variables.tf` に `entrypoint` と `user` パラメータを追加
-   - `terraform/modules/docker_container/main.tf` で entrypoint と user の適用を実装
-
-4. ✅ **Terragrunt設定の更新**
-   - `terraform/envs/local/zabbix/terragrunt.hcl`:
-     - entrypoint設定: `/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh`
-     - user設定: `root` (パッケージインストールのため)
-     - 環境変数追加: `SWITCHBOT_TOKEN`, `SWITCHBOT_SECRET`, `SWITCHBOT_TIMEOUT`
-     - bind_mount設定:
-       - init-zabbix-server.sh (read-only)
-       - externalscripts/ (read-write)
-       - alertscripts/ (read-write)
-   - `terraform/root.hcl`:
-     - 環境変数注入: `SWITCHBOT_TOKEN`, `SWITCHBOT_SECRET` を get_env() で取得
-
-5. ✅ **リモート配置スクリプトの更新**
-   - `scripts/setup-remote-config.sh` を更新:
-     - Zabbix外部スクリプト用ディレクトリ作成 (externalscripts/, alertscripts/, userparameters/)
-     - check_switchbot.py の自動転送
-     - init-zabbix-server.sh の自動転送
-     - 実行権限の自動付与
-
-6. ✅ **環境変数設定の追加**
-   - `.env.example` に SwitchBot API認証情報を追加
-   - `.env` ファイルの作成と確認
-
-7. ✅ **デプロイとトラブルシューティング**
-   - 問題1: Terragrunt変数参照エラー (`${SWITCHBOT_TOKEN}`)
-     - 解決策: `get_env("SWITCHBOT_TOKEN", "default")` に修正
-   - 問題2: 権限エラー (apk add が Permission denied)
-     - 解決策: Zabbix Serverコンテナを `user = "root"` で起動
-   - Zabbix Serverコンテナの再作成成功
-   - Python3/requests の自動インストール成功
-   - Zabbix Serverの正常起動確認
-
-8. ✅ **ドキュメント作成**
-   - `config/zabbix/scripts/externalscripts/README_SWITCHBOT.md` を作成
-     - セットアップ手順の詳細
-     - Zabbix Web UIでの設定方法
-     - トラブルシューティングガイド
-     - 終了コード一覧
-     - パフォーマンス考慮事項（APIレート制限）
-
-**技術的知見**:
-- Zabbix External Checksは `/usr/lib/zabbix/externalscripts/` にスクリプトを配置
-- Python依存関係のインストールにはroot権限が必要（`apk add`, `pip3 install`）
-- Terragruntの環境変数参照は `get_env()` 関数を使用（`${VAR}` は不可）
-- Alpine LinuxのPython3.12では `--break-system-packages` オプションが必要
-- Dockerモジュールの `entrypoint` と `user` パラメータで初期化スクリプトを実行可能
-
-**デプロイ結果**:
-```
-✅ check_switchbot.py → /home/ubuntu/monitoring-lab/zabbix/scripts/externalscripts/
-✅ init-zabbix-server.sh → /home/ubuntu/monitoring-lab/zabbix/scripts/
-✅ Python3 + pip3 自動インストール成功
-✅ requests パッケージ自動インストール成功
-✅ Zabbix Serverコンテナ正常起動
-✅ 環境変数 (SWITCHBOT_TOKEN/SECRET) 正常注入
-```
-
-**動作確認結果**:
-- ✅ スクリプト配置確認完了
-- ✅ Python環境確認完了（Python 3.12.12 + requests 2.32.5）
-- ✅ 環境変数確認完了（SWITCHBOT_TOKEN, SWITCHBOT_SECRET, SWITCHBOT_TIMEOUT）
-- ✅ 2台の温湿度計からデータ取得成功:
-  - 温湿度計Pro 2F (B0E9FEEDD228): 温度23.1°C, 湿度60%, バッテリー100%
-  - 防水温湿度計 外 (F2B200461F1A): 温度15.8°C, 湿度96%, バッテリー60%
-
-**次回のアクション**:
-- [ ] Zabbix Web UIで External Check アイテム作成
-  - デバイスID: B0E9FEEDD228（温湿度計Pro 2F）
-  - デバイスID: F2B200461F1A（防水温湿度計 外）
-- [ ] Dependent Items で温度・湿度・バッテリーを個別取得
-- [ ] トリガー設定（温度/湿度の閾値アラート）
-- [ ] 更新間隔の調整（APIレート制限を考慮: 推奨5分以上）
-
-**関連ファイル**:
-- `config/zabbix/scripts/externalscripts/check_switchbot.py` (新規作成)
-- `config/zabbix/scripts/init-zabbix-server.sh` (新規作成)
-- `config/zabbix/scripts/externalscripts/README_SWITCHBOT.md` (新規作成)
-- `terraform/modules/docker_container/variables.tf` (修正)
-- `terraform/modules/docker_container/main.tf` (修正)
-- `terraform/envs/local/zabbix/terragrunt.hcl` (修正)
-- `terraform/root.hcl` (修正)
-- `scripts/setup-remote-config.sh` (修正)
-- `.env.example` (修正)
-
-#### 2025-10-22 (1): Zabbix Agent2監視の有効化成功 🎉
-
-**実施内容**:
-1. ✅ **Zabbix Agent監視問題の調査**
-   - 「Zabbix agent is not available (for 3m)」警告の原因調査
-   - Zabbix Serverコンテナ内にAgent2が含まれていないことを再確認
-   - Zabbix Agent2コンテナは既にデプロイ済みで正常稼働中
-
-2. ✅ **Docker内部DNSの仕組み確認**
-   - `zbx_agent` で名前解決できることを確認
-   - Terraformの `docker_container` モジュールで `aliases = [each.key]` 設定を確認
-   - フルコンテナ名（`monitoring-lab-zbx_agent`）とエイリアス名（`zbx_agent`）の両方で解決可能
-
-3. ✅ **ネットワーク接続の確認**
-   - Zabbix ServerからAgent2への接続テスト成功（172.28.0.8:10050）
-   - 同一Dockerネットワーク（monitoring-lab-network）で通信可能
-
-4. ✅ **問題の原因特定**
-   - Zabbix Web UIのホスト設定で、Agentのインターフェースが正しく設定されていなかった
-   - おそらく `127.0.0.1` を指していたため、Agent2に接続できていなかった
-
-5. ✅ **ユーザーによる設定修正**
-   - Zabbix Web UIでホスト「Zabbix server」の設定を変更
-   - Interface設定: DNS name = `zbx_agent`, Port = 10050
-   - 監視が正常に開始し、警告が解消
-
-**技術的知見**:
-- Dockerの `networks_advanced` ブロックで `aliases` を設定することで、サービス名で名前解決が可能
-- Zabbix Agent2は Passive checks モードで動作中（Serverからのポーリングを待機）
-- Docker内部DNSは同一ネットワーク内のコンテナ間で自動的に名前解決を提供
-
-**デプロイ結果**:
-```
-✅ monitoring-lab-zbx_agent (Up 2 days, healthy) - 172.28.0.8:10050
-✅ monitoring-lab-zbx_server (Up 2 days, healthy) - 172.28.0.6:10051
-✅ Zabbix Server自己監視が正常動作
-✅ 「Zabbix agent is not available」警告が解消
-```
-
-#### 2025-10-20 (1): Zabbix Agent2コンテナのデプロイ成功 🎉
-
-**実施内容**:
-1. ✅ **Zabbix Agent2の必要性確認**
-   - Zabbix Serverコンテナ内にAgent2が含まれていないことを確認
-   - 自己監視のため、別コンテナとしてAgent2をデプロイする方針を決定
-
-2. ✅ **Terragrunt設定ファイルの作成**
-   - `terraform/envs/local/zabbix-agent/terragrunt.hcl` を新規作成
-   - イメージ: `zabbix/zabbix-agent2:alpine-latest`
-   - ポート: 10050 (Agent2のデフォルトポート)
-   - ネットワーク依存関係を設定 (monitoring-lab-network)
-   - Zabbix Server依存関係を設定 (起動順序制御)
-
-3. ✅ **環境変数設定のトラブルシューティング**
-   - 問題1: `ZBX_SERVER_HOST`と`ZBX_PASSIVESERVERS`の重複でエラー
-     - エラー: "address 'zbx_server' specified more than once"
-   - 解決策: Passive checksのみを使用、Active checksを無効化
-     - `ZBX_PASSIVE_ALLOW=true`
-     - `ZBX_PASSIVESERVERS=zbx_server`
-     - `ZBX_ACTIVE_ALLOW=false`
-   - `ZBX_HOSTNAME=Zabbix server` (Web UIのホスト名と一致)
-
-4. ✅ **デプロイ成功**
-   - `terragrunt init` → `terragrunt apply -auto-approve`
-   - コンテナ起動成功: `monitoring-lab-zbx_agent`
-   - ヘルスチェック: healthy
-   - エラーログなし
-
-**デプロイ結果**:
-```
-✅ monitoring-lab-zbx_agent (Up, healthy)
-✅ monitoring-lab-zbx_server (Up 31 hours, healthy)
-✅ monitoring-lab-zbx_web (Up 31 hours, healthy)
-```
-
-**修正ファイル**:
-- `terraform/envs/local/zabbix-agent/terragrunt.hcl` (新規作成)
-
-**技術的知見**:
-- Zabbix Agent2の環境変数は、`ZBX_SERVER_HOST`が内部的に`Server`パラメータに変換される
-- `ZBX_PASSIVESERVERS`も`Server`パラメータにマッピングされるため、両方指定すると重複エラーになる
-- Passive checksのみの構成でも、Zabbix Serverからのポーリングで監視が可能
-
-#### 2025-10-19 (8): 設定ファイルの最終クリーンアップ 🧹
-
-**実施内容**:
-1. ✅ **STDERR/WARNING出力の完全除去**
-   - `.env` ファイルの修正:
-     - `TF_LOG=info` をコメントアウト（STDERR出力の根本原因を解消）
-     - `SSH_PUBLIC_KEY` 削除（未使用変数）
-     - `POSTGRES_DATA_DIR` 削除（未使用変数）
-     - `VAULT_DATA_DIR` 削除（未使用変数）
-   - `docker-compose.yml` の修正:
-     - `TERRAGRUNT_DOWNLOAD` → `TG_DOWNLOAD_DIR` に変更（非推奨警告の解消）
-
-2. ✅ **動作確認**
-   - Terragruntコンテナ再起動
-   - `terragrunt plan` で出力を検証
-   - STDERR出力が完全に消滅
-   - WARNING（非推奨警告）が完全に消滅
-
-**成果**:
-```
-Before:
-[WARN] The `TERRAGRUNT_NON_INTERACTIVE` environment variable is deprecated...
-[WARN] The `TERRAGRUNT_DOWNLOAD` environment variable is deprecated...
-[STDERR] Docker network inspect: {...}
-[STDERR] - .ipv6: planned value cty.False...
-
-After:
-[STDOUT] terraform: docker_network.monitoring: Refreshing state...
-[STDOUT] terraform: No changes. Your infrastructure matches the configuration.
-```
-
-**修正ファイル**:
-- `.env` (3箇所: TF_LOG コメントアウト、未使用変数3つ削除)
-- `docker-compose.yml` (1箇所: TERRAGRUNT_DOWNLOAD → TG_DOWNLOAD_DIR)
-
-**効果**:
-- ✅ Terragrunt出力がクリーンになり、デバッグが容易に
-- ✅ 不要な環境変数を削除し、設定ファイルが整理された
-- ✅ 非推奨警告が消え、将来のバージョンアップに対応
-
-#### 2025-10-19 (7): コンテナ監視方針の調査・検討 🔍
-
-**実施内容**:
-1. ✅ **コンテナ監視手法の比較調査**
-   - Node Exporterのコンテナ内配置検討
-   - 3つの導入方法の比較（既存コンテナ内/専用コンテナ/ホストOS）
-   - 各方法のメリット・デメリット整理
-
-2. ✅ **監視レイヤーの整理**
-   - Layer 1: ホストOS層（Node Exporter）
-   - Layer 2: コンテナ層（cAdvisor、Docker Stats）
-   - Layer 3: アプリケーション層（個別Exporter）
-
-3. ✅ **コンテナ監視ツールの選択肢提示**
-   - cAdvisor（最推奨）: コンテナリソース監視
-   - Docker Stats API（中程度）: Docker標準機能
-   - Zabbix Docker Monitoring（中程度）: Zabbix統合
-   - 個別Exporter（低優先）: アプリ固有メトリクス
-
-4. ✅ **推奨監視戦略の提案**
-   - フェーズ1: cAdvisor導入（コンテナリソース監視）
-   - フェーズ2: Node Exporter追加（ホストOS監視）
-   - フェーズ3: 個別Exporter追加（アプリ監視）
-
-**結論**:
-- ⏸️ 監視機能の実装は**後回し**（方針を慎重に検討してから実装）
-- ✅ 調査結果は文書化済み（口頭説明）
-- ✅ 次回セッション時に全体方針を決定してから進める
-
-**推奨される次のステップ（保留中）**:
-1. 監視戦略全体の設計書作成
-2. cAdvisor導入ガイド作成
-3. Terragrunt設定ファイル作成
-
-#### 2025-10-19 (6): スクリプト・ダッシュボード管理ドキュメント作成 📚
-
-**実施内容**:
-1. ✅ **Zabbixスクリプト管理ディレクトリ作成**
-   - `config/zabbix/scripts/` ディレクトリ構造作成
-     - `externalscripts/` - External Checksスクリプト
-     - `alertscripts/` - アラート通知スクリプト
-     - `userparameters/` - UserParameter設定ファイル
-   - `config/zabbix/scripts/README.md` 作成（包括的なガイド）
-
-2. ✅ **Grafanaダッシュボード管理ディレクトリ作成**
-   - `config/grafana/dashboards/` ディレクトリ作成
-   - `config/grafana/dashboards/README.md` 作成（ベストプラクティス）
-
-**ドキュメント内容**:
-- スクリプトの種類と用途（External/Alert/UserParameter）
-- スクリプト追加手順（作成 → 配置 → Terragrunt設定 → デプロイ）
-- テスト方法とトラブルシューティング
-- セキュリティ考慮事項
-- Bash/Pythonテンプレート
-- ダッシュボードエクスポート/インポート手順
-- Provisioning設定方法
-- バージョン管理のベストプラクティス
-
-**設計方針の明確化**:
-- ✅ IaC（Terraform/Terragrunt）: 基盤管理のみ
-- ✅ スクリプト: Gitで管理、bind_mountで配置
-- ✅ ダッシュボード: Web UIで作成 → JSONエクスポート → Git管理（オプション）
-- ✅ 監視設定: Web UIで管理（コンソール管理に閉じる）
-
-#### 2025-10-19 (5): ネットワークモジュール実装とデプロイ成功 🎉
-
-**実施内容**:
-1. ✅ **ネットワーク競合問題の解決**
-   - 問題: 各サービスが同時に `monitoring-lab-network` を作成しようとしてエラー
-   - 原因: `docker_container` モジュール内でネットワークリソースを定義していた
-   - 解決策: 専用の `network` モジュールを作成し、依存関係で制御
-
-2. ✅ **新規モジュール作成**
-   - `terraform/modules/network/` - Docker ネットワーク専用モジュール
-     - main.tf: docker_network リソース定義
-     - variables.tf: network_name, subnet, gateway パラメータ
-     - outputs.tf: network_name, network_id, subnet, gateway を出力
-   - `terraform/envs/local/network/terragrunt.hcl` - ネットワークサービス定義
-
-3. ✅ **docker_container モジュールの修正**
-   - `main.tf`: ネットワークリソース定義を削除（11-20行目）
-   - `variables.tf`: network_name 変数を追加
-   - `outputs.tf`: network_name, network_id 出力を削除
-
-4. ✅ **全サービス設定の更新**
-   - 各サービスに network 依存関係を追加:
-     - postgres/terragrunt.hcl
-     - prometheus/terragrunt.hcl
-     - vault/terragrunt.hcl
-     - zabbix/terragrunt.hcl
-     - grafana/terragrunt.hcl
-   - `network_name = dependency.network.outputs.network_name` を inputs に追加
-
-5. ✅ **デプロイ成功**
-   - `terragrunt run --all apply` が正常完了
-   - 起動順序: network → (postgres, prometheus, vault) → zabbix → grafana
-   - すべてのコンテナが正常起動
-   - ネットワーク接続確認完了
-
-**デプロイ結果**:
-```
-✅ monitoring-lab-network (172.28.0.0/16)
-✅ monitoring-lab-postgres (172.28.0.2)
-✅ monitoring-lab-vault (172.28.0.3)
-✅ monitoring-lab-prometheus (172.28.0.4)
-✅ monitoring-lab-zbx_server
-✅ monitoring-lab-zbx_web
-✅ monitoring-lab-grafana
-```
-
-**解決したエラー**:
-- ❌ → ✅ `network with name monitoring-lab-network already exists` (ネットワーク競合)
-- ❌ → ✅ 複数サービスによる同時ネットワーク作成の競合状態
-
-#### 2025-10-19 (4): Terragrunt設定の修正とリモートDocker環境のセットアップ
-
-**実施内容**:
-1. ✅ **バージョン確認と互換性検証**
-   - Terraform v1.13.3, Terragrunt v0.90.0 の動作確認
-   - Docker Provider 3.6.2 の互換性確認
-   - `terragrunt run --all` コマンド構文の確認
-
-2. ✅ **Terragrunt設定ファイルの修正**
-   - `terraform/modules/docker_container/main.tf`:
-     - `terraform {}` ブロック削除（重複定義エラー修正）
-     - `env` を動的ブロックから文字列リスト形式に変更
-   - `terraform/root.hcl`:
-     - Docker Provider の環境変数参照を `$${VAR}` から `get_env("VAR")` に修正
-   - `terraform/envs/local/prometheus/terragrunt.hcl`:
-     - bind_mounts パスを `/opt/monitoring-lab` → `/home/ubuntu/monitoring-lab` に修正
-   - `terraform/envs/local/grafana/terragrunt.hcl`:
-     - bind_mounts パスを `/opt/monitoring-lab` → `/home/ubuntu/monitoring-lab` に修正
-
-3. ✅ **リモートサーバーのDocker Engine セットアップ**
-   - `scripts/setup-docker-remote.sh` 作成
-   - Docker Engine インストール・起動・自動起動設定
-   - `ubuntu` ユーザーを `docker` グループに追加
-   - Docker 動作確認完了
-
-4. ✅ **docker-compose.yml の修正**
-   - SSH鍵マウント追加: `${HOME}/.ssh:/root/.ssh:ro`
-   - 環境変数ファイル読み込み: `env_file: - .env`
-
-**解決したエラー**:
-- ❌ → ✅ `Duplicate required providers configuration` (重複定義)
-- ❌ → ✅ `Unsupported block type "env"` (動的ブロック構文エラー)
-- ❌ → ✅ `Invalid reference` (環境変数参照エラー)
-- ❌ → ✅ bind_mounts パス不一致
-- ❌ → ✅ リモートサーバーに Docker Engine 未インストール
-- ⚠️ SSH鍵認証エラー（コンテナ再起動待ち）
-
-#### 2025-10-19 (3): リモートサーバーのセットアップ完了
-
-**実施内容**:
-1. ✅ **SSH鍵の設定**
-   - Windows側のSSH鍵 (`C:\Users\k1981\.ssh\monitoring_lab_key`) をWSL2にコピー
-   - `~/.ssh/id_rsa` として配置、権限設定完了
-   - SSH接続テスト成功 (10.0.0.220)
-
-2. ✅ **setup-remote-config.shの拡張**
-   - SSH接続確認機能を追加
-   - リモートサーバーでの設定ファイル直接作成機能を実装
-   - sudo不要な構成に変更 (ホームディレクトリ配下に配置)
-   - 4ステップの完全セットアップスクリプトに進化
-
-3. ✅ **リモートサーバーのセットアップ実行**
-   - ディレクトリ作成: `/home/ubuntu/monitoring-lab/`
-   - Prometheus設定ファイル作成: `prometheus.yml`
-   - Grafana設定ファイル作成: `datasources.yml`
-   - 権限設定完了 (755)
-
-4. ✅ **.env設定の更新**
-   - `REMOTE_BASE_DIR` を `/opt/zabbix` → `~/monitoring-lab` に変更
-   - 関連パスも更新 (sudo不要な構成)
-
-#### 2025-10-19 (2): 不要ファイルのクリーンアップ
-
-**実施内容**:
-1. ✅ **不要ファイルの削除**
-   - `nul` - 空ファイル
-   - `scripts/setup.sh` - ローカル実行前提（コンテナ構成と矛盾）
-   - `scripts/deploy.sh` - ローカル実行前提
-   - `scripts/destroy.sh` - ローカル実行前提
-   - `scripts/tf.sh` / `tf.bat` - Terraformコンテナが存在しないため不要
-   - `TERRAFORM_REMOTE_INSTRUCTIONS.md` - 古い設計、claude.mdと重複
-   - `QUICKSTART.md` - README.mdと重複
-
-2. ✅ **スクリプトの修正**
-   - `scripts/container-setup.sh` - Terraformコンテナ参照を削除、Terragruntのみに統一
-   - `scripts/container-setup.bat` - 同上
-   - `scripts/cleanup-and-rebuild.sh` - パスを汎用化（WSL2専用から脱却）
-
-3. ✅ **セッション継続機能の実装**
-   - `.claude/SESSION_STATE.md` - 作業履歴と次のステップを記録
-   - `.claude/commands/init.md` - 自動セッション開始機能
-   - `.claude/commands/status.md` - 状況確認コマンド
-   - `.claude/commands/update-status.md` - 状態更新コマンド
-   - `claude.md` - セッション開始時の自動指示を追加
-
-#### 2025-10-19 (1): Terragrunt設定ファイルの全面修正
-
-**修正内容**:
-1. ✅ **Dockerプロバイダーの重複定義を解消**
-   - `terraform/modules/docker_container/main.tf` からプロバイダー定義を削除
-   - root.hclの自動生成を使用（SSH経由のリモート接続対応）
-
-2. ✅ **docker_containerモジュールにcommandパラメータ追加**
-   - `terraform/modules/docker_container/variables.tf` に `command = optional(list(string), [])` 追加
-   - `terraform/modules/docker_container/main.tf` で動的設定
-
-3. ✅ **環境変数フォーマットの統一**
-   - オブジェクト形式 `{ name = "KEY", value = "VALUE" }` → 文字列配列 `"KEY=VALUE"` に変更
-   - 対象ファイル:
-     - `terraform/envs/local/zabbix/terragrunt.hcl` (zbx_server, zbx_web)
-     - `terraform/envs/local/grafana/terragrunt.hcl`
-     - `terraform/envs/local/vault/terragrunt.hcl`
-
-4. ✅ **bind_mountsパラメータの明示化**
-   - すべてのサービスに `bind_mounts = []` を追加
-   - 対象: postgres, vault, zabbix (zbx_server, zbx_web)
-
----
-
-## 🎯 プロジェクト概要
-
-### 実行方式 ⚠️ 重要
-
-**実行環境**: WSL2 (Ubuntu-24.04) 上のDocker Engine
-- **Docker Desktop は使用しない**
-- WSL2でdocker composeを実行
-- Terragruntコンテナ内から当プロジェクトのTerraformを実行
-- TerragruntコンテナはWSL2のDocker Engine上で動作
-
-**SSH鍵の配置**:
-- WSL2: `~/.ssh/id_rsa` (ubuntuユーザーのホームディレクトリ)
-- コンテナ起動時に自動的に `/root/.ssh/` にコピー (docker-compose.ymlのentrypointで実行)
-- コンテナ内から `/root/.ssh/id_rsa` を使用してリモートサーバーにSSH接続
-
-### アーキテクチャ
-
-**構築方式**: Windows PC (WSL2) → SSH → リモートUbuntuサーバー (Docker Engine)
-
-**構成**:
-```
-[Windows PC - WSL2]
-  ├─ Docker Engine (WSL2で実行)
-  │   ├─ Terragrunt開発コンテナ (alpine/terragrunt:latest)
-  │   │   └─ SSH鍵: /root/.ssh/id_rsa (起動時に自動コピー)
-  │   └─ Vault開発サーバー (hashicorp/vault:latest) ※ローカル
-  │
-  └─ SSH鍵: ~/.ssh/id_rsa (ubuntuユーザー)
-
-      ↓ Terragruntコンテナ内からSSH経由でDocker操作
-
-[リモートサーバー: 10.0.0.220]
-  ├─ Docker Engine
-  ├─ PostgreSQL:5432          (Zabbixデータベース)
-  ├─ Zabbix Server:10051      (監視バックエンド)
-  ├─ Zabbix Agent2:10050      (Zabbix Server自己監視用)
-  ├─ Zabbix Web:8080          (Web UI)
-  ├─ Prometheus:9090          (メトリクス収集)
-  ├─ Grafana:3000             (ダッシュボード)
-  └─ New Relic Infra Agent    (統合監視プラットフォーム) ← ✨ NEW!
-```
-
-### 重要な環境変数 (.env)
-
-```bash
-# リモートサーバー接続
-TARGET_HOST=10.0.0.220
-TARGET_USER=ubuntu
-TARGET_PORT=22
-SSH_PRIVATE_KEY=~/.ssh/id_rsa
-
-# リモートディレクトリ（修正済み）
-REMOTE_BASE_DIR=~/monitoring-lab
-POSTGRES_DATA_DIR=~/monitoring-lab/postgres
-VAULT_DATA_DIR=~/monitoring-lab/vault
-
-# Vault (ローカル開発モード)
-VAULT_TOKEN=root
-VAULT_ADDR=http://localhost:8200
-```
-
----
-
-## 🚧 未完了・次のステップ
-
-### 優先度: 最高 🔴🔴🔴 HCP Terraform + GitHub Actions 完全移行
-
-**目的**: ローカルState管理から、クラウドベースの自動化環境へ完全移行
-
-**推奨スケジュール**: 5日間（合計8-10時間）
-- Day 1: Phase 0-1（45分）
-- Day 2: Phase 2-3A（2-3時間）
-- Day 3: Phase 3B-4（1.5時間）
-- Day 4: Phase 5-6（1.5時間）
-- Day 5: Phase 7-8（2-3時間）
-
-#### 詳細タスク一覧
-
-**Phase 0: 準備とバックアップ** ⏱️ 15分
-- [ ] 現状のStateファイルをバックアップ
-  ```bash
-  cd /mnt/e/work/labo
-  tar -czf ~/terraform-state-backup-$(date +%Y%m%d-%H%M%S).tar.gz terraform/.terraform-state/
-  ls -lh ~/terraform-state-backup-*.tar.gz
-  ```
-- [ ] 現在の動作確認（`terragrunt run-all plan` が成功すること）
-
-**Phase 1: GitHubリポジトリセットアップ** ⏱️ 30分
-- [ ] GitHubでPrivateリポジトリ作成（`monitoring-lab-terraform`）
-- [ ] リモートリポジトリ追加（`git remote add origin`）
-- [ ] 機密情報の最終チェック（`.env`, `.terraform-state/` が除外されているか）
-- [ ] プッシュ（`git push -u origin master`）
-
-**Phase 2: HCP Terraform セットアップ** ⏱️ 20分
-- [ ] HCP Terraformアカウント作成
-- [ ] Organization作成（`monitoring-lab`）
-- [ ] API Token生成・保存
-
-**Phase 3-A: Terraform Agent セットアップ（WSL2）** ⏱️ 1-2時間
-- [ ] HCP Terraform UIでAgent Pool作成（`homelab-agent-pool`）
-- [ ] Agent Token生成・保存
-- [ ] WSL2でAgentバイナリダウンロード・解凍
-- [ ] Agent設定ファイル作成（`agent.hcl`）
-- [ ] Agent起動テスト（フォアグラウンド）
-- [ ] HCP Terraform UIで接続確認（Status: Connected）
-- [ ] systemdサービス化（`/etc/systemd/system/tfc-agent.service`）
-- [ ] 自動起動設定完了
-
-**Phase 3-B: GitHub Actions Self-hosted Runner セットアップ** ⏱️ 45分
-- [ ] GitHub UIでRunner追加
-- [ ] WSL2でRunnerバイナリダウンロード・解凍
-- [ ] Runner設定（`./config.sh`）
-- [ ] Runner起動テスト（フォアグラウンド）
-- [ ] GitHub UIで接続確認（Status: Idle）
-- [ ] systemdサービス化（`./svc.sh install && start`）
-- [ ] 自動起動設定完了
-
-**Phase 4: HCP Terraform Workspace作成** ⏱️ 30分
-- [ ] HCP Terraform認証情報設定（`~/.terraformrc`）
-- [ ] 8個のWorkspace作成（CLI経由）
-  - `monitoring-lab-local-network`
-  - `monitoring-lab-local-postgres`
-  - `monitoring-lab-local-vault`
-  - `monitoring-lab-local-zabbix`
-  - `monitoring-lab-local-zabbix-agent`
-  - `monitoring-lab-local-prometheus`
-  - `monitoring-lab-local-grafana`
-  - `monitoring-lab-local-newrelic`
-- [ ] 各Workspaceの実行モードをAgentに設定
-- [ ] Agent Poolを `homelab-agent-pool` に設定
-
-**Phase 5: 基本的なGitHub Actions ワークフロー作成** ⏱️ 30分
-- [ ] `.github/workflows/terraform-check.yml` 作成
-- [ ] Terraform Format Checkワークフロー実装
-- [ ] コミット・プッシュ
-- [ ] GitHub ActionsでSelf-hosted Runnerでの実行確認
-
-**Phase 6: 1サービス（network）でbackend移行テスト** ⏱️ 1時間
-- [ ] `backend_override.tf` 作成（network用）
-- [ ] Terragrunt経由でState移行（`terragrunt init`）
-- [ ] HCP Terraform UIでState確認
-- [ ] `terragrunt plan` で動作確認（No changes）
-- [ ] ロールバック手順の確認
-
-**Phase 7: 全サービスのbackend移行** ⏱️ 1-2時間
-- [ ] `terraform/root.hcl` のbackend設定変更
-- [ ] `credentials.tfrc.json` 作成・docker-compose.ymlマウント設定
-- [ ] コンテナ再起動
-- [ ] 依存順序で全サービス移行（network → postgres/vault/prometheus → zabbix → zabbix-agent → grafana → newrelic）
-- [ ] `terragrunt run-all plan` で全体確認
-
-**Phase 8: GitHub Actions自動Plan/Applyワークフロー追加** ⏱️ 1時間
-- [ ] `.github/workflows/terraform-plan.yml` 作成（PR時の自動Plan）
-- [ ] `.github/workflows/terraform-apply.yml` 作成（マージ時の自動Apply）
-- [ ] GitHub Secretsに `TFC_TOKEN` 設定
-- [ ] コミット・プッシュ
-- [ ] PRテストで動作確認
-
-**完了条件**:
-- ✅ 全8サービスがHCP Terraformで管理されている
-- ✅ PR作成時に自動Planが実行される
-- ✅ mainブランチマージ時に自動Applyが実行される
-- ✅ Self-hosted RunnerとTerraform Agentが安定稼働
-- ✅ 完全無料で運用できている（月額 $0）
-
-**ロールバック計画**:
-- Phase 6以前: いつでも中断可能（既存環境に影響なし）
-- Phase 6以降: `backend_override.tf` 削除 + `terraform init -reconfigure` でローカルに戻せる
-- 最終手段: Phase 0のバックアップから復元
-
----
-
-### 優先度: 高 🔴
-
-#### 1. 監視基盤の基本動作確認（移行完了後）
-**ステータス**: ログイン確認済み、詳細確認は未実施
-
-**確認済み**:
-- ✅ Zabbix Web UIへのアクセス: http://10.0.0.220:8080 (ログイン成功)
-- ✅ Prometheus UIへのアクセス: http://10.0.0.220:9090 (ログイン成功)
-- ✅ Grafana UIへのアクセス: http://10.0.0.220:3000 (ログイン成功)
-- ✅ データソース接続に問題なし
-
-**今後の確認項目**:
-- [ ] Prometheusのターゲット設定の有効化
-- [ ] Grafanaダッシュボードの作成
-- [ ] アラート設定のテスト
-
----
-
-### 優先度: 中 🟡
-
-#### 5. Vault統合の実装
-**ステータス**: 設計のみ完了、実装は未着手
-
-**現状**: パスワードがハードコード
-**目標**: すべての機密情報をVaultから動的取得
-
-**参考実装** (`vault_secret` モジュールが存在):
-```hcl
-data "vault_kv_secret_v2" "postgres" {
-  mount = "secret"
-  name  = "monitoring-lab/postgres"
-}
-
-env = [
-  "POSTGRES_PASSWORD=${data.vault_kv_secret_v2.postgres.data["password"]}"
-]
-```
-
-#### 2. 監視機能の実装（保留中）⏸️
-**ステータス**: 方針検討中、実装は保留
-
-**検討事項**:
-- 監視対象の明確化（ホストOS / コンテナ / アプリケーション）
-- 監視ツールの選定（Node Exporter / cAdvisor / 個別Exporter）
-- 導入フェーズの決定（段階的 or 一括）
-
-**候補ツール**:
-- **cAdvisor**: コンテナリソース監視（最推奨）
-- **Node Exporter**: ホストOS監視
-- **PostgreSQL Exporter**: DB監視（オプション）
-
-**次回決定すべきこと**:
-1. 監視の優先順位（コンテナ優先 or ホストOS優先）
-2. 導入範囲（フェーズ1のみ or 全体）
-3. 管理の複雑さの許容度
-
-**準備済みドキュメント**:
-- ✅ 監視レイヤーの整理（Layer 1-3）
-- ✅ ツール比較表
-- ✅ 推奨戦略（フェーズ1-3）
-
-#### 3. Vault統合の実装
-**ステータス**: 設計のみ完了、実装は未着手
-
-**現状**: パスワードがハードコード
-**目標**: すべての機密情報をVaultから動的取得
-
-**参考実装** (`vault_secret` モジュールが存在):
-```hcl
-data "vault_kv_secret_v2" "postgres" {
-  mount = "secret"
-  name  = "monitoring-lab/postgres"
-}
-
-env = [
-  "POSTGRES_PASSWORD=${data.vault_kv_secret_v2.postgres.data["password"]}"
-]
-```
+3. **HCP Terraform State確認**
+   - ブラウザで https://app.terraform.io/app/k1981-learning-lab/workspaces を開く
+   - 8個のWorkspaceが正常に表示されることを確認
 
 ---
 
 ## 🐛 既知の問題・制約
 
-### 1. SSH鍵認証（解決済み）✅
-**問題**: Terragruntコンテナ内から `monitoring_lab_key` でSSH接続できない
-**原因**: `/root/.ssh/` が空（マウント失敗）
-**解決策**: docker-compose.ymlのentrypointでWSL2の鍵を自動コピー
-**現状**: SSH接続成功、デプロイ完了
+### WSL2関連
 
-### 2. bind_mountsの制約
-**問題**: Prometheus/Grafanaがリモートサーバーのファイルシステムを直接参照
-**影響**: 事前にリモートサーバーに設定ファイルを配置する必要がある
-**回避策**: ✅ setup-remote-config.sh で自動配置済み
+**問題**: WSL2再起動後、Dockerサービスが停止する
+- **影響**: 次回セッション開始時に`sudo service docker start`が必要
+- **回避策**: 手動で起動、または自動起動設定を追加
+- **優先度**: 低（現状は手動起動で問題なし）
 
-### 3. Vaultの開発モード
-**問題**: Root Token固定、データ永続化なし
-**影響**: 本番環境では使用不可
-**移行パス**: config.hcl作成、TLS設定、Auto-unseal実装
+**問題**: WSL2のメモリ使用量
+- **影響**: デフォルトでホストメモリの50%を使用
+- **回避策**: `.wslconfig`でメモリ制限を設定可能
+- **優先度**: 低（現時点で問題なし）
 
----
+### HCP Terraform関連
 
-## 📁 重要なファイルパス
+**注意**: 無料プランの制限
+- 月間実行時間制限あり
+- 同時実行: 1 Organizationあたり1実行まで
+- チームメンバー: 5名まで
+- **影響**: 学習用途では問題なし
 
-### 今セッションで修正したファイル (2025-10-19)
-```
-terraform/
-├── root.hcl                          # ✅ Docker Provider環境変数参照修正
-├── modules/docker_container/
-│   └── main.tf                      # ✅ terraform{}削除、env動的ブロック→文字列リスト
-├── envs/local/
-│   ├── prometheus/terragrunt.hcl    # ✅ bind_mountsパス修正
-│   └── grafana/terragrunt.hcl       # ✅ bind_mountsパス修正
+**注意**: API Tokenのセキュリティ
+- `.env`ファイルは`.gitignore`に追加済み（安全）
+- Token値は絶対にGitにコミットしない
+- 漏洩時は即座に再発行が必要
 
-scripts/
-└── setup-docker-remote.sh           # ✅ 新規作成
+### State移行関連
 
-docker-compose.yml                    # ✅ SSH鍵マウント、env_file追加
-```
-
-### Terragrunt設定（全体）
-```
-terraform/
-├── root.hcl                          # 全環境共通設定（プロバイダー自動生成）
-├── envs/local/
-│   ├── terragrunt.hcl               # 環境固有設定（SSH接続情報）
-│   ├── postgres/terragrunt.hcl
-│   ├── vault/terragrunt.hcl
-│   ├── zabbix/terragrunt.hcl
-│   ├── prometheus/terragrunt.hcl
-│   └── grafana/terragrunt.hcl
-└── modules/
-    ├── docker_container/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    └── vault_secret/                # 未使用（将来の拡張用）
-```
-
-### 設定ファイル（リモートサーバー上）
-```
-/home/ubuntu/monitoring-lab/
-├── prometheus/
-│   └── prometheus.yml               # ✅ 配置済み
-└── grafana/
-    └── provisioning/
-        ├── datasources/
-        │   └── datasources.yml      # ✅ 配置済み
-        └── dashboards/              # ✅ ディレクトリ作成済み
-```
+**注意**: State移行の不可逆性
+- HCP Terraformへの移行後、ローカルStateファイルは削除される
+- バックアップ取得を推奨（上記タスク2参照）
+- 移行後は必ず`plan`で差分がないことを確認
 
 ---
 
-## 🔧 よく使うコマンド
+## 🎯 重要な設定情報
 
-### Terragrunt操作（コンテナ内）
-```bash
-# 初期化
-terragrunt run-all init
+### HCP Terraform
 
-# 実行計画
-terragrunt run-all plan
+- **Organization**: `k1981-learning-lab`
+- **API Token**: `.env`ファイルに保存（変数名: `TF_TOKEN_app_terraform_io`）
+- **Workspace命名規則**: `${project_name}-${environment}-${service_name}`
+- **作成済みWorkspace（8個）**:
+  1. `monitoring-lab-local-network` - Dockerネットワーク
+  2. `monitoring-lab-local-postgres` - PostgreSQL
+  3. `monitoring-lab-local-vault` - Vault開発モード
+  4. `monitoring-lab-local-prometheus` - Prometheus
+  5. `monitoring-lab-local-newrelic` - New Relic
+  6. `monitoring-lab-local-zabbix` - Zabbix Server + Web
+  7. `monitoring-lab-local-zabbix-agent` - Zabbix Agent2
+  8. `monitoring-lab-local-grafana` - Grafana
+- **Execution Mode**: すべて"Local"に設定済み
+- **State状態**: すべてのWorkspaceで差分なし（No changes）
 
-# デプロイ
-terragrunt run-all apply
+### WSL2環境
 
-# 削除
-terragrunt run-all destroy
+- **ディストリビューション**: Ubuntu（最新版）
+- **ユーザー名**: `ubuntu`
+- **Dockerバージョン**: 29.1.3
+- **Docker Composeバージョン**: v5.0.0
 
-# 特定サービスのみ
-cd terraform/envs/local/grafana
-terragrunt apply
+### プロジェクトパス
 
-# 依存関係グラフ表示
-terragrunt graph-dependencies
-```
+- **Windows**: `C:\work\repos\monitoring-lab-terraform`
+- **WSL2**: `/mnt/c/work/repos/monitoring-lab-terraform`
 
-### Docker操作（ホストから）
-```bash
-# コンテナ起動
-wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose up -d"
+### リモートサーバー
 
-# コンテナ接続
-wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose exec terragrunt sh"
-
-# ログ確認
-wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose logs -f terragrunt"
-
-# 監視基盤のコンテナ確認（リモートサーバー上）
-ssh ubuntu@10.0.0.220 "docker ps"
-```
-
-### リモートサーバー操作
-```bash
-# SSH接続
-ssh ubuntu@10.0.0.220
-
-# コンテナ状態確認
-docker ps -a --filter "label=project=monitoring-lab"
-
-# ログ確認
-docker logs monitoring-lab-postgres
-docker logs monitoring-lab-zbx_server
-docker logs monitoring-lab-grafana
-
-# ネットワーク確認
-docker network inspect monitoring-lab-network
-
-# ボリューム確認
-docker volume ls | grep monitoring-lab
-```
+- **ホスト**: 10.0.0.220
+- **ユーザー**: ubuntu
+- **SSH鍵**: `~/.ssh/monitoring_lab_key` (WSL2内に配置予定)
 
 ---
 
-## 🎓 学習ポイント
+## 📚 詳細記録（アーカイブ）
 
-### Terragruntの特徴
-1. **DRY原則**: root.hclで共通設定を定義、各環境で差分のみ記述
-2. **依存関係管理**: `dependency` ブロックで起動順序を自動制御
-3. **一括操作**: `run-all` コマンドで複数サービスを一括管理
+過去のセッション詳細記録は `sessions/` ディレクトリに保存されています：
 
-### Docker Providerの注意点
-- モジュール内でプロバイダーを定義すると環境依存になる
-- root.hclの `generate "provider"` で環境ごとに動的生成が推奨
-
-### リモート構築のポイント
-- SSH鍵認証の設定が必須
-- bind_mountsはリモートサーバーのパスを指定
-- Dockerボリュームは自動作成されるが、bind_mountはディレクトリが必要
+- [2025-12-30: HCP Terraform連携とWSL2環境構築](sessions/2025-12-30_hcp_wsl2.md)
+- *(過去のセッションは今後追加予定)*
 
 ---
 
-## 📞 トラブルシューティング
+## 🔗 関連ドキュメント
 
-### SSH接続エラー
-```bash
-# 接続テスト
-ssh -vvv ubuntu@10.0.0.220
-
-# 鍵の権限確認
-ls -la ~/.ssh/id_rsa  # 600 である必要
-
-# known_hostsクリア（ホスト再インストール後）
-ssh-keygen -R 10.0.0.220
-```
-
-### Terragruntエラー
-```bash
-# キャッシュクリア
-rm -rf .terragrunt-cache
-
-# State再初期化
-terragrunt init -reconfigure
-
-# ロック解除
-terragrunt force-unlock <LOCK_ID>
-```
-
-### コンテナ起動失敗
-```bash
-# リモートサーバー上で確認
-ssh ubuntu@10.0.0.220 "docker logs monitoring-lab-postgres"
-
-# ネットワーク確認
-ssh ubuntu@10.0.0.220 "docker network inspect monitoring-lab-network"
-
-# ボリューム権限確認
-ssh ubuntu@10.0.0.220 "docker volume inspect monitoring-lab-postgres_data"
-```
+- [CLAUDE.md](../CLAUDE.md) - プロジェクト概要とコミュニケーションガイドライン
+- [README.md](../README.md) - プロジェクトドキュメント
+- [QUICKSTART.md](../QUICKSTART.md) - クイックスタートガイド
+- [.env.example](../.env.example) - 環境変数テンプレート
 
 ---
 
-## 🔐 セキュリティチェックリスト
-
-### 現在の状態（学習環境）
-- ❌ Vault開発モード（Root Token: root）
-- ❌ パスワードがハードコード
-- ❌ HTTP通信（TLS未設定）
-- ❌ デフォルト認証情報使用
-
-### 本番移行時の必須対応
-- [ ] Vaultの本番モード化
-- [ ] TLS/SSL証明書設定
-- [ ] 強力なパスワード生成
-- [ ] Stateファイルのリモートバックエンド化（S3等）
-- [ ] ネットワークセグメント分離
-- [ ] シークレットローテーション実装
-
----
-
-## 📝 メモ・備考
-
-### 今後の拡張案
-1. **Phase 1.5**: 監視基盤の動作確認（次回優先）
-   - Web UIアクセステスト
-   - 初期設定とパスワード変更
-   - データソース接続確認
-2. **Phase 2**: 監視機能の実装（Agent、スクレイプ設定、ダッシュボード）
-3. **Phase 3**: Vault統合（動的シークレット取得）
-4. **Phase 4**: CI/CDパイプライン統合
-5. **Phase 5**: 本番環境対応（マルチ環境、リモートバックエンド）
-
-### 最近のクリーンアップ成果（2025-10-19）
-- ✅ 設定ファイルの全面整理完了（.env, .env.example, docker-compose.yml, terragrunt.hcl, root.hcl）
-- ✅ STDERR/WARNING出力を100%削減
-- ✅ 非推奨環境変数を新形式に移行
-- ✅ 未使用変数を7個削除
-- ✅ Terragrunt出力がクリーンになり、デバッグが容易に
-
-### 参考リンク
-- [Terragrunt公式ドキュメント](https://terragrunt.gruntwork.io/docs/)
-- [Docker Provider for Terraform](https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs)
-- [HashiCorp Vault](https://www.vaultproject.io/docs)
-
----
-
-**このファイルは自動的に更新されます。セッション開始時に必ず確認してください。**
-
----
-
-## 📅 2025-11-16 (3): Phase 0完了 - HCP Terraform移行準備完了
-
-**最終更新**: 2025-11-16 11:35
-**セッション時間**: 11:00-11:35 (35分)
-**実施フェーズ**: Phase 0 - 準備とバックアップ
-
-### ✅ 完了した作業
-
-#### 1. Stateファイルのバックアップ作成
-- ✅ バックアップファイル作成完了
-  - パス: `/root/terraform-state-backup-20251116-105359.tar.gz`
-  - サイズ: 7.0KB
-  - 内容: 全8サービスのTerraform Stateファイル
-  ```bash
-  tar -czf ~/terraform-state-backup-$(date +%Y%m%d-%H%M%S).tar.gz terraform/.terraform-state/
-  ```
-
-#### 2. 現在の動作確認（全サービス検証）
-- ✅ 全8サービスの状態検証完了
-  - コマンド: `terragrunt run --all plan`
-  - 実行時間: 約3秒（並列実行）
-
-**検証結果サマリー**:
-```
-✅ network:       No changes
-✅ postgres:      No changes
-✅ vault:         No changes
-✅ prometheus:    No changes
-✅ newrelic:      No changes
-✅ zabbix-agent:  No changes
-✅ grafana:       No changes
-⚠️  zabbix:       Plan: 0 to add, 1 to change, 0 to destroy
-```
-
-#### 3. zabbixサービスの変更内容確認
-**検出された差分**:
-```hcl
-# docker_container.service["zbx_web"] will be updated in-place
-~ healthcheck {
-  ~ start_interval = "5s" -> "0s"
-  ~ start_period   = "40s" -> "0s"
-}
-```
-
-**原因分析**:
-- Dockerプロバイダーの既知の挙動
-- Terraform設定で `start_interval`/`start_period` が未指定
-- Docker Engine側がデフォルト値（5s/40s）を自動設定
-- Terraformは未指定を `0s` として認識し差分検出
-
-**影響評価**:
-- ❌ 実質的な問題なし
-- ❌ コンテナの動作に影響なし
-- ❌ ヘルスチェックは正常稼働中
-- ✅ HCP Terraform移行には影響しない
-
-### 🎯 Phase 0完了判定
-
-**判定**: ✅ **Phase 0完了**
-
-**理由**:
-1. ✅ Stateファイルバックアップ完了（7.0KB）
-2. ✅ 7/8サービスが完全一致
-3. ✅ 1サービスの差分は無害（ヘルスチェックのデフォルト値）
-4. ✅ 実環境は正常稼働中
-5. ✅ Phase 0の目的「破損チェック」を達成
-
-### 📊 効率化ポイント
-
-**今回使用した効率的なコマンド**:
-```bash
-# 全サービス一括検証 + 結果のみ抽出
-cd /workspace/terraform/envs/local && \
-terragrunt run --all plan 2>&1 | grep -E "(STDOUT.*No changes|Error|Plan:|Apply)"
-```
-
-**メリット**:
-- 並列実行で検証時間を大幅短縮（個別実行の1/8）
-- デバッグログを除外し、重要な結果のみ表示
-- エラー検出が容易
-
-### 🔍 学習ポイント
-
-1. **STDERRの理解**
-   - Dockerプロバイダーのデバッグログは `STDERR` に出力される
-   - `"Error": ""` はDockerのJSONレスポンスの一部（実際のエラーではない）
-   - 最終結果の `STDOUT` のみ確認すればOK
-
-2. **Terragrunt並列実行**
-   - `run --all` は依存関係を考慮して並列実行
-   - 大幅な時間短縮が可能
-   - grepでフィルタリングして見やすく
-
-3. **バックアップの重要性**
-   - 移行前の必須作業
-   - ロールバック時の保険
-   - 7.0KBと非常に軽量
-
-### 📝 次のステップ: Phase 1
-
-**Phase 1: GitHubプライベートリポジトリ作成と機密情報チェック（30分）**
-
-**タスク内容**:
-1. GitHubでPrivateリポジトリ作成（`monitoring-lab-terraform`）
-2. リモートリポジトリ追加（`git remote add origin`）
-3. 機密情報の最終チェック（`.env`, `.terraform-state/` が除外されているか）
-4. プッシュ（`git push -u origin master`）
-
-**前提条件**: ✅ すべてクリア
-- ✅ `.gitignore` 設定済み（HCP Terraform認証情報も保護）
-- ✅ `.env` は除外設定済み
-- ✅ `.terraform-state/` は除外設定済み
-- ✅ Stateファイルバックアップ完了
-
-**推定時間**: 30分
-**難易度**: ⭐ (簡単)
-
----
-
----
-
-## ?? 2025-12-28: Phase 1�J�n - GitHub Private Repository�쐬
-
-**�ŏI�X�V**: 2025-12-28
-**���{�t�F�[�Y**: Phase 1 - GitHub���|�W�g���쐬�Ƌ@�����`�F�b�N
-
-### ? �����������
-
-#### 1. GitHub CLI (gh) ��Windows���ւ̃C���X�g�[��
-- ? winget���g�p����GitHub CLI v2.83.2���C���X�g�[������
-  - �C���X�g�[���p�X: 
-  - �R�}���h:    -                                                                                                                           ??????????????????????????????  1024 KB / 2.47 MB  ??????????????????????????????  2.00 MB / 2.47 MB  ??????????????????????????????  2.47 MB / 2.47 MB                                                                                                                          ??????????????????????????????  0%  ??????????????????????????????  0%  ??????????????????????????????  9%  ??????????????????????????????  13%  ??????????????????????????????  27%  ??????????????????????????????  41%  ??????????????????????????????  53%  ??????????????????????????????  54%  ??????????????????????????????  56%  ??????????????????????????????  57%  ??????????????????????????????  59%  ??????????????????????????????  60%  ??????????????????????????????  61%  ??????????????????????????????  62%  ??????????????????????????????  63%  ??????????????????????????????  75%  ??????????????????????????????  76%  ??????????????????????????????  80%  ??????????????????????????????  82%  ??????????????????????????????  88%  ??????????????????????????????  99%  ??????????????????????????????  99%  ??????????????????????????????  100%                                                                                                                           -    \                                                                                                                         �����̃p�b�P�[�W�����ɃC���X�g�[������Ă��܂��B�C���X�g�[������Ă���p�b�P�[�W...���A�b�v�O���[�h���悤�Ƃ��Ă��܂�
-���p�\�ȃA�b�v�O���[�h��������܂���ł����B
-�\�����ꂽ�\�[�X�������ł���V�����p�b�P�[�W �o�[�W�����͂���܂���B
-  
-**�ۑ�**: 
-- ?? PATH���ϐ��͍X�V���ꂽ���A������VSCode�v���Z�X���Â����ϐ���ێ�
-- �V�����^�[�~�i���ł�  �R�}���h���F������Ȃ��iVSCode���̂̍ċN�����K�v�j
-
-**�������@**:
-1. VSCode�����S�ċN���i�����j
-2. �t���p�X�Ŏ��s: 
-
-### ?? �i�s���̃^�X�N
-
-#### 2. GitHub�F�؂̎��s (gh auth login)
-- ?? STATUS: VSCode�ċN���҂�
-- ���̃X�e�b�v:
-  1. VSCode���ċN��
-  2. �V�����^�[�~�i����  ���m�F
-  3.  �����s
-     - GitHub.com ��I��
-     - HTTPS ��I��
-     - Web browser�F�؂�I��
-
-### ? ������̃^�X�N
-
-#### 3. �@�����̍ŏI�`�F�b�N (.gitignore�m�F)
--  �����O����Ă��邩�m�F
--  �����O����Ă��邩�m�F
-- HCP Terraform�F�؏�񂪕ی삳��Ă��邩�m�F
-
-#### 4. GitHub�v���C�x�[�g���|�W�g���쐬
-- ���|�W�g����: 
-- �ݒ�: Private
-- �R�}���h: 
-
-#### 5. ����v�b�V���̎��s
-- �R�}���h: branch 'master' set up to track 'origin/master'.
-- �O��: Phase 0��State�t�@�C���o�b�N�A�b�v�ς� (7.0KB)
-
-### ?? Phase 1�̖ڕW
-
-**�ړI**: GitHub�v���C�x�[�g���|�W�g���ɃR�[�h�����S�Ƀv�b�V��
-
-**�O�����**:
-- ? Phase 0�����iState�t�@�C���o�b�N�A�b�v�A����m�F�j
-- ?  �ݒ�ς�
-- ? GitHub CLI �C���X�g�[���ς�
-- ?? GitHub CLI �F�؁i�ċN����j
-
-**����c�莞��**: 20��
-- GitHub�F��: 5��
-- �@�����`�F�b�N: 5��
-- ���|�W�g���쐬�ƃv�b�V��: 10��
-
-### ?? �w�K�|�C���g
-
-1. **Windows���ł�PATH�X�V**
-   - winget�ŃC���X�g�[�����Ă�VSCode�ȂǊ����v���Z�X�͌Â����ϐ���ێ�
-   - �V�X�e�����ϐ� () �͍X�V���ꂽ���A�v���Z�X�̍ċN�����K�v
-   - �m�F�R�}���h: 
-
-2. **GitHub CLI�F�ؕ���**
-   - Web browser�F�؁i�����j
-   - Personal Access Token
-   - SSH���F��
-
-3. **git vs gh �̎g������**
-   - usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
-           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--no-lazy-fetch]
-           [--no-optional-locks] [--no-advice] [--bare] [--git-dir=<path>]
-           [--work-tree=<path>] [--namespace=<name>] [--config-env=<name>=<envvar>]
-           <command> [<args>]
-
-These are common Git commands used in various situations:
-
-start a working area (see also: git help tutorial)
-   clone      Clone a repository into a new directory
-   init       Create an empty Git repository or reinitialize an existing one
-
-work on the current change (see also: git help everyday)
-   add        Add file contents to the index
-   mv         Move or rename a file, a directory, or a symlink
-   restore    Restore working tree files
-   rm         Remove files from the working tree and from the index
-
-examine the history and state (see also: git help revisions)
-   bisect     Use binary search to find the commit that introduced a bug
-   diff       Show changes between commits, commit and working tree, etc
-   grep       Print lines matching a pattern
-   log        Show commit logs
-   show       Show various types of objects
-   status     Show the working tree status
-
-grow, mark and tweak your common history
-   backfill   Download missing objects in a partial clone
-   branch     List, create, or delete branches
-   commit     Record changes to the repository
-   merge      Join two or more development histories together
-   rebase     Reapply commits on top of another base tip
-   reset      Reset current HEAD to the specified state
-   switch     Switch branches
-   tag        Create, list, delete or verify tags
-
-collaborate (see also: git help workflows)
-   fetch      Download objects and refs from another repository
-   pull       Fetch from and integrate with another repository or a local branch
-   push       Update remote refs along with associated objects
-
-'git help -a' and 'git help -g' list available subcommands and some
-concept guides. See 'git help <command>' or 'git help <concept>'
-to read about a specific subcommand or concept.
-See 'git help git' for an overview of the system.: Git�R�}���h�iWindows���ɃC���X�g�[���ς݁j
-   - : GitHub CLI�i���|�W�g���쐬�APR�Ǘ��Ȃǁj
-   - �����Ƃ�Windows���Ŏ��s�iWSL2�ł͂Ȃ��j
-
-### ?? ���̃Z�b�V�����Ŏ��{���邱��
-
-**�D��x1: Phase 1����**
-1. ? VSCode�ċN��
-2. GitHub�F�؎��s
-3. �@�����`�F�b�N
-4. �v���C�x�[�g���|�W�g���쐬
-5. ����v�b�V��
-
-**�D��x2: Phase 2����**
-- HCP Terraform workspace�쐬
-- VCS�A�g�ݒ�
-
----
+**🎓 学習リソース**:
+- [HCP Terraform Documentation](https://developer.hashicorp.com/terraform/cloud-docs)
+- [Terragrunt Documentation](https://terragrunt.gruntwork.io/docs/)
+- [WSL2 Documentation](https://learn.microsoft.com/en-us/windows/wsl/)

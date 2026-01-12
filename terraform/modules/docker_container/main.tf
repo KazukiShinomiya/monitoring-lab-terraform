@@ -94,10 +94,12 @@ resource "docker_container" "service" {
   }
 
   # ヘルスチェック設定（オプション）
-  healthcheck {
-    test     = ["CMD-SHELL", "echo 'alive'"]
-    interval = "30s"
-    timeout  = "5s"
-    retries  = 3
-  }
+  # 注: Dockerイメージ本来のhealthcheck設定を使用するため、
+  # ここでは明示的なhealthcheck定義を行わない
+  # healthcheck {
+  #   test     = ["CMD-SHELL", "echo 'alive'"]
+  #   interval = "30s"
+  #   timeout  = "5s"
+  #   retries  = 3
+  # }
 }
