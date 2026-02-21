@@ -50,8 +50,8 @@ datasources:
       trends: true         # トレンドデータの使用
       trendsFrom: '7d'     # 7日以前はトレンドデータを使用
       trendsRange: '4d'    # 4日以上の範囲ではトレンドデータを使用
-      cacheTTL: 60         # キャッシュ有効期間（秒）
-      timeout: 30          # タイムアウト（秒）
+      cacheTTL: '60s'      # キャッシュ有効期間 ※duration形式で指定
+      timeout: '30'        # タイムアウト（秒）※文字列で指定
 
       # ダイレクトDB接続（オプション・高速化）
       # dbConnectionEnable: true
