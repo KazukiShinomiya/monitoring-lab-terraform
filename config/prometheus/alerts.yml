@@ -1,0 +1,77 @@
+# ==========================================
+# Prometheus Alert Rules
+# ==========================================
+# 配置先: /etc/prometheus/alerts.yml (bind mount)
+#
+# 注意: このリモートサーバーのcAdvisorでは、コンテナメトリクスに
+# `name` ラベルがなく、`id` ラベルにcgroupパスが入る。
+# 例: id="/system.slice/docker-<container_id>.scope"
+
+groups:
+  # ==========================================
+  # グループ1: スクレイプターゲットの稼働状態
+  # ==========================================
+  - name: target_health
+    rules:
+      # スクレイプターゲットダウン
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "スクレイプターゲットダウン: {{ $labels.job }}"
+          description: "Prometheusがターゲット {{ $labels.instance }} (job: {{ $labels.job }}) からメトリクスを取得できません。"
+
+  # ==========================================
+  # グループ2: コンテナリソース使用率
+  # ==========================================
+  - name: container_resources
+    rules:
+      # コンテナCPU高負荷（5分間平均）
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{id=~"/system.slice/docker-.+"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU高負荷: {{ $labels.id }}"
+          description: "コンテナ {{ $labels.id }} のCPU使用率が5分間 {{ $value | printf \"%.1f\" }}% を超えています。"
+
+      # コンテナメモリ高使用率
+      - alert: ContainerHighMemory
+        expr: |
+          (container_memory_usage_bytes{id=~"/system.slice/docker-.+"} /
+           container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+"}) * 100 > 80
+            and container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "メモリ高使用: {{ $labels.id }}"
+          description: "コンテナのメモリ使用率が {{ $value | printf \"%.1f\" }}% です。"
+
+  # ==========================================
+  # グループ3: Prometheus自己監視
+  # ==========================================
+  - name: prometheus_health
+    rules:
+      # Prometheusの設定リロード失敗
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus設定リロード失敗"
+          description: "Prometheusの設定ファイルのリロードが失敗しました。設定を確認してください。"
+
+      # TSDBコンパクションの失敗
+      - alert: PrometheusTSDBCompactionsFailed
+        expr: increase(prometheus_tsdb_compactions_failed_total[3h]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TSDB圧縮失敗"
+          description: "PrometheusのTSDB圧縮が失敗しました。ディスク容量を確認してください。"
