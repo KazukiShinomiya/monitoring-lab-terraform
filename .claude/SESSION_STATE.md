@@ -1,6 +1,6 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2026-01-01 15:00
+**最終更新**: 2026-02-21 18:30
 
 ---
 
@@ -11,27 +11,376 @@ Phase 0: ✅ 完了（State破損チェックとGitHub連携）
 Phase 1: ✅ 完了（GitHubリポジトリ作成とpush）
 Phase 2: ✅ 完了（HCP Terraform State移行）
   ✅ HCP Terraform Organization作成
-  ✅ Workspace作成（8個）
-  ✅ API Token取得
+  ✅ Workspace作成（8サービス → 9サービスに拡張）
   ✅ Backend設定変更（root.hcl）
   ✅ WSL2環境構築
   ✅ Docker Engine インストール
-  ✅ Docker Composeでコンテナ起動
-  ✅ State移行実施（全8サービス完了）
+  ✅ State移行実施（別PCで完了 - 2025-12-31）
+  ✅ このPCでの移行状態確認完了（全8サービス、14リソース確認済み）
+  ✅ ローカルStateファイル削除（バックアップ済み）
+  ✅ State整合性修正（Zabbixコンテナのimport）
 Phase 2.5: ✅ 完了（Spec Kit導入と仕様化）
-  ✅ uv + specify-cli インストール
+  ✅ uv v0.9.26 + specify-cli v1.0.0 インストール（WSL2に実施）
+  ✅ specify init 実行完了（.claude/commands/ に9個のコマンド配置）
   ✅ Constitution作成（5つの核心原則）
   ✅ 既存インフラの仕様化
   ✅ Phase 3要件定義
-  ✅ Constitution検証（/speckit.constitution実行）
-  ✅ Phase 3実装計画作成（/speckit.plan実行）
-Phase 3: 📅 実装準備完了（監視機能拡充 - 次回タスク分解から開始）
-Phase 4: 📅 未着手（運用改善）
+  ✅ Phase 3実装計画作成
+  ✅ スクリーンショット用ディレクトリ作成（.claude/screenshots/）
+Phase 3: ✅ 完了（監視機能拡充）
+  ✅ タスクリスト生成（38タスク）
+  ✅ 全9ワークスペースで差分なし確認
+  ✅ Phase 1完了: cAdvisorデプロイ（T001-T005）
+  ✅ Phase 2完了: 基盤確認（T006-T007）
+  ✅ Phase 3完了: Prometheusスクレイプ設定（T008-T012）
+  ✅ Phase 4完了: Grafanaダッシュボード（T013-T018）
+  ✅ Phase 5完了: アラートルール（T019-T028）
+  ✅ Phase 6完了: Zabbix統合ダッシュボード（T029-T033）
+  ✅ Phase 7完了: 仕上げ（T034-T038）
+Phase 4: 📅 未着手（運用改善 → MCP自己成長基盤と統合予定）
+Phase 5: 📅 構想中（MCP/AI自己成長基盤）
+  ✅ Step 1: Speckit Constitution正式策定（v1.1.0）
+  ✅ Step 2: Phase 3残タスク消化（T019-T038 全完了）
+  📅 Step 3: MCP自己成長基盤設計（Speckit ADLCフルサイクル実践）
+  📅 Step 4: MCP Server構築（Docker → Prometheus → Terragrunt）
 ```
 
 ---
 
 ## ✅ 最近完了した作業（直近3セッション）
+
+### 📅 2026-02-21 (2): 統合ダッシュボード修正
+
+**🔧 Integrated Monitoring ダッシュボード不具合修正**
+
+- ✅ **datasources.yml修正**
+  - `cacheTTL: 60`（数値）→ `'60s'`（duration文字列）に修正
+  - Zabbixプラグインv6.2.0がGo duration形式を期待していた
+  - `timeout: 30` → `'30'`（文字列）に修正
+  - これによりZabbixデータソースインスタンス生成失敗が解消
+
+- ✅ **integrated-monitoring.json修正**
+  - データソースUID: 空文字`""`→正しいUID（Prometheus: `PBFA97CFB590B2093`, Zabbix: `PA67C5EADE9207728`）
+  - PromQL正規表現: `\\.scope`による二重エスケープ問題を修正
+  - Zabbixホストフィルタ: `SwitchBot Devices`（テクニカル名）→`/SwitchBot/`（正規表現）に修正
+    - プラグインは表示名（`SwitchBot 温湿度計`）を参照するため完全一致では不一致だった
+
+- ✅ **全6パネルのデータ表示を確認**
+  - スクレイプターゲット状態 ✅
+  - アクティブアラート数 ✅
+  - コンテナCPU使用率 ✅
+  - コンテナメモリ使用量 ✅
+  - 温度 (SwitchBot) ✅
+  - 湿度 (SwitchBot) ✅
+
+**🎓 学び**:
+- Zabbixプラグインv6.2.0のjsonData型制約（cacheTTLはduration文字列必須）
+- Zabbixプラグインはホストの「表示名」でフィルタする（テクニカルホスト名ではない）
+- Zabbix 7.x APIはAuthorizationヘッダー方式（`auth`パラメータ廃止）
+
+### 📅 2026-02-21: Constitution策定 + Phase 3完全完了 + MCP構想策定
+
+**🎯 Step 1: Constitution正式策定**
+
+- ✅ **Constitution v1.1.0 策定**
+  - 5つの核心原則を日本語で正式文書化
+  - MCP/AI自己成長基盤セクションを追加（承認フロー含む）
+  - ガバナンスルール（改訂手順、バージョニング）を明文化
+  - 全テンプレートとの整合性を検証（更新不要を確認）
+
+**🎯 Step 2: Phase 3残タスク完全消化（T019-T038）**
+
+- ✅ **Phase 5完了: アラートルール（T019-T028）**
+  - `config/prometheus/alerts.yml` 新規作成（3グループ、5ルール）
+    - target_health: TargetDown
+    - container_resources: ContainerHighCPU, ContainerHighMemory
+    - prometheus_health: ConfigReloadFailed, TSDBCompactionsFailed
+  - `config/prometheus/prometheus.yml` をリモートと同期 + rule_files追加
+  - `terraform/envs/local/prometheus/terragrunt.hcl` にalerts.yml bind mount追加
+  - `terragrunt apply` でPrometheusコンテナ再作成
+  - アラートテスト: cAdvisor停止 → TargetDown firing → 再起動 → 解消 ✅
+  - ⚠️ 学び: cAdvisorのメトリクスには`name`ラベルがなく`id`ラベル（cgroupパス）を使用
+
+- ✅ **Phase 6完了: Zabbix統合ダッシュボード（T029-T033）**
+  - `config/grafana/provisioning/datasources/datasources.yml` をリモートに反映（Zabbix追加）
+  - `config/grafana/provisioning/dashboards/integrated-monitoring.json` 新規作成
+    - Prometheusセクション: ターゲット状態、アラート数、CPU、メモリ
+    - Zabbixセクション: SwitchBot温度、SwitchBot湿度
+  - Grafana再起動でプロビジョニング完了
+
+- ✅ **Phase 7完了: 仕上げ（T034-T038）**
+  - 全9ワークスペースで "No changes" 確認
+  - SESSION_STATE.md更新
+
+**🎯 新構想: 自己成長型ホームラボ**
+
+- ✅ **MCP/AI自己成長基盤の方向性を議論・決定**
+  - 観測→AI分析→改善提案→人間承認→適用→効果測定のループ
+  - A案（Claude Code + カスタムMCP Servers）を初期アプローチとして採用
+  - 承認フローの安全設計（自動applyはしない、緊急度別のフロー分岐）
+
+- ✅ **ロードマップ策定（Step 1-4）**
+  - Step 1: Speckit Constitution正式策定 ← ✅ 完了
+  - Step 2: Phase 3残タスク消化（T019-T038） ← ✅ 完了
+  - Step 3: MCP自己成長基盤設計（Speckit ADLCフルサイクルの実践題材）
+  - Step 4: MCP Server構築 + Phase 4運用改善と統合
+
+**📁 作成・変更ファイル**:
+- `.specify/memory/constitution.md`（新規策定 v1.1.0）
+- `config/prometheus/alerts.yml`（新規作成）
+- `config/prometheus/prometheus.yml`（更新: リモート同期 + rule_files）
+- `config/grafana/provisioning/dashboards/integrated-monitoring.json`（新規作成）
+- `terraform/envs/local/prometheus/terragrunt.hcl`（更新: alerts.yml bind mount）
+
+**🎓 本日の学びの種**:
+- cAdvisorメトリクスのラベル構造はホスト環境依存（`name` vs `id`）
+- Zabbixプラグインv6.2.0: jsonDataの`cacheTTL`はGo duration文字列（`"60s"`）が必須
+- Zabbixプラグインはホスト「表示名」でフィルタ（テクニカル名ではない）
+- Zabbix 7.x: API認証がAuthorizationヘッダー方式に変更（`auth`パラメータ廃止）
+- 既存の残タスクと新構想は競合ではなく補完関係
+- 安全設計（承認フロー）はアーキテクチャの初期段階で組み込むべき
+
+---
+
+### 📅 2026-02-15 (夜): Speckit ADLC学習の方針決定
+
+**🎯 学習方針の検討と決定**
+
+- ✅ **Speckitスキルの棚卸し**
+  - 利用可能な8つのスキルとADLCフェーズの対応関係を整理
+  - constitution → specify → clarify → plan → tasks → analyze → checklist → implement
+
+- ✅ **現状の正確な把握**
+  - cAdvisor: Terragrunt定義完成済み、デプロイ済み（コミットは未）
+  - Prometheus: cAdvisorジョブはリモートで有効化済み（ローカルのprometheus.ymlはコメントアウトのまま）
+  - Grafana: ダッシュボードはリモートで作成済み（JSONはリポジトリ未配置）
+  - Constitution: テンプレートのまま（2026-01-01に策定した原則が未反映）
+
+- ✅ **学習アプローチの決定**
+  - アプローチB（実践型）を採用: このリポジトリの未実装機能でSpeckitフルサイクルを回す
+  - 題材は次回セッションで選択（Alertmanager導入、Vault本番化など）
+
+**🎓 本日の学びの種**:
+- ADLCは「プロセス」であり、座学より実践で身につく
+- Speckitはそのプロセスをテンプレート駆動で構造化するツール
+- Constitutionが未策定だと、以降の成果物の判断基準がぶれる
+
+---
+
+### 📅 2026-02-15: Phase 3実装開始 - cAdvisorデプロイ完了
+
+**🎯 Phase 3 Phase 1: cAdvisorデプロイ（T001-T005）**
+
+- ✅ **T001: docker_containerモジュール確認**
+  - `bind_mounts`、`privileged`、`cgroupns_mode` すべてサポート済み
+
+- ✅ **T002: cAdvisorサービス定義作成**
+  - `terraform/envs/local/cadvisor/terragrunt.hcl` 新規作成
+  - イメージ: `gcr.io/cadvisor/cadvisor:latest`
+  - ポート: 8081 → 8080（8080はZabbix Webが使用中）
+  - bind_mounts: docker.sock, /sys, /var/lib/docker, /dev/disk
+  - cgroupns_mode: host
+
+- ✅ **T003: terragrunt init**
+  - HCP Terraformに新しいWorkspace自動作成
+  - `monitoring-lab-local-cadvisor`
+
+- ⚠️ **HCP Terraform Workspace設定修正**
+  - 問題: 新規Workspaceがデフォルトで「Remote」実行モード
+  - 解決: HCP Terraform APIで「Local」に変更
+  ```bash
+  curl -X PATCH "https://app.terraform.io/api/v2/organizations/.../workspaces/monitoring-lab-local-cadvisor" \
+    --data '{"data":{"attributes":{"execution-mode":"local"}}}'
+  ```
+
+- ✅ **T004: terragrunt apply**
+  - cAdvisorコンテナ作成成功
+  - Container ID: 8c4e468b...
+
+- ✅ **T005: 稼働確認**
+  - コンテナ: Up (healthy)
+  - メトリクスエンドポイント: http://10.0.0.220:8081/metrics 応答確認
+  - cAdvisorバージョン: v0.55.1
+
+**📊 現在のリモートサーバー状態（9コンテナ稼働）**:
+- monitoring-lab-cadvisor ← **新規追加**
+- monitoring-lab-zbx_server
+- monitoring-lab-zbx_web
+- monitoring-lab-newrelic-infra
+- monitoring-lab-grafana
+- monitoring-lab-zbx_agent
+- monitoring-lab-prometheus
+- monitoring-lab-vault
+- monitoring-lab-postgres
+
+- ✅ **Phase 2完了: 基盤確認（T006-T007）**
+  - Prometheusディレクトリ確認: `/home/ubuntu/monitoring-lab/prometheus/`
+  - Grafanaプロビジョニング確認: `/home/ubuntu/monitoring-lab/grafana/provisioning/`
+
+- ✅ **Phase 3完了: Prometheusスクレイプ設定（T008-T012）**
+  - prometheus.ymlにcAdvisorジョブ追加
+  - `/-/reload`でホットリロード
+  - 両ターゲット（prometheus, cadvisor）が`up`状態
+
+- ✅ **Phase 4完了: Grafanaダッシュボード（T013-T018）**
+  - dashboards.yml（プロビジョニング設定）作成
+  - cadvisor.json（ダッシュボード定義）作成
+  - パネル: CPU使用率、メモリ使用量、ホストネットワークRX/TX、稼働コンテナ数
+  - ⚠️ 注意: ネットワークはコンテナ別ではなくホスト全体
+
+**📁 作成ファイル**:
+- `terraform/envs/local/cadvisor/terragrunt.hcl`
+- リモート: `/home/ubuntu/monitoring-lab/prometheus/prometheus.yml`（更新）
+- リモート: `/home/ubuntu/monitoring-lab/grafana/provisioning/dashboards/dashboards.yml`
+- リモート: `/home/ubuntu/monitoring-lab/grafana/provisioning/dashboards/cadvisor.json`
+
+**🎓 学習成果**:
+- HCP Terraform APIでWorkspace設定を変更する方法
+- 新規Workspaceはデフォルト「Remote」実行→「Local」に変更が必要
+- cAdvisorのbind_mounts設定（Docker監視に必要なパス）
+- cAdvisorメトリクスのラベル構造（`id`ラベル、`name`/`image`なし）
+- Grafanaダッシュボードプロビジョニング（JSON + YAML）
+- Dockerネットワークモードによるメトリクス取得の制限
+
+---
+
+### 📅 2026-01-25 (夕方): Phase 3タスク分解完了 & State整合性修正
+
+**🎯 Phase 3タスク分解**
+
+- ✅ **/speckit.tasks実行**
+  - `.specify/memory/tasks/phase3-tasks.md` 生成（日本語）
+  - 38タスク、7フェーズ構成
+  - MVPスコープ: Phase 1-4（18タスク）
+
+**🔧 State整合性の修正**
+
+- ✅ **terragrunt plan実行で差分検出**
+  - newrelic: ライセンスキー変更（意図的）
+  - zabbix: zbx_server, zbx_webがStateから欠落
+
+- ✅ **Zabbixコンテナのimport実施**
+  ```bash
+  terragrunt import "docker_container.service[\"zbx_server\"]" <full_id>
+  terragrunt import "docker_container.service[\"zbx_web\"]" <full_id>
+  ```
+  - 原因: Terraform外でコンテナが再作成されStateと乖離
+  - 対処: 既存コンテナをフルIDでimport
+
+- ✅ **全ワークスペースで「No changes」確認**
+  - 8ワークスペースすべてで差分なし
+  - データ欠損なし（PostgreSQLは別管理）
+
+**📁 生成ファイル**:
+- `.specify/memory/tasks/phase3-tasks.md`
+
+**📅 次のステップ**: T001からcAdvisorデプロイ開始
+
+---
+
+### 📅 2026-01-25 (午前): HCP Terraform移行確認完了 & Phase 3開始準備
+
+**🎯 HCP Terraform移行の完全確認**
+
+- ✅ **環境変数設定の修正**
+  - `.env`にHCP Terraformトークン追加
+  - `SSH_KEYS_DIR`をWSL2パス（/home/ubuntu/.ssh）に設定
+  - `TF_CLOUD_ORGANIZATION`設定
+
+- ✅ **Terragrunt v0.90.0対応**
+  - 新しいCLI構文（`run --all`）を確認
+  - 全8サービスの初期化成功
+
+- ✅ **HCP Terraform State確認完了**
+  - network: 1リソース (docker_network)
+  - postgres: 2リソース (container + volume)
+  - vault: 1リソース (container)
+  - prometheus: 2リソース (container + volume)
+  - newrelic: 1リソース (container)
+  - zabbix: 4リソース (container×2 + volume×2)
+  - zabbix-agent: 1リソース (container)
+  - grafana: 2リソース (container + volume)
+  - **合計: 14リソース**
+
+- ✅ **ローカルState整理**
+  - バックアップ作成: `terraform-state-backup-20260125.tar.gz`
+  - ローカルStateディレクトリ削除
+  - Terragruntキャッシュクリア
+
+- ✅ **ログレベル調整**
+  - `.env`の`TF_LOG=info`をコメントアウト
+  - 不要なSTDERRログを抑制
+
+---
+
+### 📅 2026-01-18: Spec Kit実環境構築とHCP Terraform移行状態確認開始
+
+**🎯 このPCでのSpec Kit環境完全構築**
+
+- ✅ **WSL2環境でSpec Kit CLIをインストール**
+  - `uv` v0.9.26 インストール（公式インストールスクリプト使用）
+  - `specify-cli` v1.0.0 インストール（uv tool install）
+  - Template v0.0.90 適用
+  - 動作確認完了（specify version, specify --help）
+
+- ✅ **プロジェクト初期化実行**
+  - `specify init . --ai claude --force` 実行
+  - `.claude/commands/` に9個のSpec Kitコマンド配置
+    - speckit.analyze, speckit.checklist, speckit.clarify
+    - speckit.constitution, speckit.implement, speckit.plan
+    - speckit.specify, speckit.tasks, speckit.taskstoissues
+  - 27個のテンプレートエントリ展開完了
+
+- ✅ **スクリーンショット連携基盤の構築**
+  - `.claude/screenshots/` ディレクトリ作成
+  - サブディレクトリ: hcp-terraform/, infrastructure/, debug/
+  - README.md 作成（使い方ガイド）
+  - .gitignore で .claude/ 全体が除外済み確認
+
+**🔍 HCP Terraform移行状態の確認開始**
+
+- ✅ **リモートサーバー（10.0.0.220）の状態確認**
+  - コンテナ8個が稼働中（postgres, vault, prometheus, grafana, zabbix×3, newrelic）
+  - ネットワーク: monitoring-lab-network 存在
+  - ボリューム: 5個存在（grafana, postgres, prometheus, zbx_server, zbx_web）
+  - ⚠️ New Relicのみ再起動ループ（既知の問題）
+
+- ✅ **ローカルStateファイルの確認**
+  - 8個のtfstateファイルが存在
+  - 最終更新: 2025-10-19～2026-01-08（zabbixのみ最新）
+  - 場所: terraform/.terraform-state/local/envs/local/*/terraform.tfstate
+
+- ✅ **HCP Terraform Web UIの確認（部分的）**
+  - Organization: k1981-learning-lab 存在確認
+  - Workspace: 9個存在（8サービス + 1ルート）
+  - `monitoring-lab-local-network` 詳細確認:
+    - ✅ Resources: 1 (docker_network)
+    - ✅ Created: Dec 31 2025
+    - ✅ Execution mode: Local
+    - ✅ Terraform: v1.14.1
+
+**⏸️ 次回に持ち越し**
+
+- ⚠️ **HCP Terraform移行確認の完了**（残りのWorkspace確認）
+  - [ ] `monitoring-lab-local-postgres` のState確認（期待: Resources 2）
+  - [ ] `monitoring-lab-local-zabbix` のState確認（期待: Resources 4）
+  - [ ] 確認完了後、ローカルStateの安全な削除
+
+- 📅 **Phase 3のタスク分解**
+  - [ ] `/speckit.tasks` コマンド実行（Phase 3監視機能拡充）
+  - [ ] タスクリスト生成: `.specify/memory/tasks/phase3-tasks.md`
+
+**📁 作成ファイル一覧**:
+- `.claude/screenshots/` ディレクトリ（hcp-terraform/, infrastructure/, debug/）
+- `.claude/screenshots/README.md`
+- `.claude/screenshots/hcp-terraform/001.png`（Workspaceリスト）
+- `.claude/screenshots/hcp-terraform/002.png`（network Workspace詳細）
+
+**🎓 学習成果**:
+- Spec Kit CLIの実環境での構築手順を理解
+- Claude Codeでのスクリーンショット連携方法を確立
+- HCP Terraform Stateの安全な確認手順を実践
+- 別PCで実施した作業の引き継ぎ方法を学習
 
 ### 📅 2026-01-01: Spec Kit導入完了（Phase 2.5完了） 🎉
 
@@ -146,58 +495,97 @@ Phase 4: 📅 未着手（運用改善）
 
 ---
 
-## 🚧 次回セッションでやること
+## 🚧 今後の予定（2026-02-21 策定）
 
-**Phase 2.5完了！Phase 3実装計画完成！次回: タスク分解から開始**
+### 🗺️ ロードマップ概要
 
-### 🎯 Phase 3: 監視機能拡充（次のステップ）
-
-**前提**:
-- ✅ `.specify/memory/specs/phase3-monitoring-enhancement.md` （要件定義完了）
-- ✅ `.specify/memory/plans/phase3-implementation-plan.md` （実装計画完了）
-
-#### ステップ1: Tasks（タスク分解） ← **次回ここから開始**
-
-**推奨コマンド**: `/speckit.tasks Phase 3をタスクに分解してください`
-
-3. **実装タスクに分解** - `.specify/memory/tasks/phase3-tasks.md`
-   - [ ] P1-1: Prometheusスクレイプ設定追加
-   - [ ] P1-2: Prometheus設定リロード
-   - [ ] P1-3: Grafanaダッシュボード作成
-   - [ ] P1-4: Grafanaプロビジョニング設定
-   - [ ] P2-1: アラートルール定義
-   - [ ] P2-2: アラートルールテスト
-
-#### ステップ3: Implement（実装）
-
-4. **Spec-Drivenで実装**
-   - [ ] 各タスクをTerraform/Terragruntで実装
-   - [ ] `terragrunt plan` で差分確認
-   - [ ] `terragrunt apply` でデプロイ
-   - [ ] 成功基準（SC-001〜SC-006）の検証
-
-#### ステップ4: Validate（検証）
-
-5. **Phase 3完了基準の確認**
-   - [ ] Prometheusで全コンテナのメトリクス収集確認
-   - [ ] Grafanaダッシュボードの表示確認
-   - [ ] アラートルールの動作確認
-   - [ ] Git管理とHCP Terraform差分なし確認
-
-**推奨**: 各ステップで `/speckit.plan`、`/speckit.tasks`、`/speckit.implement` スラッシュコマンドを活用
-
-**参考ドキュメント**:
-- [Phase 3 仕様書](.specify/memory/specs/phase3-monitoring-enhancement.md)
-- [既存インフラ仕様](.specify/memory/specs/existing-infrastructure.md)
-- [Constitution](.specify/memory/constitution.md)
+```
+Step 1: Speckit Constitution正式策定        ← 既存の宿題
+    ↓
+Step 2: Phase 3残タスク消化（T019-T038）     ← 既存の残り
+    ↓
+Step 3: MCP自己成長基盤の設計（Speckit ADLC） ← 新構想
+    ↓
+Step 4: MCP Server構築 + Phase 4運用改善     ← 新構想 + 既存Phase統合
+```
 
 ---
 
-### その後の選択肢
+### ✅ Step 1: Speckit Constitution正式策定 — 完了
 
-**Phase 3**: 監視機能拡充（Spec-Drivenで実施）
-**Phase 4**: 運用改善（GitHub Actions、ドキュメント整備）
-**セキュリティ強化**: Vault本番モード、TLS設定
+- [x] Constitution v1.1.0 策定・日本語化
+- [x] 5原則 + MCP/AI自己成長基盤セクション + ガバナンス
+
+---
+
+### ✅ Step 2: Phase 3残タスク消化 — 完了
+
+**達成状況**: 38/38タスク完了（100%）
+
+- [x] Phase 5: アラートルール（T019-T028）
+- [x] Phase 6: Zabbix統合ダッシュボード（T029-T033）
+- [x] Phase 7: 仕上げ（T034-T038）
+
+---
+
+### 📌 Step 3: MCP自己成長基盤の設計（Speckit ADLCフルサイクル実践）
+
+**方針**: MCP基盤構築をSpeckitフルサイクルの実践題材にする（一石三鳥）
+
+**Speckitフルサイクル（学習 + 実装）**:
+1. `/speckit.specify` → MCP自己成長基盤の要件定義
+2. `/speckit.clarify` → 仕様の曖昧点洗い出し
+3. `/speckit.plan` → 実装計画
+4. `/speckit.tasks` → タスク分解
+5. `/speckit.analyze` → 整合性チェック
+6. `/speckit.checklist` → チェックリスト生成
+7. `/speckit.implement` → 実装実行
+
+**構想の核心**:
+```
+観測(Prometheus/Zabbix) → AI分析 → 改善提案 → 【人間の承認】 → 適用 → 効果測定
+```
+
+**承認フロー（安全設計）**:
+| 緊急度 | フロー |
+|--------|--------|
+| 低（リソース最適化等） | PR作成 → レビュー → マージ → apply |
+| 中（メモリ逼迫予兆等） | PR作成 + Slack通知で注意喚起 |
+| 高（サービスダウン等） | Slack通知 + AI診断レポート（自動applyはしない） |
+
+---
+
+### 📌 Step 4: MCP Server構築（Phase 4運用改善と統合）
+
+**構築予定のMCP Server**:
+
+| 優先度 | MCP Server | できること |
+|--------|-----------|-----------|
+| 1 | **Docker MCP** | コンテナ操作・ログ取得・状態監視 |
+| 2 | **Prometheus MCP** | PromQLメトリクス取得・AI傾向分析 |
+| 3 | **Terragrunt MCP** | plan/apply実行・設定読み取り |
+
+**アーキテクチャ（A案: Claude Code + カスタムMCP Servers）**:
+```
+Claude Code
+  ├── MCP: docker-server      (コンテナ操作・ログ取得)
+  ├── MCP: prometheus-server   (メトリクスクエリ)
+  ├── MCP: terraform-server    (IaC操作)
+  └── MCP: filesystem-server   (設定ファイル編集)
+```
+
+**将来展望**:
+- B案: 定期実行エージェント（週次インフラレビュー自動化）
+- C案: イベント駆動型自律エージェント（アラートトリガー → 自動診断）
+
+---
+
+### 参考ドキュメント
+
+- [Phase 3 タスクリスト](.specify/memory/tasks/phase3-tasks.md) ← **実装ガイド**
+- [Phase 3 仕様書](.specify/memory/specs/phase3-monitoring-enhancement.md)
+- [Phase 3 実装計画](.specify/memory/plans/phase3-implementation-plan.md)
+- [Constitution](.specify/memory/constitution.md)
 
 ### 準備: 次回セッション開始時の確認事項
 
@@ -271,7 +659,7 @@ Phase 4: 📅 未着手（運用改善）
 - **Organization**: `k1981-learning-lab`
 - **API Token**: `.env`ファイルに保存（変数名: `TF_TOKEN_app_terraform_io`）
 - **Workspace命名規則**: `${project_name}-${environment}-${service_name}`
-- **作成済みWorkspace（8個）**:
+- **作成済みWorkspace（9個）**:
   1. `monitoring-lab-local-network` - Dockerネットワーク
   2. `monitoring-lab-local-postgres` - PostgreSQL
   3. `monitoring-lab-local-vault` - Vault開発モード
@@ -280,6 +668,7 @@ Phase 4: 📅 未着手（運用改善）
   6. `monitoring-lab-local-zabbix` - Zabbix Server + Web
   7. `monitoring-lab-local-zabbix-agent` - Zabbix Agent2
   8. `monitoring-lab-local-grafana` - Grafana
+  9. `monitoring-lab-local-cadvisor` - cAdvisor（コンテナメトリクス）← **新規追加**
 - **Execution Mode**: すべて"Local"に設定済み
 - **State状態**: すべてのWorkspaceで差分なし（No changes）
 
