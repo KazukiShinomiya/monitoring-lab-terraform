@@ -67,6 +67,11 @@ inputs = {
           source    = "/home/ubuntu/monitoring-lab/prometheus/prometheus.yml"
           target    = "/etc/prometheus/prometheus.yml"
           read_only = true
+        },
+        {
+          source    = "/home/ubuntu/monitoring-lab/prometheus/alerts.yml"
+          target    = "/etc/prometheus/alerts.yml"
+          read_only = true
         }
       ]
     }
