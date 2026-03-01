@@ -1,6 +1,6 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2026-02-21 18:30
+**最終更新**: 2026-03-01 18:30 (ブランチ: 001-mcp-self-growth | Step 2.6 SNMP監視基盤完成)
 
 ---
 
@@ -48,6 +48,183 @@ Phase 5: 📅 構想中（MCP/AI自己成長基盤）
 ---
 
 ## ✅ 最近完了した作業（直近3セッション）
+
+### 📅 2026-03-01: Step 2.6 SNMP監視基盤 完全実装
+
+**🎯 物理機器監視 Phase 1 全完了**
+
+- ✅ **RTX830 SNMP設定投入**
+  - コマンド構文を `snmp community monlab ro` → `snmp community read-only monlab` に修正
+    - Yamaha RTX830の正しい構文: access typeがキーワード（read-only / read-write）
+  - `snmp host 10.0.0.220 monlab` でSNMPアクセスを許可
+    - デフォルトは `snmp host none`（全拒否）→ 明示的に監視サーバーIPを許可が必要
+  - RTX830はSNMPv1のみサポート（v2cは不可）を確認
+  - `save` 実行して設定保存完了
+
+- ✅ **Synology NAS SNMP有効化**
+  - DSM UI で SNMPv1/v2c を有効化（community: monlab）
+  - 10.0.0.220 からの snmpwalk で疎通確認済み
+
+- ✅ **snmp.yml修正（SNMP Exporter v0.30.1対応）**
+  - **破壊的変更**: v0.30.1から `modules` ブロック内の `auth:` フィールドが廃止
+  - 各モジュールから `auth: monlab_v2` を削除
+  - `auths` トップレベルセクションに `monlab_v1`（version: 1）を追加
+  - 認証はURLパラメータ（`?auth=monlab_v1`）経由のみで指定
+
+- ✅ **HCP Terraform Workspace「Local」モード設定**
+  - `snmp-exporter` Workspace がデフォルト「Remote」で作成されていた
+  - API PATCH で `execution-mode: local` に変更（毎回必要）
+  ```bash
+  curl -X PATCH "https://app.terraform.io/api/v2/organizations/k1981-learning-lab/workspaces/monitoring-lab-local-snmp-exporter" \
+    -H "Authorization: Bearer $TF_TOKEN" \
+    --data '{"data":{"attributes":{"execution-mode":"local"}}}'
+  ```
+
+- ✅ **SNMP Exporter コンテナデプロイ（Terragrunt）**
+  - SSH鍵パス修正: `.env` の `SSH_PRIVATE_KEY=~/.ssh/monitoring_lab_key` → `/root/.ssh/id_rsa`
+  - Terragrunt コンテナ不安定問題（vault-dev依存）の回避策:
+    ```bash
+    docker compose run --rm terragrunt sh -c 'mkdir -p /root/.ssh && cp /tmp/ssh-keys/id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa && cd /workspace/terraform/envs/local/snmp-exporter && terragrunt apply -auto-approve'
+    ```
+  - `monitoring-lab-snmp-exporter` コンテナ起動確認（ポート 9116）
+
+- ✅ **Prometheus設定更新・反映**
+  - `snmp_rtx830`: auth `monlab_v2` → `monlab_v1` に修正
+  - リモートサーバーに scp + Prometheus ホットリロード
+  - RTX830・Synology 両ターゲット `up` 確認
+
+- ✅ **Grafana Physical Devicesダッシュボード作成**
+  - `config/grafana/provisioning/dashboards/physical-devices.json` 新規作成
+  - datasource UID: `PBFA97CFB590B2093`（実際のUIDを`/api/datasources`で確認）
+  - RTX830セクション: ifOperStatus, sysUpTime, WAN/LANトラフィック
+  - Synologyセクション: CPU使用率, Volume1使用量, メモリ, Uptime, ネットワーク
+  - リモートに scp → Grafana 再起動でプロビジョニング確認
+
+- ✅ **WAN1 Down の謎を解明**
+  - RTX830 WAN1 = PPPoE（pp1）インターフェース（IIJ PPPoE、サイト間VPN用）
+  - 通常インターネット = IPoE（LAN2 → tunnel1）
+  - VPN未使用時は WAN1 Down が正常、インターネット接続に影響なし
+
+**📁 作成・更新ファイル**:
+- `config/snmp/snmp.yml`（更新: v0.30.1対応, monlab_v1追加）
+- `config/prometheus/prometheus.yml`（更新: auth修正）
+- `config/grafana/provisioning/dashboards/physical-devices.json`（新規作成）
+- `.env`（更新: SSH_PRIVATE_KEY パス修正）
+
+**🎓 本日の学びの種**:
+- Yamaha RTX830 SNMP: `snmp community read-only <name>`、`snmp host <ip> <community>` が必須
+- RTX830はSNMPv1のみ対応（v2cはタイムアウト）
+- SNMP Exporter v0.30.1: モジュール内 `auth:` 廃止 → URLパラメータのみ
+- Terragrunt コンテナの安定起動には vault-dev が必要（または one-shot コマンドで回避）
+- HCP Terraform 新規 Workspace はデフォルト「Remote」→ 毎回 API で「Local」に変更
+
+---
+
+### 📅 2026-02-28: RTX830 CLIハンズオン & ドキュメント作成
+
+**🎯 RTX830への初接続と学習**
+
+- ✅ **RTX830にSSHで初接続成功**
+  - `show config` で現在の設定を全確認
+  - SNMP設定がゼロ（クリーンな状態）を確認
+  - WAN側フィルターがUDP 161を通さない（インターネットからSNMP不可）を確認
+  - LAN1側にフィルターなし（10.0.0.220 → 10.0.0.1 のSNMPは通る）を確認
+
+- ✅ **SNMPコマンドの理解**
+  - `snmp community monlab ro` の各引数の意味を習得
+  - `snmp host` はトラップ送信先の設定である可能性が高い（ポーリングには不要かも）
+  - `snmpwalk` コマンドによる疎通確認手順を理解
+
+- ✅ **パフォーマンス・セキュリティ分析**
+  - パフォーマンス影響：ほぼゼロ（UDP軽量通信、60秒間隔）
+  - セキュリティ：自宅LAN環境では許容範囲内
+  - 将来の改善案（SNMPv3、IP制限）も整理
+
+- ✅ **学習ノート作成**
+  - `.specify/memory/notes/rtx830-snmp-setup.md` 新規作成
+  - コマンド解説・セキュリティ分析・安全な作業手順を記録
+
+**📁 作成ファイル**:
+- `.specify/memory/notes/rtx830-snmp-setup.md`（新規）
+
+**📅 次に着手するアクション**:
+1. RTX830に `snmp community monlab ro` を投入（save なし）
+2. `show snmp` で確認
+3. WSL2から `snmpwalk -v2c -c monlab 10.0.0.1 sysDescr.0` で疎通テスト
+4. 成功したら `save`
+5. `snmp host` が必要かどうかはテスト結果で判断
+
+---
+
+### 📅 2026-02-22 (2): 物理機器監視 実装ファイル作成
+
+**🎯 実装ファイルをすべて作成（デプロイ待ち）**
+
+- ✅ **IPアドレス・設定値確定**
+  - RTX830: `10.0.0.1`
+  - Synology NAS: `10.0.0.200`
+  - SNMPコミュニティ名: `monlab`（v2c, read-only）
+  - Zabbixは今回対象外（Prometheusで一元管理）
+
+- ✅ **`config/snmp/snmp.yml` 新規作成**
+  - `if_mib` モジュール: RTX830用（インターフェーストラフィック・リンク状態）
+  - `synology` モジュール: Synology NAS用（CPU・ストレージ・ネットワーク）
+  - 認証: `monlab_v2`（community: monlab, version: 2）
+
+- ✅ **`terraform/envs/local/snmp-exporter/terragrunt.hcl` 新規作成**
+  - イメージ: `prom/snmp-exporter:latest`
+  - ポート: 9116
+  - snmp.yml を `/home/ubuntu/monitoring-lab/snmp/snmp.yml` からbind mount
+
+- ✅ **`config/prometheus/prometheus.yml` 更新**
+  - `snmp_rtx830` ジョブ追加（module: if_mib, interval: 60s）
+  - `snmp_synology` ジョブ追加（module: synology, interval: 60s）
+
+**📁 作成・更新ファイル**:
+- `config/snmp/snmp.yml`（新規）
+- `terraform/envs/local/snmp-exporter/terragrunt.hcl`（新規）
+- `config/prometheus/prometheus.yml`（更新: SNMPジョブ×2追加）
+
+**📅 次に着手するアクション（Step順）**:
+1. **Step A**: WSL2から `scp config/snmp/snmp.yml ubuntu@10.0.0.220:/home/ubuntu/monitoring-lab/snmp/`
+2. **Step B**: `terragrunt init` & HCP WorkspaceをLocalモードに変更 & `terragrunt apply`
+3. **Step C**: **Synology** DSMでSNMP有効化（コミュニティ: `monlab`）→ 疎通確認
+4. **Step D**: **RTX830** CLIコマンド投入（承認後）← 慎重に
+5. **Step E**: `prometheus.yml` をリモートに反映してリロード
+6. **Step F**: Grafana Physical Devicesダッシュボード作成
+
+**🔲 RTX830 投入予定コマンド（承認待ち）**:
+```
+snmp community monlab ro
+snmp host 10.0.0.220 community monlab version 2
+save
+```
+ロールバック: `no snmp community monlab`
+
+### 📅 2026-02-22: 物理機器監視 設計策定
+
+**🎯 対象機器の調査・設計**
+
+- ✅ **監視対象の確定**
+  - ルーター/スイッチ: Yamaha RTX830
+  - NAS: Synology（1台、Docker非対応モデル）
+  - Linux マシン群（直接インストール方式）
+  - Windows マシン群（直接インストール方式）
+
+- ✅ **アーキテクチャ設計**
+  - RTX830 + Synology → SNMP Exporter（新規コンテナ、Terragrunt管理）経由でPrometheus収集
+  - Linux → Node Exporter（systemd、:9100）
+  - Windows → Windows Exporter（Windowsサービス、:9182）
+
+- ✅ **設計書作成**
+  - `.specify/memory/specs/physical-device-monitoring.md` 新規作成
+  - Terragrunt定義スケッチ、prometheus.yml追加内容、Grafanaダッシュボード計画を含む
+  - 3フェーズの実装計画（SNMP基盤 → Linux → Windows）
+
+**📁 作成ファイル**:
+- `.specify/memory/specs/physical-device-monitoring.md`
+
+---
 
 ### 📅 2026-02-21 (2): 統合ダッシュボード修正
 
@@ -495,7 +672,7 @@ Phase 5: 📅 構想中（MCP/AI自己成長基盤）
 
 ---
 
-## 🚧 今後の予定（2026-02-21 策定）
+## 🚧 今後の予定（2026-02-22 更新）
 
 ### 🗺️ ロードマップ概要
 
@@ -525,6 +702,32 @@ Step 4: MCP Server構築 + Phase 4運用改善     ← 新構想 + 既存Phase�
 - [x] Phase 5: アラートルール（T019-T028）
 - [x] Phase 6: Zabbix統合ダッシュボード（T029-T033）
 - [x] Phase 7: 仕上げ（T034-T038）
+
+---
+
+### 📌 Step 2.6: 物理機器監視（新規追加）
+
+**設計完了 / 実装待ち**
+
+詳細: [physical-device-monitoring.md](.specify/memory/specs/physical-device-monitoring.md)
+
+**Phase 1: SNMP基盤（RTX830 + Synology）** ← ✅ 完了（2026-03-01）
+- [x] RTX830 SNMP設定投入（`snmp community read-only monlab` + `snmp host`）
+- [x] Synology DSM SNMP有効化
+- [x] `config/snmp/snmp.yml` 作成・v0.30.1対応修正
+- [x] Terragrunt: `snmp-exporter` コンテナ定義作成・apply
+- [x] `prometheus.yml` 更新（SNMPジョブ追加 + auth修正）
+- [x] Grafana Physical Devicesダッシュボード作成
+
+**Phase 2: Linux マシン監視**
+- [ ] 対象IPリスト確定後、Node Exporterインストール・設定
+
+**Phase 3: Windows マシン監視**
+- [ ] 対象IPリスト確定後、Windows Exporterインストール・設定
+
+**事前確認事項**:
+- RTX830 / Synology / Linux / Windows マシンのIPアドレス
+- SNMPコミュニティ名の方針
 
 ---
 
@@ -582,7 +785,8 @@ Claude Code
 
 ### 参考ドキュメント
 
-- [Phase 3 タスクリスト](.specify/memory/tasks/phase3-tasks.md) ← **実装ガイド**
+- [物理機器監視 設計書](.specify/memory/specs/physical-device-monitoring.md) ← **次のターゲット**
+- [Phase 3 タスクリスト](.specify/memory/tasks/phase3-tasks.md)
 - [Phase 3 仕様書](.specify/memory/specs/phase3-monitoring-enhancement.md)
 - [Phase 3 実装計画](.specify/memory/plans/phase3-implementation-plan.md)
 - [Constitution](.specify/memory/constitution.md)
@@ -643,6 +847,20 @@ Claude Code
 - Token値は絶対にGitにコミットしない
 - 漏洩時は即座に再発行が必要
 
+### SNMP Exporter関連
+
+**注意**: SNMP Exporter v0.30.1 破壊的変更
+- `modules` ブロック内の `auth:` フィールドが廃止（フィールド非認識エラーでクラッシュ）
+- 認証はURLパラメータ `?auth=<auth_name>` でのみ指定（prometheus.yml の `params` セクション）
+- `auths:` トップレベルセクションは引き続き必要
+
+**問題**: Terragrunt コンテナが vault-dev 依存で不安定
+- **原因**: docker-compose.yml の entrypoint で vault-dev が up 状態でないとコンテナ終了
+- **回避策**: `docker compose up -d vault` してから terragrunt を起動、または one-shot 実行
+  ```bash
+  docker compose run --rm terragrunt sh -c 'cp /tmp/ssh-keys/id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa && cd /workspace/.../snmp-exporter && terragrunt apply -auto-approve'
+  ```
+
 ### State移行関連
 
 **注意**: State移行の不可逆性
@@ -668,7 +886,8 @@ Claude Code
   6. `monitoring-lab-local-zabbix` - Zabbix Server + Web
   7. `monitoring-lab-local-zabbix-agent` - Zabbix Agent2
   8. `monitoring-lab-local-grafana` - Grafana
-  9. `monitoring-lab-local-cadvisor` - cAdvisor（コンテナメトリクス）← **新規追加**
+  9. `monitoring-lab-local-cadvisor` - cAdvisor（コンテナメトリクス）
+  10. `monitoring-lab-local-snmp-exporter` - SNMP Exporter（物理機器監視）← **新規追加**
 - **Execution Mode**: すべて"Local"に設定済み
 - **State状態**: すべてのWorkspaceで差分なし（No changes）
 
@@ -688,7 +907,7 @@ Claude Code
 
 - **ホスト**: 10.0.0.220
 - **ユーザー**: ubuntu
-- **SSH鍵**: `~/.ssh/monitoring_lab_key` (WSL2内に配置予定)
+- **SSH鍵**: `/root/.ssh/id_rsa`（コンテナ内）、`~/.ssh/id_rsa`（WSL2内）
 
 ---
 
