@@ -75,3 +75,44 @@ groups:
         annotations:
           summary: "TSDB圧縮失敗"
           description: "PrometheusのTSDB圧縮が失敗しました。ディスク容量を確認してください。"
+
+  # ==========================================
+  # グループ4: 物理機器監視（RTX830 + Synology NAS）
+  # ==========================================
+  # 注意: デバイス到達不能は既存の TargetDown (グループ1) がカバー済み。
+  # このグループはデバイスが応答している前提で、機器固有の状態を監視する。
+  - name: physical_devices
+    rules:
+      # RTX830 LANインターフェースの運用停止
+      # WAN1 (pp1/PPPoE) は通常 Down のため除外し、LAN[0-9]+ のみ対象
+      - alert: RTX830LANInterfaceDown
+        expr: ifOperStatus{job="snmp_rtx830", ifDescr=~"LAN[0-9]+.*"} == 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RTX830 LANポートダウン: {{ $labels.ifDescr }}"
+          description: "RTX830のインターフェース {{ $labels.ifDescr }} が運用停止 (ifOperStatus=2) 状態です。2分以上継続しています。"
+
+      # Synology NAS CPU高負荷
+      - alert: SynologyHighCPU
+        expr: hrProcessorLoad{job="snmp_synology"} > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Synology NAS CPU高負荷"
+          description: "Synology NASのCPU使用率が {{ $value }}% に達しています（5分間継続）。"
+
+      # Synology NAS ディスク使用率高
+      # hrStorageDescr が "Volume" を含むエントリのみ対象（RAM・スワップを除外）
+      - alert: SynologyDiskHighUsage
+        expr: |
+          (hrStorageUsed{job="snmp_synology", hrStorageDescr=~".*[Vv]olume.*"} /
+           hrStorageSize{job="snmp_synology", hrStorageDescr=~".*[Vv]olume.*"}) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Synology NAS ディスク残量不足: {{ $labels.hrStorageDescr }}"
+          description: "ボリューム {{ $labels.hrStorageDescr }} の使用率が {{ $value | printf \"%.1f\" }}% です。"
