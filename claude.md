@@ -1153,3 +1153,10 @@ MIT License
 **Happy Learning! 🎓**
 
 *最終更新: 2025-10-18*
+
+## Active Technologies
+- TypeScript 5.x + Node.js v22.20.0（Windows Git Bash環境で利用可能） (001-mcp-self-growth)
+- ローカルJSON/Markdownファイル（`.specify/memory/proposals/`、`.specify/memory/approvals/`） (001-mcp-self-growth)
+
+## Recent Changes
+- 001-mcp-self-growth: Added TypeScript 5.x + Node.js v22.20.0（Windows Git Bash環境で利用可能）
