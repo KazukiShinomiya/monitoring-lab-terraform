@@ -75,6 +75,9 @@ logs/
 *.bak
 *.backup
 
+# Claude Code 一時作業ディレクトリ
+tmpclaude-*
+
 # ----- Docker関連 -----
 # docker-compose override（個人設定）
 docker-compose.override.yml
@@ -89,6 +92,9 @@ docker-compose.override.yml
 
 # GitHub Actions実行時の一時ファイル
 .runner/
+
+# ----- バックアップファイル -----
+terraform-state-backup-*.tar.gz
 
 # ----- AI Agent関連 -----
 # Claude Code エージェントフォルダ（認証情報、プライベート情報を含む可能性）
