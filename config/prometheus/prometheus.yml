@@ -2,7 +2,7 @@
 # Prometheus Configuration
 # ==========================================
 # このファイルはPrometheusのメトリクス収集設定です。
-# 配置先: prometheus_config ボリューム内の prometheus.yml
+# 配置先: /etc/prometheus/prometheus.yml (bind mount)
 
 # ----- グローバル設定 -----
 global:
@@ -20,18 +20,9 @@ global:
     cluster: 'monitoring-lab'
     environment: 'local'
 
-# ----- アラートマネージャー設定 -----
-# Alertmanagerをデプロイしている場合に有効化
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets:
-#             - 'alertmanager:9093'
-
 # ----- ルールファイルの読み込み -----
-# アラートルールや記録ルールを定義したYAMLファイル
 rule_files:
-  # - '/etc/prometheus/rules/*.yml'
+  - '/etc/prometheus/alerts.yml'
 
 # ----- スクレイプ設定 -----
 scrape_configs:
@@ -41,96 +32,80 @@ scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  # ==========================================
+  # Job 2: cAdvisor（Dockerコンテナメトリクス）
+  # ==========================================
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker-host'
+
+  # ==========================================
+  # Job 3: SNMP - RTX830 ルーター
+  # ==========================================
+  # SNMP Exporter経由でYamaha RTX830のインターフェーストラフィックを収集
+  # モジュール if_mib: WAN/LAN 送受信バイト数・リンク状態
+  - job_name: 'snmp_rtx830'
+    static_configs:
+      - targets: ['YOUR_ROUTER_IP']
         labels:
-          service: 'prometheus'
-          tier: 'monitoring'
+          device_type: router
+          device_name: rtx830
+          device_vendor: yamaha
+    metrics_path: /snmp
+    params:
+      module: [if_mib]
+      auth: [monlab_v1]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmp-exporter:9116
+    # SNMP は応答が遅い場合があるため、タイムアウトを長めに設定
+    scrape_timeout: 30s
+    scrape_interval: 60s
 
   # ==========================================
-  # Job 2: Node Exporter（ホストメトリクス）
+  # Job 4: SNMP - Synology NAS
   # ==========================================
-  # Node Exporterをデプロイしている場合に有効化
-  # - job_name: 'node-exporter'
-  #   static_configs:
-  #     - targets: ['node-exporter:9100']
-  #       labels:
-  #         service: 'node-exporter'
-  #         tier: 'infrastructure'
+  # SNMP Exporter経由でSynology NASのストレージ・CPU・ネットワークを収集
+  # モジュール synology: CPU使用率・ストレージ使用量・ネットワークトラフィック
+  - job_name: 'snmp_synology'
+    static_configs:
+      - targets: ['YOUR_NAS_IP']
+        labels:
+          device_type: nas
+          device_name: synology
+    metrics_path: /snmp
+    params:
+      module: [synology]
+      auth: [monlab_v2]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmp-exporter:9116
+    scrape_timeout: 30s
+    scrape_interval: 60s
 
   # ==========================================
-  # Job 3: cAdvisor（Dockerコンテナメトリクス）
+  # Job 5: Node Exporter（Linuxホストメトリクス）
   # ==========================================
-  # cAdvisorをデプロイしている場合に有効化
-  # - job_name: 'cadvisor'
-  #   static_configs:
-  #     - targets: ['cadvisor:8080']
-  #       labels:
-  #         service: 'cadvisor'
-  #         tier: 'infrastructure'
-
-  # ==========================================
-  # Job 4: Zabbix Server（オプション）
-  # ==========================================
-  # Zabbix ServerがPrometheusメトリクスを公開している場合
-  # - job_name: 'zabbix'
-  #   static_configs:
-  #     - targets: ['zbx_server:10051']
-  #       labels:
-  #         service: 'zabbix'
-  #         tier: 'monitoring'
-
-  # ==========================================
-  # Job 5: PostgreSQL Exporter（オプション）
-  # ==========================================
-  # PostgreSQL Exporterをデプロイしている場合
-  # - job_name: 'postgres'
-  #   static_configs:
-  #     - targets: ['postgres-exporter:9187']
-  #       labels:
-  #         service: 'postgres'
-  #         tier: 'database'
-
-  # ==========================================
-  # Job 6: Grafana（オプション）
-  # ==========================================
-  # Grafanaの内部メトリクスを収集
-  # - job_name: 'grafana'
-  #   static_configs:
-  #     - targets: ['grafana:3000']
-  #       labels:
-  #         service: 'grafana'
-  #         tier: 'monitoring'
-
-# ==========================================
-# リモートWrite設定（オプション）
-# ==========================================
-# 長期保存用のリモートストレージに送信する場合
-# remote_write:
-#   - url: 'http://remote-storage:9201/write'
-#     queue_config:
-#       capacity: 10000
-#       max_shards: 5
-#       max_samples_per_send: 1000
-
-# ==========================================
-# リモートRead設定（オプション）
-# ==========================================
-# リモートストレージからデータを読み取る場合
-# remote_read:
-#   - url: 'http://remote-storage:9201/read'
-
-# ==========================================
-# 設定適用方法
-# ==========================================
-# 1. Prometheusコンテナが起動している状態で:
-#    docker cp prometheus.yml monitoring-lab-prometheus:/etc/prometheus/
-#
-# 2. 設定をリロード:
-#    curl -X POST http://localhost:9090/-/reload
-#    ※ --web.enable-lifecycle フラグが必要
-#
-# 3. または、Prometheusを再起動:
-#    docker restart monitoring-lab-prometheus
-#
-# 確認方法:
-# - Prometheus UI → Status → Configuration
-# - Prometheus UI → Status → Targets
+  # 各Linuxマシンに直接インストールしたNode Exporterからメトリクス収集
+  # CPU・メモリ・ディスク・ネットワーク等のホストレベルメトリクス
+  - job_name: 'node_exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'YOUR_LINUX_HOST_1:9100'
+          - 'YOUR_LINUX_HOST_2:9100'
+        labels:
+          env: 'local'
