@@ -95,3 +95,17 @@ scrape_configs:
         replacement: snmp-exporter:9116
     scrape_timeout: 30s
     scrape_interval: 60s
+
+  # ==========================================
+  # Job 5: Node Exporter（Linuxホストメトリクス）
+  # ==========================================
+  # 各Linuxマシンに直接インストールしたNode Exporterからメトリクス収集
+  # CPU・メモリ・ディスク・ネットワーク等のホストレベルメトリクス
+  - job_name: 'node_exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - '10.0.0.250:9100'
+          - '10.0.0.254:9100'
+        labels:
+          env: 'local'
