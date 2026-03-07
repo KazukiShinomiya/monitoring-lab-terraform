@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "docker": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--mount", "type=bind,src=/home/ubuntu/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly",
+        "monitoring-lab-docker-mcp"
+      ]
+    }
+  }
+}

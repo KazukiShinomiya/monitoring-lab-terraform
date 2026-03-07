@@ -1,124 +1,206 @@
+<!--
+  同期影響レポート
+  ================
+  バージョン変更: 0.0.0 (テンプレート) → 1.1.0
+  バンプ理由: MINOR - 初期5原則の正式化(1.0.0) +
+    MCP/AI自己成長基盤セクションの追加(1.1.0)
+
+  変更された原則:
+    - [PRINCIPLE_1_NAME] → I. Infrastructure as Code (IaC)
+    - [PRINCIPLE_2_NAME] → II. セキュリティファースト
+    - [PRINCIPLE_3_NAME] → III. ドキュメント駆動開発
+    - [PRINCIPLE_4_NAME] → IV. モジュール化とDRY原則
+    - [PRINCIPLE_5_NAME] → V. 自己監視の可観測性
+
+  追加セクション:
+    - 技術的制約（技術スタック、環境、State管理）
+    - 開発ワークフロー（Speckit ADLCプロセス）
+    - MCP/AI自己成長基盤（新構想、承認フロー）
+    - ガバナンス（改訂手順、バージョニング、コンプライアンス）
+
+  削除セクション: なし
+
+  テンプレート影響:
+    - .specify/templates/plan-template.md        ✅ 更新不要
+      (Constitution Checkは動的プレースホルダー)
+    - .specify/templates/spec-template.md         ✅ 更新不要
+      (Constitution参照なし)
+    - .specify/templates/tasks-template.md        ✅ 更新不要
+      (Constitution参照なし)
+    - .specify/templates/checklist-template.md    ✅ 更新不要
+      (Constitution参照なし)
+    - .specify/templates/agent-file-template.md   ✅ 更新不要
+      (Constitution参照なし)
+
+  保留事項: なし
+-->
+
 # Monitoring Lab Constitution
 
-## Core Principles
+## 核心原則
 
-### I. Infrastructure as Code (IaC) - NON-NEGOTIABLE
-すべてのインフラリソースはコードで管理する。手動での変更は禁止。
-- Terraform/Terragruntによる宣言的な定義
-- Git管理によるバージョン管理と変更履歴の追跡
-- State管理はHCP Terraform（リモートバックエンド）を使用
-- 変更は必ず`plan` → レビュー → `apply`のフローを経る
+### I. Infrastructure as Code (IaC) - 絶対原則
+
+すべてのインフラ変更はTerraform/Terragruntで管理しなければならない。
+リモートDocker環境（10.0.0.220）への手動変更は禁止とする。
+緊急復旧時のみ例外を認めるが、同一セッション内にIaCへ反映すること。
+
+- すべてのリソースは `terraform/envs/local/` にTerragruntサービス定義
+  として記述し、再利用可能モジュールを参照すること。
+- apply作業の完了後、`terragrunt plan` が全ワークスペースで
+  "No changes" を示すこと。
+- StateはHCP Terraform（Organization: `k1981-learning-lab`）に保存
+  すること。ローカルStateファイルの使用は禁止とする。
+- すべての変更はバージョン管理上のdiffとして表現可能であること。
 
 ### II. セキュリティファースト（段階的アプローチ）
-学習用プロジェクトだが、本番移行を見据えたセキュリティ設計を段階的に導入。
-- Phase 1-2: 基本構築（開発モード、平文パスワード許容）
-- Phase 3-4: セキュリティ強化（Vault本番モード、TLS/SSL）
-- Phase 5: 本番化準備（強力な認証、ネットワーク分離）
-- `.env`ファイルは絶対にGitコミットしない（`.gitignore`で保護）
-- 機密情報はVaultで管理（将来的に100%移行）
+
+学習環境であっても、基本的なセキュリティ衛生を維持すること。
+セキュリティ強化は一度にすべてではなく、計画的な段階で進める。
+
+- シークレット（APIトークン、パスワード、ライセンスキー）は `.env` に
+  格納し、Gitにコミットしてはならない。`.gitignore` に `.env` を
+  含めること。
+- Vault統合は段階的に進める。現在はdev-mode、将来的にproduction-mode
+  へ移行する。各段階は実装前に文書化すること。
+- デフォルト認証情報（例: Zabbix `Admin/zabbix`）は現在の学習段階
+  では許容するが、技術的負債として追跡すること。
+- AIが提案した変更の自動適用は禁止とする。すべての変更に人間の
+  明示的な承認を要する（下記MCP/AIセクション参照）。
 
 ### III. ドキュメント駆動開発
-仕様とドキュメントを実装と同等に重視する。
-- `.specify/memory/`に仕様・計画・タスクを記録
-- `CLAUDE.md`にプロジェクト概要とガイドラインを維持
-- `SESSION_STATE.md`でセッション状態を追跡
-- すべての変更は目的と理由を明記
+
+実装は「仕様策定 → 計画 → タスク分解 → 実装」の順序に従うこと。
+事前の仕様なしにコード変更を行ってはならない。
+
+- Speckit ADLCプロセスを正式なワークフローとする:
+  `specify → clarify → plan → tasks → analyze → checklist → implement`
+- 機能実装の開始前に、仕様書を作成すること。
+- 設計上の意思決定は、根拠と検討した代替案とともに
+  該当するplanドキュメントに記録すること。
+- セッション終了時に `.claude/SESSION_STATE.md` へ進捗を記録すること。
 
 ### IV. モジュール化とDRY原則
-再利用可能なモジュールを作成し、重複を排除する。
-- 共通設定は`terraform/root.hcl`に集約
-- サービス固有設定のみ`terraform/envs/local/*/terragrunt.hcl`に記述
-- `terraform/modules/`に再利用可能なモジュールを配置
-- 依存関係は明示的に`dependency`ブロックで定義
 
-### V. 監視の可観測性（Self-Monitoring）
-監視基盤自体も監視対象とする。
-- Zabbix Agent2でZabbix Server自身を監視
-- Prometheusでコンテナメトリクスを収集
-- Grafanaで統合ダッシュボードを構築
-- ログとメトリクスの永続化を考慮
+Terraformモジュールは再利用すること。共有モジュールで対応可能な
+場合、コードの重複は禁止とする。
 
-## Technology Stack Constraints
+- すべてのコンテナ定義には `docker_container` モジュール
+  （`terraform/modules/docker_container/`）を使用すること。
+  インラインでの `docker_container` リソース定義は禁止とする。
+- 新規モジュールの作成は、既存モジュールでは合理的に対応できない
+  場合のみ許可する。その判断は文書化すること。
+- 環境ごとに異なる設定は `terraform/envs/<env>/terragrunt.hcl` に、
+  共通の設定は `terraform/root.hcl` に配置すること。
 
-### 必須技術スタック
-- **IaC**: Terraform 1.x + Terragrunt 0.x
-- **Container Runtime**: Docker Engine（WSL2経由）
-- **State Backend**: HCP Terraform (app.terraform.io)
-- **Secrets Management**: HashiCorp Vault
-- **監視**: Zabbix + Prometheus + Grafana + New Relic
+### V. 自己監視の可観測性（Self-Monitoring）
 
-### 環境構成
-- **開発環境**: WSL2 (Ubuntu) + Docker Compose
-- **実行環境**: リモートDockerホスト (10.0.0.220)
-- **SSH接続**: Ed25519鍵認証（パスワード認証禁止）
+監視基盤自体を監視すること。監視スタックの盲点は許容しない。
 
-### 禁止事項
-- Docker Desktopの使用（WSL2のDocker Engineを使用）
-- Stateファイルのローカル管理（HCP Terraform必須）
-- 手動でのコンテナ起動・停止（すべてTerraform経由）
+- 本プロジェクトがデプロイするすべてのコンテナは、Prometheusの
+  スクレイプ対象またはZabbixの監視対象（もしくは両方）とすること。
+- すべての重要なサービスメトリクスに対してGrafanaダッシュボードを
+  用意すること。
+- サービスダウンおよびリソース逼迫に対するアラートルールを
+  定義すること（Phase 3スコープ）。
+- スタックに新しいサービスを追加する際は、同一タスク内で
+  監視設定も含めること。
 
-## Development Workflow
+## 技術的制約
 
-### Spec-Driven Development Process
-1. **Specify** - `.specify/memory/specs/`に仕様を作成
-2. **Plan** - `.specify/memory/plans/`に実装計画を作成
-3. **Tasks** - `.specify/memory/tasks/`にタスクを分解
-4. **Implement** - コードを実装
-5. **Validate** - `terragrunt plan`で差分なしを確認
+| 制約 | 値 |
+|------|-----|
+| IaCツール | Terraform + Terragrunt |
+| コンテナランタイム | リモートホスト（10.0.0.220）上のDocker Engine |
+| 開発環境 | WSL2 (Ubuntu-24.04) on Windows 11 |
+| Stateバックエンド | HCP Terraform (`k1981-learning-lab`) |
+| 監視スタック | Prometheus, Zabbix, Grafana, cAdvisor |
+| シークレット管理 | HashiCorp Vault（dev-mode、段階的にproductionへ移行） |
+| データベース | PostgreSQL 15 (Alpine) |
+| CI/CD | 未構築（Phase 4スコープ） |
 
-### Phase-Based Progression
-- **Phase 0**: 環境準備（完了）
-- **Phase 1**: 基本インフラ構築（完了）
-- **Phase 2**: HCP Terraform移行（完了）
-- **Phase 2.5**: Spec Kit導入（進行中）
-- **Phase 3**: 監視機能拡充（次回）
-- **Phase 4**: 運用改善
-- **Phase 5**: 本番化準備
+## 開発ワークフロー
 
-### Quality Gates
-- すべての変更は`terragrunt plan`で差分を確認
-- HCP Terraformで全Workspaceの状態を追跡
-- セッション記録を`SESSION_STATE.md`に残す
-- 重要なマイルストーンはGitコミット
+本プロジェクトは **Speckit ADLC**（Application Development Life Cycle）に従う:
 
-## Observability & Monitoring Standards
+```
+/speckit.constitution  →  プロジェクト原則（本ファイル）
+        ↓
+/speckit.specify       →  機能仕様書（spec.md）
+        ↓
+/speckit.clarify       →  曖昧点の解消（Q&Aをspecに反映）
+        ↓
+/speckit.plan          →  実装計画（plan.md）
+        ↓
+/speckit.tasks         →  タスク分解（tasks.md）
+        ↓
+/speckit.analyze       →  成果物間の整合性チェック
+        ↓
+/speckit.checklist     →  実装前チェックリスト
+        ↓
+/speckit.implement     →  実行
+```
 
-### 監視対象
-- **SwitchBot温湿度計**: Zabbix External Check（4台）
-- **Dockerコンテナ**: New Relic Docker統合（8台）
-- **ホストOS**: New Relic Infrastructure Agent
-- **Zabbix自身**: Zabbix Agent2による自己監視
+- すべての非自明な機能は、少なくとも specify → plan → tasks を
+  経由すること。
+- 軽微な修正（タイポ、1行の設定変更等）はフルサイクルを省略して
+  よいが、SESSION_STATE.mdへの記録は必須とする。
 
-### メトリクス収集
-- Prometheusで15秒間隔でスクレイプ
-- データ保持期間: 15日間（初期設定）
-- Grafanaで統合ダッシュボード提供
+## MCP/AI自己成長基盤
 
-### ログ管理
-- コンテナログは`docker logs`で確認可能
-- 重要なイベントはセッション記録に記載
+本セクションは、AIを活用したインフラの自律的進化を可能にする
+MCP（Model Context Protocol）統合の方針を定める。
 
-## Governance
+### ビジョン
 
-### 憲法の優先順位
-この憲法はすべてのコーディング規約・慣習に優先する。
-- 原則に反する変更は拒否される
-- 例外が必要な場合は憲法の改訂を検討
+```
+観測 → AI分析 → 改善提案 → 人間の承認 → 適用 → 効果測定
+```
 
-### 改訂プロセス
-1. 変更の必要性を`.specify/memory/`に文書化
-2. 影響範囲を分析
-3. 移行計画を作成
-4. 改訂を実施し、バージョンアップ
+### 承認フロー（絶対原則）
 
-### コンプライアンス
-- すべての変更はこの憲法への準拠を確認
-- Spec-Driven Developmentのプロセスを遵守
-- セッション間の継続性を`SESSION_STATE.md`で維持
+AIが生成した変更の自動適用は一切禁止する。承認フローは緊急度に
+応じて以下のように分岐する:
 
----
+| 緊急度 | 例 | フロー |
+|--------|-----|--------|
+| 低 | リソース最適化、設定チューニング | PR作成 → レビュー → マージ → apply |
+| 中 | メモリ逼迫の予兆 | PR作成 + 通知で注意喚起 |
+| 高 | サービスダウン | 通知 + AI診断レポート（自動applyはしない） |
 
-**Version**: 1.0.0
-**Ratified**: 2026-01-01
-**Last Amended**: 2026-01-01
-**Project**: Monitoring Lab - オブザーバビリティ基盤学習プロジェクト
+### MCP Serverスコープ（計画）
+
+| 優先度 | MCP Server | 機能 |
+|--------|-----------|------|
+| 1 | Docker MCP | コンテナ操作、ログ取得、状態監視 |
+| 2 | Prometheus MCP | PromQLクエリ、AIによる傾向分析 |
+| 3 | Terragrunt MCP | plan/apply実行、設定の読み取り |
+
+### 制約条件
+
+- MCP Serverは読み取り中心・書き込み慎重の設計とすること。
+  書き込み操作には人間の明示的な確認を必須とする。
+- AI分析結果にはエビデンス（メトリクス、ログ、タイムスタンプ）を
+  含めること。根拠のない提案は却下すること。
+- AIが提案したすべての変更と、その承認/却下の結果を
+  監査可能な形でログに記録すること。
+
+## ガバナンス
+
+- 本Constitutionはすべてのアドホックな慣行に優先する。
+  ここに記載された原則と矛盾する慣行がある場合、
+  Constitutionが優先される。
+- 改訂には以下を要する:
+  (1) 文書化された根拠
+  (2) 仕様書/計画書/タスクへの下流影響のレビュー
+  (3) セマンティックバージョニングに基づくバージョンバンプ
+- バージョニングポリシー:
+  - MAJOR: 原則の削除または後方互換性のない再定義
+  - MINOR: 新しい原則やセクションの追加、または大幅な拡充
+  - PATCH: 表現の明確化、タイポ修正、非意味的な改善
+- すべての実装計画に「Constitution Check」ゲートを設け、
+  作業開始前にすべての原則への準拠を検証すること。
+- コンプライアンスレビュー: 新しい機能サイクルの開始時に
+  本文書を再読し、原則が暗黙のうちに違反されていないか確認すること。
+
+**Version**: 1.1.0 | **策定日**: 2026-01-01 | **最終改訂日**: 2026-02-21
