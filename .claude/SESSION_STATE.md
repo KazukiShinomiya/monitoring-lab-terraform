@@ -1,6 +1,6 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2026-03-01 18:30 (ブランチ: 001-mcp-self-growth | Step 2.6 SNMP監視基盤完成)
+**最終更新**: 2026-03-04 (ブランチ: 001-mcp-self-growth | Agent Teams検証完了)
 
 ---
 
@@ -48,6 +48,56 @@ Phase 5: 📅 構想中（MCP/AI自己成長基盤）
 ---
 
 ## ✅ 最近完了した作業（直近3セッション）
+
+### 📅 2026-03-04: Claude Code Agent Teams 検証
+
+**🎯 Agent Teamsの有用性確認**
+
+- ✅ **Agent Teams 有効化確認**
+  - PowerShell: `$env:CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"`
+  - Git Bash: `export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+  - Windows環境ではin-processモードで動作（tmux不要）
+
+- ✅ **検証実施: Step 2.6 Phase 2+3 並列ドキュメント生成**
+  - Teammate A: Linux Node Exporter調査 → `docs/node-exporter-setup.md`
+  - Teammate B: Windows Exporter調査 → `docs/windows-exporter-setup.md`
+  - 所要時間: 3分35秒（2タスク並列）
+  - 品質: プロジェクトIP・コンテナ名を正しく反映した即戦力ドキュメント
+
+- ✅ **有用性判定**
+  - 独立した並列タスク: 積極採用（競合ゼロ・時間短縮効果大）
+  - 多角的レビュー: 採用（Architecture/Security/Syntaxを同時検証）
+  - 依存関係ありタスク・単純作業: 不採用
+
+**📁 作成ファイル**:
+- `docs/node-exporter-setup.md`（Node Exporter v1.10.2、Ubuntu/Debian向け）
+- `docs/windows-exporter-setup.md`（Windows Exporter v0.31.3）
+
+**📅 推奨適用先（今後）**:
+- Step 4 MCP Server 3本同時構築
+- Terragruntデプロイ前の多角レビュー
+- Step 2.6 Phase 2+3（上記ドキュメントをそのまま活用可能）
+
+---
+
+### 📅 2026-03-03: 物理機器アラートルール追加 + Git整理
+
+- ✅ **Git cleanup commit** (`3b9a118`)
+  - `.claude/` の古いセッションサマリー削除（gitignore対象に移行済み）
+  - `settings.local.json` 承認コマンド蓄積分をコミット
+  - `claude.md` Speckit追記分をコミット
+
+- ✅ **物理機器監視アラート追加** (`5902dd9`)
+  - `config/prometheus/alerts.yml` に `physical_devices` グループを追加
+  - `RTX830LANInterfaceDown`: LAN[0-9]+ が ifOperStatus=2 (for: 2m) ← WAN1(PPPoE)除外済み
+  - `SynologyHighCPU`: hrProcessorLoad > 80% (for: 5m)
+  - `SynologyDiskHighUsage`: Volume使用率 > 85% (for: 10m) ← RAM/スワップ除外済み
+  - リモートサーバーに scp 転送 + Prometheus ホットリロードで反映確認
+
+**📁 更新ファイル**:
+- `config/prometheus/alerts.yml`（physical_devicesグループ追加）
+
+---
 
 ### 📅 2026-03-01: Step 2.6 SNMP監視基盤 完全実装
 

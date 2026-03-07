@@ -191,7 +191,12 @@
       "Bash(git checkout:*)",
       "Bash(bash:*)",
       "Bash(node:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "WebFetch(domain:prometheus.io)",
+      "Read(//mnt/e/work/**)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
