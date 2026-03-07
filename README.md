@@ -7,7 +7,12 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 
 ## 📐 アーキテクチャ構成図
 
-> `docs/monitoring-stack.drawio` を draw.io（[app.diagrams.net](https://app.diagrams.net) または VS Code の Draw.io 拡張機能）で開いてください。
+> `docs/` 以下の `.drawio` ファイルを draw.io（[app.diagrams.net](https://app.diagrams.net) または VS Code の Draw.io 拡張機能）で開いてください。
+
+| ファイル | 内容 |
+|---------|------|
+| `docs/network-topology.drawio` | **ネットワークトポロジー** — 物理構成・LAN/WAN・クラウド接続 |
+| `docs/monitoring-stack.drawio` | **監視スタック** — コンポーネント間のデータフロー・ポート番号 |
 
 **概要:**
 
@@ -84,7 +89,8 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 ```
 E:\work\labo/
 ├── docs/
-│   └── monitoring-stack.drawio     # アーキテクチャ構成図
+│   ├── network-topology.drawio     # ネットワークトポロジー図（物理構成・LAN/WAN）
+│   └── monitoring-stack.drawio     # 監視スタック構成図（コンポーネント・データフロー）
 ├── config/
 │   ├── prometheus/
 │   │   ├── prometheus.yml          # スクレイプ設定（SNMP / cAdvisor / Prometheus self）
