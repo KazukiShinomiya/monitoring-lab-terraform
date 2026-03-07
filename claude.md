@@ -1157,6 +1157,8 @@ MIT License
 ## Active Technologies
 - TypeScript 5.x + Node.js v22.20.0（Windows Git Bash環境で利用可能） (001-mcp-self-growth)
 - ローカルJSON/Markdownファイル（`.specify/memory/proposals/`、`.specify/memory/approvals/`） (001-mcp-self-growth)
+- TypeScript 5.x + Node.js v22.20.0 (LTS) + `@modelcontextprotocol/sdk` (MCP通信), `zod` (スキーマバリデーション) (002-docker-mcp-server)
+- N/A（ステートレス設計） (002-docker-mcp-server)
 
 ## Recent Changes
 - 001-mcp-self-growth: Added TypeScript 5.x + Node.js v22.20.0（Windows Git Bash環境で利用可能）
