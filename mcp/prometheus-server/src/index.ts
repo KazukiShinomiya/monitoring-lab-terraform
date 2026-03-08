@@ -6,9 +6,10 @@ import { queryRangeTool, handleQueryRange } from './tools/query-range.js';
 import { getActiveAlertsTool, handleGetActiveAlerts } from './tools/get-active-alerts.js';
 import { compareMetricsTool, handleCompareMetrics } from './tools/compare-metrics.js';
 import { generateProposalTool, handleGenerateProposal } from './tools/generate-proposal.js';
+import { listProposalsTool, handleListProposals } from './tools/list-proposals.js';
 
 const server = new Server(
-  { name: 'monitoring-lab-prometheus-mcp', version: '1.0.0' },
+  { name: 'monitoring-lab-prometheus-mcp', version: '1.1.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -19,6 +20,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     getActiveAlertsTool,
     compareMetricsTool,
     generateProposalTool,
+    listProposalsTool,
   ],
 }));
 
@@ -45,6 +47,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       );
     case 'generate_proposal':
       return handleGenerateProposal();
+    case 'list_proposals':
+      return handleListProposals(a as { status?: string });
     default:
       throw new Error(`Unknown tool: ${name}`);
   }

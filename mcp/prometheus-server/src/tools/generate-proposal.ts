@@ -1,12 +1,28 @@
 import { randomUUID } from 'crypto';
 import { getAlerts, query } from '../prometheus-client.js';
 import { classifyUrgency } from '../urgency.js';
-import { saveProposal } from '../storage.js';
+import { saveProposal, listProposals, updateProposalStatus, getProposal } from '../storage.js';
 import type { Proposal, Evidence } from '../types.js';
+
+/** cAdvisorの id ラベル（/docker/abc123...）からコンテナ名を抽出する */
+function parseContainerName(metric: Record<string, string>): string {
+  if (metric['name']) return metric['name'];
+  if (metric['container_name']) return metric['container_name'];
+  if (metric['image']) {
+    // イメージ名の最後のコンポーネントをタグなしで返す
+    const img = metric['image'].split('/').pop() ?? metric['image'];
+    return img.split(':')[0];
+  }
+  // id ラベルが /docker/HASH または /system.slice/docker-HASH.scope 形式に対応
+  const id = metric['id'] ?? '';
+  const m = id.match(/docker[/-]([a-f0-9]{12})/);
+  if (m) return `container:${m[1]}`;
+  return 'unknown';
+}
 
 export const generateProposalTool = {
   name: 'generate_proposal',
-  description: '現在のインフラ状態を分析して改善提案を生成・保存する。緊急度（low/medium/high）を自動分類する。',
+  description: '現在のインフラ状態を分析して改善提案を生成・保存する。緊急度（low/medium/high）を自動分類する。解消済みアラートの提案は自動でresolvedにする。',
   inputSchema: {
     type: 'object' as const,
     properties: {},
@@ -19,13 +35,65 @@ export async function handleGenerateProposal() {
     // アラートとメモリ使用率を並列取得
     const [alerts, memResult] = await Promise.all([
       getAlerts(),
-      query('container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 80').catch(() => ({ result: [] as { metric: Record<string, string>; value: [number, string] }[] })),
+      query('(container_memory_usage_bytes{id=~"/system.slice/docker-.+\\\\.scope"} / container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+\\\\.scope"} * 100 > 80) and container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+\\\\.scope"} > 0').catch(() => ({ result: [] as { metric: Record<string, string>; value: [number, string] }[] })),
     ]);
 
     const firingAlerts = alerts.filter(a => a.state === 'firing');
+    const firingAlertNames = new Set(firingAlerts.map(a => a.labels['alertname'] ?? ''));
+
+    // Fix 1: cAdvisorのidラベルにも対応したコンテナ名抽出
     const highMemContainers = (memResult as { result: Array<{ metric: Record<string, string>; value: [number, string] }> }).result.map(
-      r => r.metric['name'] ?? r.metric['container_name'] ?? 'unknown'
+      r => parseContainerName(r.metric)
     );
+
+    // Fix 3: 既存のpending提案のうち、アラートが解消されたものをresolvedに更新
+    const index = await listProposals();
+    const pendingItems = index.items.filter(i => i.status === 'pending');
+    const autoResolved: string[] = [];
+    for (const item of pendingItems) {
+      const proposal = await getProposal(item.id);
+      if (!proposal) continue;
+      const alertEvidence = proposal.evidence.find(e => e.type === 'alert');
+      if (!alertEvidence) continue;
+      // evidenceのアラート名を抽出して、現在も発火中かチェック
+      const evidenceAlertNames = alertEvidence.data
+        .split('\n')
+        .map(line => line.split(':')[0].trim())
+        .filter(Boolean);
+      const allResolved = evidenceAlertNames.every(name => !firingAlertNames.has(name));
+      if (allResolved && evidenceAlertNames.length > 0) {
+        await updateProposalStatus(item.id, 'applied');
+        autoResolved.push(item.id.slice(0, 8));
+      }
+    }
+
+    // Fix 2: 同一アラート名でpendingな提案が既にあればスキップ
+    const updatedIndex = await listProposals();
+    const stillPendingItems = updatedIndex.items.filter(i => i.status === 'pending');
+    if (firingAlerts.length > 0 && stillPendingItems.length > 0) {
+      for (const item of stillPendingItems) {
+        const proposal = await getProposal(item.id);
+        if (!proposal) continue;
+        const alertEvidence = proposal.evidence.find(e => e.type === 'alert');
+        if (!alertEvidence) continue;
+        const existingNames = alertEvidence.data
+          .split('\n')
+          .map(line => line.split(':')[0].trim())
+          .filter(Boolean);
+        const overlap = existingNames.some(name => firingAlertNames.has(name));
+        if (overlap) {
+          const resolvedMsg = autoResolved.length > 0
+            ? `\n\n✅ 解消済みとしてresolvedに更新した提案: ${autoResolved.join(', ')}`
+            : '';
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `同じアラートに対するpending提案が既に存在します（ID: ${item.id.slice(0, 8)}...）。重複生成をスキップしました。${resolvedMsg}\n\n既存提案を確認するには list_proposals を使用してください。`,
+            }],
+          };
+        }
+      }
+    }
 
     const urgency = classifyUrgency(
       firingAlerts.map(a => ({ name: a.labels['alertname'] ?? '', state: 'firing' as const })),
@@ -67,7 +135,10 @@ export async function handleGenerateProposal() {
     if (urgency === 'high' && firingAlerts.length > 0) {
       const alert = firingAlerts[0];
       target = alert.labels['instance'] ?? alert.labels['job'] ?? 'infrastructure';
-      content = `## 緊急: アラート発火中\n\n**${alert.labels['alertname']}** が発火しています。\n\n${alert.annotations['description'] ?? alert.annotations['summary'] ?? ''}\n\n対象: ${target}\n\n### 推奨アクション\n1. 対象サービスのログを確認する（docker MCP の docker_get_logs を使用）\n2. リソース使用状況を確認する（docker MCP の docker_get_stats を使用）\n3. 必要に応じてサービスを再起動する`;
+      const allAlertSummaries = firingAlerts
+        .map(a => `- **${a.labels['alertname']}**: ${a.annotations['description'] ?? a.annotations['summary'] ?? ''}`)
+        .join('\n');
+      content = `## 緊急: アラート発火中（${firingAlerts.length}件）\n\n${allAlertSummaries}\n\n### 推奨アクション\n1. 対象サービスのログを確認する（docker MCP の docker_get_logs を使用）\n2. リソース使用状況を確認する（docker MCP の docker_get_stats を使用）\n3. 必要に応じてサービスを再起動する`;
       expectedEffect = 'アラートの解消とサービスの正常化';
     } else if (urgency === 'medium' && highMemContainers.length > 0) {
       target = highMemContainers[0];
@@ -93,7 +164,10 @@ export async function handleGenerateProposal() {
     await saveProposal(proposal);
 
     const urgencyLabel = { high: '🔴 高', medium: '🟡 中', low: '🟢 低' }[urgency];
-    const summary = `改善提案を生成しました（緊急度: ${urgencyLabel}）\n\nID: ${proposal.id}\n対象: ${target}\n\n${content}`;
+    const resolvedMsg = autoResolved.length > 0
+      ? `\n\n✅ 解消済みとしてresolvedに更新した提案: ${autoResolved.join(', ')}`
+      : '';
+    const summary = `改善提案を生成しました（緊急度: ${urgencyLabel}）${resolvedMsg}\n\nID: ${proposal.id}\n対象: ${target}\n\n${content}`;
 
     return {
       content: [{ type: 'text' as const, text: summary }],
