@@ -13,7 +13,7 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 |---------|------|
 | `docs/network-topology.drawio` | **ネットワークトポロジー** — 物理構成・LAN/WAN・クラウド接続 |
 | `docs/monitoring-stack.drawio` | **監視スタック** — コンポーネント間のデータフロー・ポート番号 |
-| `docs/mcp-servers.md` | **MCP Servers** — Claude Code 連携の使い方・ツールリファレンス |
+| [`docs/mcp-servers.md`](docs/mcp-servers.md) | **MCP Servers** — Claude Code 連携の使い方・ツールリファレンス |
 
 **概要:**
 
@@ -141,7 +141,7 @@ E:\work\labo/
 │   └── commands/                   # Speckit スラッシュコマンド
 ├── docker-compose.yml               # 開発環境（Terragrunt / Vault）
 ├── .env.example                     # 環境変数テンプレート
-├── CLAUDE.md                        # Claude Code 用プロジェクト概要
+├── [CLAUDE.md](CLAUDE.md)               # Claude Code 用プロジェクト概要
 └── README.md                        # このファイル
 ```
 
