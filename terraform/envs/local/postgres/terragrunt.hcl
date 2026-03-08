@@ -50,9 +50,9 @@ inputs = {
         # ユーザー名
         "POSTGRES_USER=zabbix",
 
-        # パスワード（本来はVaultから取得すべき）
+        # パスワード（.envファイルの POSTGRES_PASSWORD から取得）
         # TODO: Vault連携実装後に vault_kv_secret から取得するように変更
-        "POSTGRES_PASSWORD=YOUR_POSTGRES_PASSWORD",
+        "POSTGRES_PASSWORD=${get_env("POSTGRES_PASSWORD", "")}",
 
         # 文字エンコーディング（日本語対応）
         "POSTGRES_INITDB_ARGS=--encoding=UTF-8 --locale=C",

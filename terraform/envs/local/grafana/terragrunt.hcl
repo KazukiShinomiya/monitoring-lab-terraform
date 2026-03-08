@@ -60,7 +60,7 @@ inputs = {
       # 環境変数設定
       env = [
         "GF_SECURITY_ADMIN_USER=admin",
-        "GF_SECURITY_ADMIN_PASSWORD=admin",
+        "GF_SECURITY_ADMIN_PASSWORD=${get_env("GRAFANA_ADMIN_PASSWORD", "")}",
         "GF_SECURITY_ALLOW_EMBEDDING=true",
         "GF_AUTH_ANONYMOUS_ENABLED=false",
         "GF_SERVER_ROOT_URL=http://localhost:3000",
