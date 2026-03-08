@@ -6,9 +6,10 @@ import { getServiceConfigTool, handleGetServiceConfig } from './tools/get-servic
 import { listWorkspacesTool, handleListWorkspaces } from './tools/list-workspaces.js';
 import { applyServiceTool, handleApplyService } from './tools/apply-service.js';
 import { rollbackServiceTool, handleRollbackService } from './tools/rollback-service.js';
+import { createApprovalTool, handleCreateApproval } from './tools/create-approval.js';
 
 const server = new Server(
-  { name: 'monitoring-lab-terragrunt-mcp', version: '1.0.0' },
+  { name: 'monitoring-lab-terragrunt-mcp', version: '1.1.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -17,6 +18,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     planServiceTool,
     getServiceConfigTool,
     listWorkspacesTool,
+    createApprovalTool,
     applyServiceTool,
     rollbackServiceTool,
   ],
@@ -35,7 +37,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     case 'apply_service':
       return handleApplyService(a['service'] as string, a['approval_id'] as string);
     case 'rollback_service':
-      return handleRollbackService(a['approval_id'] as string);
+      return handleRollbackService(a['approval_id'] as string, a['confirmed'] as boolean);
+    case 'create_approval':
+      return handleCreateApproval(
+        a['proposal_id'] as string,
+        a['decision'] as 'approved' | 'rejected',
+        a['decided_by'] as string | undefined,
+      );
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
