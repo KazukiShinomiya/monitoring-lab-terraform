@@ -196,9 +196,16 @@
       "Read(//mnt/e/work/**)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh --json)",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npm:*)",
+      "Bash(cmd:*)",
+      "Bash(npm ci:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "docker"
+  ]
 }

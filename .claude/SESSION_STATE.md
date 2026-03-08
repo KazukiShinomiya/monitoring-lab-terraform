@@ -1,6 +1,6 @@
 # 🔄 セッション継続用ステータスファイル
 
-**最終更新**: 2026-03-04 (ブランチ: 001-mcp-self-growth | Agent Teams検証完了)
+**最終更新**: 2026-03-08 (ブランチ: 003-prometheus-terragrunt-mcp | MCP自己成長基盤 バグ修正 + ドキュメント整備)
 
 ---
 
@@ -38,16 +38,113 @@ Phase 3: ✅ 完了（監視機能拡充）
   ✅ Phase 6完了: Zabbix統合ダッシュボード（T029-T033）
   ✅ Phase 7完了: 仕上げ（T034-T038）
 Phase 4: 📅 未着手（運用改善 → MCP自己成長基盤と統合予定）
-Phase 5: 📅 構想中（MCP/AI自己成長基盤）
+Phase 5: ✅ 完了（MCP/AI自己成長基盤）
   ✅ Step 1: Speckit Constitution正式策定（v1.1.0）
   ✅ Step 2: Phase 3残タスク消化（T019-T038 全完了）
-  📅 Step 3: MCP自己成長基盤設計（Speckit ADLCフルサイクル実践）
-  📅 Step 4: MCP Server構築（Docker → Prometheus → Terragrunt）
+  ✅ Step 3: MCP自己成長基盤設計（tasks.md生成 2026-03-08）
+  ✅ Step 4: MCP Server構築完了（Docker + Prometheus + Terragrunt 計14ツール）
 ```
 
 ---
 
 ## ✅ 最近完了した作業（直近3セッション）
+
+### 📅 2026-03-08 (2): MCP Server バグ修正 + ドキュメント整備 + PR #12
+
+**🎯 今日の戦果**
+
+- ✅ **MCP Server 動作確認**: 3サーバーが実際に動くことを確認。Synology NASディスク満杯アラートをリアルタイム検知
+- ✅ **Prometheus MCP 3点修正** (`fix: prometheus-mcp`)
+  - Fix 1: unknown コンテナ名 → cAdvisor の `/system.slice/docker-HASH.scope` 形式に対応した `parseContainerName()` 追加
+  - Fix 2: 重複提案 → 同一アラート名で pending 提案が既存の場合はスキップ
+  - Fix 3: pending 放置 → アラート解消時に自動で `applied` 更新 + `list_proposals` ツール追加（6ツール体制）
+  - メモリ監視クエリ修正: Dockerコンテナかつ `limit > 0` のみに限定（+Inf 問題解消）
+- ✅ **Docker/Terragrunt MCP 6点修正** (`fix: mcp 全6点`)
+  - Fix 1: `create_approval` ツール新規追加（承認フロー完全化）
+  - Fix 2: `rollback_service` シェルインジェクション修正（base64経由の安全な書き戻し）
+  - Fix 3: サービス名の二重管理解消（`VALID_SERVICES` から自動生成）
+  - Fix 4: `docker_get_stats` を `monitoring-lab-` コンテナのみにフィルタ
+  - Fix 5: `rollback_service` に `confirmed: true` 確認を追加
+  - Fix 6: `docker_get_logs` に `since` 時間フィルタパラメータを追加
+- ✅ **`docs/mcp-servers.md` 新規作成**（全ツールリファレンス・ワークフロー・セットアップ手順）
+- ✅ **README.md 更新**（MCP 3本を✅完了に、ディレクトリ構成追加、Node Exporter 完了反映）
+- ✅ **PR #12 作成**: `003-prometheus-terragrunt-mcp` → `master`
+
+**📁 作成・更新ファイル**:
+- `mcp/prometheus-server/src/tools/generate-proposal.ts`（Fix 1-3 + クエリ修正）
+- `mcp/prometheus-server/src/tools/list-proposals.ts`（新規）
+- `mcp/prometheus-server/src/index.ts`（v1.1.0）
+- `mcp/terragrunt-server/src/tools/create-approval.ts`（新規）
+- `mcp/terragrunt-server/src/tools/rollback-service.ts`（Fix 2+5）
+- `mcp/terragrunt-server/src/tools/plan-service.ts`（Fix 3）
+- `mcp/terragrunt-server/src/tools/get-service-config.ts`（Fix 3）
+- `mcp/terragrunt-server/src/tools/apply-service.ts`（Fix 3）
+- `mcp/terragrunt-server/src/index.ts`（v1.1.0）
+- `mcp/docker-server/src/docker-client.ts`（Fix 4+6）
+- `mcp/docker-server/src/tools/get-logs.ts`（Fix 6）
+- `mcp/docker-server/src/index.ts`（v1.1.0）
+- `docs/mcp-servers.md`（新規）
+- `README.md`（更新）
+
+**🎓 本日の学び**:
+- cAdvisor の id ラベル形式はホスト環境依存（`/docker/HASH` vs `/system.slice/docker-HASH.scope`）
+- `container_spec_memory_limit_bytes=0` は「制限なし」を意味し、除算すると `+Inf` になる
+- シェルインジェクション対策には base64 エンコード経由が安全
+
+---
+
+### 📅 2026-03-08: Prometheus MCP + Terragrunt MCP 実装 + PR #11
+
+**🎯 今日の戦果**
+
+- ✅ **Step 2.6 Phase 2 完了確認**: Node Exporter（10.0.0.250, 10.0.0.254）が既に稼働済みであることを確認
+- ✅ **Step 2.6 Phase 3 スコープ外決定**: 常時起動Windowsマシンなし → Windows Exporter不要
+- ✅ **specs/001-mcp-self-growth/tasks.md 生成**（/speckit.tasks 実行、全39タスク）
+- ✅ **Prometheus MCP Server 実装** (`mcp/prometheus-server/`) — 5ツール
+  - `query_metrics`, `query_range`, `get_active_alerts`, `compare_metrics`, `generate_proposal`
+  - Dockerイメージ `monitoring-lab-prometheus-mcp` ビルド・動作確認済み
+- ✅ **Terragrunt MCP Server 実装** (`mcp/terragrunt-server/`) — 5ツール
+  - `plan_service`, `get_service_config`, `list_workspaces`, `apply_service`, `rollback_service`
+  - Dockerイメージ `monitoring-lab-terragrunt-mcp` ビルド・動作確認済み
+- ✅ **`.mcp.json` 更新**: `prometheus` + `terragrunt` エントリ追加
+- ✅ **`.gitignore` 更新**: `.mcp-data/`, `mcp/*/dist/` 追加
+- ✅ **`generate_proposal` 動作確認**: Synology NASディスク残量不足を検知→緊急度「高」の提案を `.mcp-data/proposals/` に保存
+- ✅ **PR #11 作成**: `003-prometheus-terragrunt-mcp` → `master`
+
+**📁 作成ファイル**:
+- `mcp/prometheus-server/` （全ソース + Dockerfile）
+- `mcp/terragrunt-server/` （全ソース + Dockerfile）
+- `specs/001-mcp-self-growth/tasks.md`
+
+**🎓 本日の学び**:
+- `McpServer`（新API）ではなく `Server` + `setRequestHandler` パターンが必要（docker-serverと同じ）
+- テンプレートリテラル内のバッククォートはコンパイルエラーになる → 文字列に置き換え
+
+---
+
+### 📅 2026-03-07: ドキュメント整備 + PR #10 マージ
+
+**🎯 今日の戦果**
+
+- ✅ **draw.io 構成図 2枚作成**
+  - `docs/monitoring-stack.drawio`: 監視スタック構成図（4層、コンポーネント・データフロー・ポート番号）
+  - `docs/network-topology.drawio`: ネットワークトポロジー図（物理構成・LAN/WAN・クラウド接続）
+- ✅ **README.md 全面更新**（現状との齟齬を解消）
+  - cAdvisor / SNMP Exporter をコンポーネント表に追加
+  - 監視対象に RTX830 / Synology NAS を追加
+  - アクセス URL を localhost → 10.0.0.220 に修正
+  - 前提条件を Docker Desktop → WSL2 + Docker Engine に修正
+  - HCP Terraform セクション追加、今後の拡張案を完了済みに更新
+  - 構成図への参照セクション追加（2枚）
+- ✅ **PR #10 作成・マージ**（`002-docker-mcp-server` → `master`）
+  - 9コミット分の作業履歴を保持
+
+**📁 作成・更新ファイル**:
+- `docs/monitoring-stack.drawio`（新規）
+- `docs/network-topology.drawio`（新規）
+- `README.md`（全面更新）
+
+---
 
 ### 📅 2026-03-04: Claude Code Agent Teams 検証
 
@@ -755,13 +852,11 @@ Step 4: MCP Server構築 + Phase 4運用改善     ← 新構想 + 既存Phase�
 
 ---
 
-### 📌 Step 2.6: 物理機器監視（新規追加）
-
-**設計完了 / 実装待ち**
+### ✅ Step 2.6: 物理機器監視 — 完了（2026-03-08）
 
 詳細: [physical-device-monitoring.md](.specify/memory/specs/physical-device-monitoring.md)
 
-**Phase 1: SNMP基盤（RTX830 + Synology）** ← ✅ 完了（2026-03-01）
+**Phase 1: SNMP基盤（RTX830 + Synology）** ✅ 完了（2026-03-01）
 - [x] RTX830 SNMP設定投入（`snmp community read-only monlab` + `snmp host`）
 - [x] Synology DSM SNMP有効化
 - [x] `config/snmp/snmp.yml` 作成・v0.30.1対応修正
@@ -769,15 +864,12 @@ Step 4: MCP Server構築 + Phase 4運用改善     ← 新構想 + 既存Phase�
 - [x] `prometheus.yml` 更新（SNMPジョブ追加 + auth修正）
 - [x] Grafana Physical Devicesダッシュボード作成
 
-**Phase 2: Linux マシン監視**
-- [ ] 対象IPリスト確定後、Node Exporterインストール・設定
+**Phase 2: Linux マシン監視** ✅ 完了（実装済み・2026-03-08確認）
+- [x] Node Exporter インストール済み（10.0.0.250, 10.0.0.254）
+- [x] Prometheus ターゲット両方 `up` 確認済み
 
-**Phase 3: Windows マシン監視**
-- [ ] 対象IPリスト確定後、Windows Exporterインストール・設定
-
-**事前確認事項**:
-- RTX830 / Synology / Linux / Windows マシンのIPアドレス
-- SNMPコミュニティ名の方針
+**Phase 3: Windows マシン監視** — スコープ外
+- 常時起動マシンなし → 監視不要と判断
 
 ---
 
