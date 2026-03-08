@@ -104,6 +104,14 @@ terraform-state-backup-*.tar.gz
 .specify/.cache/
 .specify/*.tmp
 
+# ----- MCP Server関連 -----
+# MCPデータストア（個人の監視データ・承認ログ）
+.mcp-data/
+
+# MCPサーバーのビルド成果物
+mcp/*/dist/
+mcp/*/node_modules/
+
 # ----- その他 -----
 # Node modules（もし使用する場合）
 node_modules/
