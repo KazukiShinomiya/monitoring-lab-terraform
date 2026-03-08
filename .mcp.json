@@ -7,6 +7,23 @@
         "--mount", "type=bind,src=/home/ubuntu/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly",
         "monitoring-lab-docker-mcp"
       ]
+    },
+    "prometheus": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "monitoring-lab-prometheus-mcp"
+      ]
+    },
+    "terragrunt": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--mount", "type=bind,src=/home/ubuntu/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly",
+        "--mount", "type=bind,src=/mnt/e/work/labo/.mcp-data,dst=/app/.mcp-data",
+        "--env", "TF_TOKEN_app_terraform_io",
+        "monitoring-lab-terragrunt-mcp"
+      ]
     }
   }
 }
