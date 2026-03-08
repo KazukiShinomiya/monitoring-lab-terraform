@@ -12,7 +12,7 @@ import { stopContainerTool, handleStopContainer } from './tools/stop-container.j
 import { startContainerTool, handleStartContainer } from './tools/start-container.js';
 
 const server = new Server(
-  { name: 'monitoring-lab-docker-mcp', version: '1.0.0' },
+  { name: 'monitoring-lab-docker-mcp', version: '1.1.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -34,8 +34,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return await handleListContainers();
     case 'docker_get_logs':
       return await handleGetLogs(
-        (args as { container_name: string; lines?: number }).container_name,
-        (args as { container_name: string; lines?: number }).lines,
+        (args as { container_name: string; lines?: number; since?: string }).container_name,
+        (args as { container_name: string; lines?: number; since?: string }).lines,
+        (args as { container_name: string; lines?: number; since?: string }).since,
       );
     case 'docker_get_stats':
       return await handleGetStats();

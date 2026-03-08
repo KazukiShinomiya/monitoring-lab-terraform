@@ -1,4 +1,4 @@
-import { execSsh, validateServiceName } from '../ssh-client.js';
+import { execSsh, validateServiceName, VALID_SERVICES } from '../ssh-client.js';
 
 export const getServiceConfigTool = {
   name: 'get_service_config',
@@ -8,7 +8,7 @@ export const getServiceConfigTool = {
     properties: {
       service: {
         type: 'string',
-        enum: ['network', 'postgres', 'vault', 'prometheus', 'grafana', 'zabbix', 'zabbix-agent', 'cadvisor', 'snmp-exporter', 'newrelic'],
+        enum: [...VALID_SERVICES],
         description: '設定を読み取るサービス名',
       },
     },

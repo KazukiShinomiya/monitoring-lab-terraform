@@ -13,6 +13,7 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 |---------|------|
 | `docs/network-topology.drawio` | **ネットワークトポロジー** — 物理構成・LAN/WAN・クラウド接続 |
 | `docs/monitoring-stack.drawio` | **監視スタック** — コンポーネント間のデータフロー・ポート番号 |
+| `docs/mcp-servers.md` | **MCP Servers** — Claude Code 連携の使い方・ツールリファレンス |
 
 **概要:**
 
@@ -80,7 +81,7 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 - **IaC の学習**: Terraform / Terragrunt の実践的な理解
 - **Vault 連携**: シークレット管理のベストプラクティス習得（将来の完全移行に向けて準備中）
 - **監視基盤の構築**: Zabbix + Prometheus + Grafana の統合環境構築
-- **MCP Server 開発**: AI を活用した自律的インフラ改善基盤の研究（Step 4 進行中）
+- **MCP Server 開発**: AI を活用した自律的インフラ改善基盤（Docker / Prometheus / Terragrunt MCP 稼働中）
 
 ---
 
@@ -129,6 +130,10 @@ E:\work\labo/
 │   ├── setup-remote-config.sh      # リモートサーバー初期設定
 │   ├── container-setup.sh / .bat   # 開発コンテナセットアップ
 │   └── tg.sh / tg.bat              # Terragrunt ラッパー
+├── mcp/
+│   ├── prometheus-server/          # Prometheus MCP Server（メトリクス取得・提案生成）
+│   ├── docker-server/              # Docker MCP Server（コンテナ操作・ログ取得）
+│   └── terragrunt-server/          # Terragrunt MCP Server（承認フロー・apply実行）
 ├── .specify/
 │   └── memory/                     # Speckit ADLC 成果物（仕様書、計画書、タスクリスト）
 ├── .claude/
@@ -427,10 +432,10 @@ wsl -d Ubuntu-24.04 -e bash -c \
 | ✅ 完了 | SNMP Exporter による物理機器監視（RTX830 / Synology） |
 | ✅ 完了 | Grafana ダッシュボード（cAdvisor / Physical Devices / Integrated） |
 | ✅ 完了 | HCP Terraform による State 管理（10 Workspaces） |
-| 🚧 進行中 | Docker MCP Server（Claude Code 連携） |
-| 📅 計画中 | Prometheus MCP Server |
-| 📅 計画中 | Terragrunt MCP Server |
-| 📅 計画中 | Linux / Windows Node Exporter 設定 |
+| ✅ 完了 | Docker MCP Server（コンテナ操作・ログ・リソース監視） |
+| ✅ 完了 | Prometheus MCP Server（メトリクス取得・アラート確認・改善提案生成） |
+| ✅ 完了 | Terragrunt MCP Server（承認フロー・plan/apply・ロールバック） |
+| ✅ 完了 | Linux Node Exporter 設定（YOUR_LINUX_HOST_1 / YOUR_LINUX_HOST_2） |
 | 📅 計画中 | Vault の完全活用（Dynamic Secrets） |
 | 📅 計画中 | CI/CD 統合（GitHub Actions + Terragrunt） |
 

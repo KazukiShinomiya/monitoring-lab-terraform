@@ -64,17 +64,20 @@ export class DockerClient {
     return container?.status ?? 'stopped';
   }
 
-  async getLogs(name: string, lines: number): Promise<string> {
-    return await this.execDocker(['logs', '--tail', String(lines), name]);
+  async getLogs(name: string, lines: number, since?: string): Promise<string> {
+    const args = ['logs', '--tail', String(lines)];
+    if (since) args.push('--since', since);
+    args.push(name);
+    return await this.execDocker(args);
   }
 
-  async getStats(): Promise<ContainerStats[]> {
+  async getStats(filter?: string): Promise<ContainerStats[]> {
     const output = await this.execDocker([
       'stats', '--no-stream',
       '--format', '{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}',
     ]);
     if (!output) return [];
-    return output.split('\n').filter(Boolean).map(line => {
+    const stats = output.split('\n').filter(Boolean).map(line => {
       const [name, cpu_percent, memory_usage, memory_percent] = line.split('\t');
       return {
         name: name ?? '',
@@ -83,6 +86,9 @@ export class DockerClient {
         memory_percent: memory_percent ?? '',
       };
     });
+    // Fix 4: monitoring-lab- プレフィックスでフィルタ（省略時はデフォルトでフィルタ）
+    const prefix = filter ?? 'monitoring-lab-';
+    return prefix ? stats.filter(s => s.name.startsWith(prefix)) : stats;
   }
 
   async restartContainer(name: string): Promise<void> {
