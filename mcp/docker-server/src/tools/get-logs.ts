@@ -16,6 +16,10 @@ export const getLogsTool: Tool = {
         description: '取得するログ行数（デフォルト: 100）',
         default: 100,
       },
+      since: {
+        type: 'string',
+        description: '指定時刻以降のログのみ取得（例: "1h", "30m", "2026-03-08T00:00:00"）。省略時は行数フィルタのみ適用。',
+      },
     },
     required: ['container_name'],
   },
@@ -23,10 +27,10 @@ export const getLogsTool: Tool = {
 
 const client = new DockerClient();
 
-export async function handleGetLogs(container_name: string, lines: number = 100) {
+export async function handleGetLogs(container_name: string, lines: number = 100, since?: string) {
   try {
     const fullName = await client.findContainer(container_name);
-    const logs = await client.getLogs(fullName, lines);
+    const logs = await client.getLogs(fullName, lines, since);
     const text = logs || '(ログが空です)';
     return { content: [{ type: 'text' as const, text }] };
   } catch (error: unknown) {
