@@ -4,9 +4,10 @@ import type { ContainerInfo, ContainerStats, ContainerStatus } from './types.js'
 
 const execFileAsync = promisify(execFile);
 
-const REMOTE_HOST = 'ssh://ubuntu@YOUR_SERVER_IP';
+const REMOTE_HOST = process.env.DOCKER_REMOTE_HOST ?? 'ssh://ubuntu@YOUR_SERVER_IP';
+const REMOTE_DISPLAY = REMOTE_HOST.replace('ssh://', '').split('@')[1] ?? REMOTE_HOST;
 
-const ERR_SSH = 'Error: リモートサーバー (YOUR_SERVER_IP) に接続できません。SSH鍵とネットワーク接続を確認してください。';
+const ERR_SSH = `Error: リモートサーバー (${REMOTE_DISPLAY}) に接続できません。SSH鍵とネットワーク接続を確認してください。`;
 
 export class DockerClient {
   private async execDocker(args: string[]): Promise<string> {
