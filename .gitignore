@@ -100,6 +100,9 @@ terraform-state-backup-*.tar.gz
 # Claude Code エージェントフォルダ（認証情報、プライベート情報を含む可能性）
 .claude/
 
+# Claude Code プロジェクト設定（キャラクター設定・個人ワークフローを含む）
+CLAUDE.md
+
 # GitHub Spec Kit（仕様ファイルはコミット、一時ファイルは除外）
 .specify/.cache/
 .specify/*.tmp
