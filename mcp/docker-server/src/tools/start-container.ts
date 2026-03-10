@@ -1,24 +1,4 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { DockerClient } from '../docker-client.js';
-
-export const startContainerTool: Tool = {
-  name: 'docker_start_container',
-  description: '停止中のコンテナを起動する。confirmed=false でドライラン。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      container_name: {
-        type: 'string',
-        description: '起動するコンテナ名（部分一致可）',
-      },
-      confirmed: {
-        type: 'boolean',
-        description: 'false: 操作内容を表示して終了。true: 実際に起動を実行。',
-      },
-    },
-    required: ['container_name', 'confirmed'],
-  },
-};
 
 const client = new DockerClient();
 

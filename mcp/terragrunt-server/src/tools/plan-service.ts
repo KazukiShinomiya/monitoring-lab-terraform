@@ -1,20 +1,4 @@
-import { execSsh, validateServiceName, VALID_SERVICES } from '../ssh-client.js';
-
-export const planServiceTool = {
-  name: 'plan_service',
-  description: 'terragrunt planを実行して変更内容を確認する（読み取り専用、承認不要）。提案内容の差分確認に使用する。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      service: {
-        type: 'string',
-        enum: [...VALID_SERVICES],
-        description: 'planを実行するサービス名',
-      },
-    },
-    required: ['service'],
-  },
-};
+import { execSsh, validateServiceName } from '../ssh-client.js';
 
 export async function handlePlanService(service: string) {
   try {

@@ -1,16 +1,6 @@
 const TF_ORG = process.env.TF_ORG ?? 'YOUR_TF_ORG';
 const TF_TOKEN = process.env.TF_TOKEN_app_terraform_io ?? process.env.TF_TOKEN ?? '';
 
-export const listWorkspacesTool = {
-  name: 'list_workspaces',
-  description: 'HCP TerraformのWorkspace一覧と状態を取得する。インフラ全体の管理状況を確認する。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {},
-    required: [],
-  },
-};
-
 export async function handleListWorkspaces() {
   try {
     if (!TF_TOKEN) {

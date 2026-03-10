@@ -1,20 +1,4 @@
-import { execSsh, validateServiceName, VALID_SERVICES } from '../ssh-client.js';
-
-export const getServiceConfigTool = {
-  name: 'get_service_config',
-  description: 'サービスのTerragrunt設定ファイルを読み取る（読み取り専用）。変更提案の基礎情報収集に使用する。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      service: {
-        type: 'string',
-        enum: [...VALID_SERVICES],
-        description: '設定を読み取るサービス名',
-      },
-    },
-    required: ['service'],
-  },
-};
+import { execSsh, validateServiceName } from '../ssh-client.js';
 
 export async function handleGetServiceConfig(service: string) {
   try {

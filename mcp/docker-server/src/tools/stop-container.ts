@@ -1,24 +1,4 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { DockerClient } from '../docker-client.js';
-
-export const stopContainerTool: Tool = {
-  name: 'docker_stop_container',
-  description: 'コンテナを停止する。confirmed=false でドライラン。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      container_name: {
-        type: 'string',
-        description: '停止するコンテナ名（部分一致可）',
-      },
-      confirmed: {
-        type: 'boolean',
-        description: 'false: 操作内容を表示して終了。true: 実際に停止を実行。',
-      },
-    },
-    required: ['container_name', 'confirmed'],
-  },
-};
 
 const client = new DockerClient();
 

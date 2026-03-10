@@ -1,15 +1,4 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { DockerClient } from '../docker-client.js';
-
-export const listContainersTool: Tool = {
-  name: 'docker_list_containers',
-  description: '全コンテナの名前・状態・起動経過時間を取得する',
-  inputSchema: {
-    type: 'object',
-    properties: {},
-    required: [],
-  },
-};
 
 const client = new DockerClient();
 

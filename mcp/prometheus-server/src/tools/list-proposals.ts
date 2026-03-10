@@ -1,22 +1,5 @@
 import { listProposals } from '../storage.js';
 
-export const listProposalsTool = {
-  name: 'list_proposals',
-  description: '保存済みの改善提案一覧を取得する。status でフィルタ可能（pending/applied/rejected/all）。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      status: {
-        type: 'string',
-        enum: ['all', 'pending', 'approved', 'applied', 'rejected', 'rolled_back'],
-        description: 'フィルター: pending=未処理, applied=解消済み, all=全件',
-        default: 'all',
-      },
-    },
-    required: [],
-  },
-};
-
 export async function handleListProposals(args: { status?: string }) {
   try {
     const filter = args.status ?? 'all';

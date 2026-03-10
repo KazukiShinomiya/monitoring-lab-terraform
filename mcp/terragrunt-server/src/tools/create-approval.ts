@@ -2,31 +2,6 @@ import { randomUUID } from 'crypto';
 import { saveApprovalLog } from '../storage.js';
 import type { ApprovalLog } from '../types.js';
 
-export const createApprovalTool = {
-  name: 'create_approval',
-  description: '改善提案に対する承認ログを作成する。apply_service / rollback_service を実行するために必要。decision="approved" で承認、"rejected" で却下。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      proposal_id: {
-        type: 'string',
-        description: '対象の提案ID（Prometheus MCP の generate_proposal で生成されたID）',
-      },
-      decision: {
-        type: 'string',
-        enum: ['approved', 'rejected'],
-        description: 'approved=承認して apply_service で実行可能にする / rejected=却下',
-      },
-      decided_by: {
-        type: 'string',
-        description: '承認者名（例: "operator", "admin"）',
-        default: 'operator',
-      },
-    },
-    required: ['proposal_id', 'decision'],
-  },
-};
-
 export async function handleCreateApproval(
   proposalId: string,
   decision: 'approved' | 'rejected',

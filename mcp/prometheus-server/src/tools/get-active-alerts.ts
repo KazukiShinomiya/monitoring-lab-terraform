@@ -1,22 +1,5 @@
 import { getAlerts } from '../prometheus-client.js';
 
-export const getActiveAlertsTool = {
-  name: 'get_active_alerts',
-  description: '現在発火中のPrometheusアラートを取得する。問題の緊急度判定に使用する。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      severity: {
-        type: 'string',
-        enum: ['all', 'critical', 'warning', 'info'],
-        description: 'フィルター: allで全アラート取得',
-        default: 'all',
-      },
-    },
-    required: [],
-  },
-};
-
 export async function handleGetActiveAlerts(severity: string = 'all') {
   try {
     const alerts = await getAlerts();

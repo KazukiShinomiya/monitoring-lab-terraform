@@ -1,24 +1,4 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { DockerClient } from '../docker-client.js';
-
-export const restartContainerTool: Tool = {
-  name: 'docker_restart_container',
-  description: 'コンテナを再起動する。confirmed=false でドライラン（操作内容の確認のみ）。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      container_name: {
-        type: 'string',
-        description: '再起動するコンテナ名（部分一致可）',
-      },
-      confirmed: {
-        type: 'boolean',
-        description: 'false: 操作内容を表示して終了（ドライラン）。true: 実際に再起動を実行。',
-      },
-    },
-    required: ['container_name', 'confirmed'],
-  },
-};
 
 const client = new DockerClient();
 

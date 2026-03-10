@@ -1,28 +1,5 @@
 import { query } from '../prometheus-client.js';
 
-export const compareMetricsTool = {
-  name: 'compare_metrics',
-  description: '変更前後のメトリクスを比較して効果を測定する。terragrunt apply後の効果確認に使用する。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      query: {
-        type: 'string',
-        description: '比較するPromQL式',
-      },
-      baseline_time: {
-        type: 'string',
-        description: '比較基準時刻（変更前）ISO 8601 または Unix timestamp',
-      },
-      current_time: {
-        type: 'string',
-        description: '現在時刻（変更後）省略時=現在',
-      },
-    },
-    required: ['query', 'baseline_time'],
-  },
-};
-
 export async function handleCompareMetrics(
   queryExpr: string,
   baselineTime: string,

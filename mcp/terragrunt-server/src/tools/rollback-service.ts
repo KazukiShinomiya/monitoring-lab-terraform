@@ -1,25 +1,6 @@
 import { execSsh } from '../ssh-client.js';
 import { getApprovalLog, saveApprovalLog } from '../storage.js';
 
-export const rollbackServiceTool = {
-  name: 'rollback_service',
-  description: '承認ログのスナップショットからサービスをロールバックする。問題発生時の復元に使用する。【確認必須】confirmed=true が必要。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      approval_id: {
-        type: 'string',
-        description: 'ロールバック対象の承認ログID。このIDのsnapshot_beforeが復元される。',
-      },
-      confirmed: {
-        type: 'boolean',
-        description: 'ロールバックを実行することを明示的に確認するフラグ。true を指定しないと実行されない。',
-      },
-    },
-    required: ['approval_id', 'confirmed'],
-  },
-};
-
 export async function handleRollbackService(approvalId: string, confirmed: boolean) {
   try {
     if (!confirmed) {
@@ -45,11 +26,10 @@ export async function handleRollbackService(approvalId: string, confirmed: boole
 
     const { service, file_path, content_before, captured_at } = approvalLog.snapshot_before;
 
-    // Fix 2: base64経由でファイルを書き戻す（シェルインジェクション対策）
+    // base64経由でファイルを書き戻す（シェルインジェクション対策）
     const base64Content = Buffer.from(content_before, 'utf-8').toString('base64');
     await execSsh(`echo '${base64Content}' | base64 -d > ${file_path}`, 30000);
 
-    // terragrunt apply でロールバックを適用
     const applyOutput = await execSsh(
       `docker exec monitoring-lab-terragrunt sh -c 'cd /workspace/terraform/envs/local/${service} && terragrunt apply -auto-approve 2>&1'`,
       300000,
