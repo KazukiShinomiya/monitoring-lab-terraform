@@ -1,15 +1,4 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { DockerClient } from '../docker-client.js';
-
-export const getStatsTool: Tool = {
-  name: 'docker_get_stats',
-  description: '全コンテナのCPU・メモリ使用量を取得する',
-  inputSchema: {
-    type: 'object',
-    properties: {},
-    required: [],
-  },
-};
 
 const client = new DockerClient();
 

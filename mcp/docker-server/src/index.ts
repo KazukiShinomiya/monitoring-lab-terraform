@@ -1,64 +1,71 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { listContainersTool, handleListContainers } from './tools/list-containers.js';
-import { getLogsTool, handleGetLogs } from './tools/get-logs.js';
-import { getStatsTool, handleGetStats } from './tools/get-stats.js';
-import { restartContainerTool, handleRestartContainer } from './tools/restart-container.js';
-import { stopContainerTool, handleStopContainer } from './tools/stop-container.js';
-import { startContainerTool, handleStartContainer } from './tools/start-container.js';
+import { z } from 'zod';
+import { handleListContainers } from './tools/list-containers.js';
+import { handleGetLogs } from './tools/get-logs.js';
+import { handleGetStats } from './tools/get-stats.js';
+import { handleRestartContainer } from './tools/restart-container.js';
+import { handleStopContainer } from './tools/stop-container.js';
+import { handleStartContainer } from './tools/start-container.js';
 
-const server = new Server(
-  { name: 'monitoring-lab-docker-mcp', version: '1.1.0' },
-  { capabilities: { tools: {} } },
+const server = new McpServer(
+  { name: 'monitoring-lab-docker-mcp', version: '2.0.0' },
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    listContainersTool,
-    getLogsTool,
-    getStatsTool,
-    restartContainerTool,
-    stopContainerTool,
-    startContainerTool,
-  ],
-}));
+server.tool(
+  'docker_list_containers',
+  '全コンテナの名前・状態・起動経過時間を取得する',
+  {},
+  () => handleListContainers(),
+);
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  switch (name) {
-    case 'docker_list_containers':
-      return await handleListContainers();
-    case 'docker_get_logs':
-      return await handleGetLogs(
-        (args as { container_name: string; lines?: number; since?: string }).container_name,
-        (args as { container_name: string; lines?: number; since?: string }).lines,
-        (args as { container_name: string; lines?: number; since?: string }).since,
-      );
-    case 'docker_get_stats':
-      return await handleGetStats();
-    case 'docker_restart_container':
-      return await handleRestartContainer(
-        (args as { container_name: string; confirmed: boolean }).container_name,
-        (args as { container_name: string; confirmed: boolean }).confirmed,
-      );
-    case 'docker_stop_container':
-      return await handleStopContainer(
-        (args as { container_name: string; confirmed: boolean }).container_name,
-        (args as { container_name: string; confirmed: boolean }).confirmed,
-      );
-    case 'docker_start_container':
-      return await handleStartContainer(
-        (args as { container_name: string; confirmed: boolean }).container_name,
-        (args as { container_name: string; confirmed: boolean }).confirmed,
-      );
-    default:
-      throw new Error(`Unknown tool: ${name}`);
-  }
-});
+server.tool(
+  'docker_get_logs',
+  '指定コンテナの直近ログを取得する',
+  {
+    container_name: z.string().describe('コンテナ名（部分一致可。候補が複数ある場合は選択を促す）'),
+    lines: z.number().int().positive().optional().default(100).describe('取得するログ行数（デフォルト: 100）'),
+    since: z.string().optional().describe('指定時刻以降のログのみ取得（例: "1h", "30m", "2026-03-08T00:00:00"）'),
+  },
+  ({ container_name, lines, since }) => handleGetLogs(container_name, lines, since),
+);
+
+server.tool(
+  'docker_get_stats',
+  '全コンテナのCPU・メモリ使用量を取得する',
+  {},
+  () => handleGetStats(),
+);
+
+server.tool(
+  'docker_restart_container',
+  'コンテナを再起動する。confirmed=false でドライラン（操作内容の確認のみ）。',
+  {
+    container_name: z.string().describe('再起動するコンテナ名（部分一致可）'),
+    confirmed: z.boolean().describe('false: 操作内容を表示して終了（ドライラン）。true: 実際に再起動を実行。'),
+  },
+  ({ container_name, confirmed }) => handleRestartContainer(container_name, confirmed),
+);
+
+server.tool(
+  'docker_stop_container',
+  'コンテナを停止する。confirmed=false でドライラン。',
+  {
+    container_name: z.string().describe('停止するコンテナ名（部分一致可）'),
+    confirmed: z.boolean().describe('false: 操作内容を表示して終了。true: 実際に停止を実行。'),
+  },
+  ({ container_name, confirmed }) => handleStopContainer(container_name, confirmed),
+);
+
+server.tool(
+  'docker_start_container',
+  '停止中のコンテナを起動する。confirmed=false でドライラン。',
+  {
+    container_name: z.string().describe('起動するコンテナ名（部分一致可）'),
+    confirmed: z.boolean().describe('false: 操作内容を表示して終了。true: 実際に起動を実行。'),
+  },
+  ({ container_name, confirmed }) => handleStartContainer(container_name, confirmed),
+);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

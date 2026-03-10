@@ -9,44 +9,33 @@ function parseContainerName(metric: Record<string, string>): string {
   if (metric['name']) return metric['name'];
   if (metric['container_name']) return metric['container_name'];
   if (metric['image']) {
-    // イメージ名の最後のコンポーネントをタグなしで返す
     const img = metric['image'].split('/').pop() ?? metric['image'];
     return img.split(':')[0];
   }
-  // id ラベルが /docker/HASH または /system.slice/docker-HASH.scope 形式に対応
   const id = metric['id'] ?? '';
   const m = id.match(/docker[/-]([a-f0-9]{12})/);
   if (m) return `container:${m[1]}`;
   return 'unknown';
 }
 
-export const generateProposalTool = {
-  name: 'generate_proposal',
-  description: '現在のインフラ状態を分析して改善提案を生成・保存する。緊急度（low/medium/high）を自動分類する。解消済みアラートの提案は自動でresolvedにする。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {},
-    required: [],
-  },
-};
-
-export async function handleGenerateProposal() {
+export async function handleGenerateProposal(dryRun: boolean = false, focus: string = 'all') {
   try {
-    // アラートとメモリ使用率を並列取得
+    // focus による取得対象の絞り込み
     const [alerts, memResult] = await Promise.all([
-      getAlerts(),
-      query('(container_memory_usage_bytes{id=~"/system.slice/docker-.+\\\\.scope"} / container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+\\\\.scope"} * 100 > 80) and container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+\\\\.scope"} > 0').catch(() => ({ result: [] as { metric: Record<string, string>; value: [number, string] }[] })),
+      focus !== 'memory' ? getAlerts() : Promise.resolve([]),
+      focus !== 'alerts'
+        ? query('(container_memory_usage_bytes{id=~"/system.slice/docker-.+\\.scope"} / container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+\\.scope"} * 100 > 80) and container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+\\.scope"} > 0').catch(() => ({ result: [] as { metric: Record<string, string>; value: [number, string] }[] }))
+        : Promise.resolve({ result: [] as { metric: Record<string, string>; value: [number, string] }[] }),
     ]);
 
     const firingAlerts = alerts.filter(a => a.state === 'firing');
     const firingAlertNames = new Set(firingAlerts.map(a => a.labels['alertname'] ?? ''));
 
-    // Fix 1: cAdvisorのidラベルにも対応したコンテナ名抽出
     const highMemContainers = (memResult as { result: Array<{ metric: Record<string, string>; value: [number, string] }> }).result.map(
       r => parseContainerName(r.metric)
     );
 
-    // Fix 3: 既存のpending提案のうち、アラートが解消されたものをresolvedに更新
+    // 既存のpending提案のうち、アラートが解消されたものをresolvedに更新
     const index = await listProposals();
     const pendingItems = index.items.filter(i => i.status === 'pending');
     const autoResolved: string[] = [];
@@ -55,7 +44,6 @@ export async function handleGenerateProposal() {
       if (!proposal) continue;
       const alertEvidence = proposal.evidence.find(e => e.type === 'alert');
       if (!alertEvidence) continue;
-      // evidenceのアラート名を抽出して、現在も発火中かチェック
       const evidenceAlertNames = alertEvidence.data
         .split('\n')
         .map(line => line.split(':')[0].trim())
@@ -67,7 +55,7 @@ export async function handleGenerateProposal() {
       }
     }
 
-    // Fix 2: 同一アラート名でpendingな提案が既にあればスキップ
+    // 同一アラート名でpendingな提案が既にあればスキップ
     const updatedIndex = await listProposals();
     const stillPendingItems = updatedIndex.items.filter(i => i.status === 'pending');
     if (firingAlerts.length > 0 && stillPendingItems.length > 0) {
@@ -100,7 +88,6 @@ export async function handleGenerateProposal() {
       highMemContainers,
     );
 
-    // 根拠データ（evidence）の構築
     const evidence: Evidence[] = [];
     if (firingAlerts.length > 0) {
       evidence.push({
@@ -127,7 +114,6 @@ export async function handleGenerateProposal() {
       });
     }
 
-    // 提案内容の生成
     let content: string;
     let expectedEffect: string;
     let target: string;
@@ -161,13 +147,17 @@ export async function handleGenerateProposal() {
       status: 'pending',
     };
 
-    await saveProposal(proposal);
+    const dryRunNote = dryRun ? '\n\n⚠️ dry_run=true: 提案は保存されていません。' : '';
+
+    if (!dryRun) {
+      await saveProposal(proposal);
+    }
 
     const urgencyLabel = { high: '🔴 高', medium: '🟡 中', low: '🟢 低' }[urgency];
     const resolvedMsg = autoResolved.length > 0
       ? `\n\n✅ 解消済みとしてresolvedに更新した提案: ${autoResolved.join(', ')}`
       : '';
-    const summary = `改善提案を生成しました（緊急度: ${urgencyLabel}）${resolvedMsg}\n\nID: ${proposal.id}\n対象: ${target}\n\n${content}`;
+    const summary = `改善提案を生成しました（緊急度: ${urgencyLabel}）${resolvedMsg}${dryRunNote}\n\nID: ${proposal.id}\n対象: ${target}\n分析対象: ${focus}\n\n${content}`;
 
     return {
       content: [{ type: 'text' as const, text: summary }],

@@ -1,32 +1,11 @@
-import { execSsh, validateServiceName, VALID_SERVICES } from '../ssh-client.js';
+import { execSsh, validateServiceName } from '../ssh-client.js';
 import { getApprovalLog, saveApprovalLog } from '../storage.js';
 import type { ConfigSnapshot } from '../types.js';
-
-export const applyServiceTool = {
-  name: 'apply_service',
-  description: 'terragrunt applyを実行してインフラ変更を適用する。【承認必須】approval_idが必要。',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      service: {
-        type: 'string',
-        enum: [...VALID_SERVICES],
-        description: 'applyを実行するサービス名',
-      },
-      approval_id: {
-        type: 'string',
-        description: '対応する承認ログのID（承認なしでは実行不可）',
-      },
-    },
-    required: ['service', 'approval_id'],
-  },
-};
 
 export async function handleApplyService(service: string, approvalId: string) {
   try {
     const validService = validateServiceName(service);
 
-    // FR-006: 承認ログの存在確認
     const approvalLog = await getApprovalLog(approvalId);
     if (!approvalLog) {
       return {
@@ -41,7 +20,6 @@ export async function handleApplyService(service: string, approvalId: string) {
       };
     }
 
-    // 変更前スナップショット取得
     const filePath = `/workspace/terraform/envs/local/${validService}/terragrunt.hcl`;
     const contentBefore = await execSsh(`cat ${filePath}`);
     const snapshot: ConfigSnapshot = {
@@ -52,7 +30,6 @@ export async function handleApplyService(service: string, approvalId: string) {
     };
     approvalLog.snapshot_before = snapshot;
 
-    // terragrunt apply 実行
     const applyOutput = await execSsh(
       `docker exec monitoring-lab-terragrunt sh -c 'cd /workspace/terraform/envs/local/${validService} && terragrunt apply -auto-approve 2>&1'`,
       300000,
@@ -61,7 +38,7 @@ export async function handleApplyService(service: string, approvalId: string) {
     const success = !applyOutput.includes('Error:') && !applyOutput.includes('error:');
     const appliedAt = new Date().toISOString();
     approvalLog.applied_at = appliedAt;
-    approvalLog.apply_result = applyOutput.slice(-500); // 末尾500文字を保存
+    approvalLog.apply_result = applyOutput.slice(-500);
     await saveApprovalLog(approvalLog);
 
     const addMatch = applyOutput.match(/(\d+) added/);
