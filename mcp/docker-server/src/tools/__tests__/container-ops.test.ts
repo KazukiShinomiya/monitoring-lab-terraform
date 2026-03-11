@@ -2,16 +2,18 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // __tests__/ から見た正しい相対パス（../../ = src/ 直下）
 vi.mock('../../docker-client.js', () => ({
-  DockerClient: vi.fn().mockImplementation(() => ({
-    findContainer: vi.fn().mockResolvedValue('monitoring-lab-prometheus'),
-    getContainerStatus: vi.fn().mockResolvedValue('running'),
-    restartContainer: vi.fn().mockResolvedValue(undefined),
-    stopContainer: vi.fn().mockResolvedValue(undefined),
-    startContainer: vi.fn().mockResolvedValue(undefined),
-    getLogs: vi.fn().mockResolvedValue('2026-01-01 INFO server started\n2026-01-01 INFO ready'),
-    listContainers: vi.fn().mockResolvedValue([]),
-    getStats: vi.fn().mockResolvedValue([]),
-  })),
+  DockerClient: vi.fn(function() {
+    return {
+      findContainer: vi.fn().mockResolvedValue('monitoring-lab-prometheus'),
+      getContainerStatus: vi.fn().mockResolvedValue('running'),
+      restartContainer: vi.fn().mockResolvedValue(undefined),
+      stopContainer: vi.fn().mockResolvedValue(undefined),
+      startContainer: vi.fn().mockResolvedValue(undefined),
+      getLogs: vi.fn().mockResolvedValue('2026-01-01 INFO server started\n2026-01-01 INFO ready'),
+      listContainers: vi.fn().mockResolvedValue([]),
+      getStats: vi.fn().mockResolvedValue([]),
+    };
+  }),
 }));
 
 import { handleRestartContainer } from '../restart-container.js';
