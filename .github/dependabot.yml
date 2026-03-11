@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /mcp/docker-server
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - mcp
+
+  - package-ecosystem: npm
+    directory: /mcp/prometheus-server
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - mcp
+
+  - package-ecosystem: npm
+    directory: /mcp/terragrunt-server
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - mcp
