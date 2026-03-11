@@ -71,5 +71,16 @@ server.tool(
   ({ approval_id, confirmed }) => handleRollbackService(approval_id, confirmed),
 );
 
+process.on('SIGINT', () => process.exit(0));
+process.on('SIGTERM', () => process.exit(0));
+process.on('uncaughtException', (error) => {
+  process.stderr.write(`Uncaught exception: ${error.message}\n${error.stack}\n`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  process.stderr.write(`Unhandled rejection: ${String(reason)}\n`);
+  process.exit(1);
+});
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
