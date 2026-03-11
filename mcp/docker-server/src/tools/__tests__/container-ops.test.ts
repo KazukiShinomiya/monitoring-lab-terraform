@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // __tests__/ から見た正しい相対パス（../../ = src/ 直下）
 vi.mock('../../docker-client.js', () => ({
-  DockerClient: vi.fn(() => ({
+  DockerClient: vi.fn().mockImplementation(() => ({
     findContainer: vi.fn().mockResolvedValue('monitoring-lab-prometheus'),
     getContainerStatus: vi.fn().mockResolvedValue('running'),
     restartContainer: vi.fn().mockResolvedValue(undefined),
