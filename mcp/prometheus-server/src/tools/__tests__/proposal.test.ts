@@ -8,7 +8,7 @@ vi.mock('../../prometheus-client.js', () => ({
 
 vi.mock('../../storage.js', () => ({
   saveProposal: vi.fn().mockResolvedValue(undefined),
-  listProposals: vi.fn().mockResolvedValue({ items: [] }),
+  listProposals: vi.fn().mockResolvedValue({ items: [], last_updated: '', total: 0 }),
   updateProposalStatus: vi.fn().mockResolvedValue(undefined),
   getProposal: vi.fn().mockResolvedValue(null),
 }));
@@ -53,13 +53,13 @@ describe('list_proposals: status フィルタ', () => {
   ];
 
   it('status=all → 全件返す', async () => {
-    vi.mocked(storage.listProposals).mockResolvedValueOnce({ items: twoItems });
+    vi.mocked(storage.listProposals).mockResolvedValueOnce({ items: twoItems, last_updated: '', total: 2 });
     const result = await handleListProposals({ status: 'all' });
     expect(result.content[0].text).toContain('2件');
   });
 
   it('status=pending → pending のみ返す', async () => {
-    vi.mocked(storage.listProposals).mockResolvedValueOnce({ items: twoItems });
+    vi.mocked(storage.listProposals).mockResolvedValueOnce({ items: twoItems, last_updated: '', total: 2 });
     const result = await handleListProposals({ status: 'pending' });
     expect(result.content[0].text).toContain('1件');
     expect(result.content[0].text).not.toContain('applied');
