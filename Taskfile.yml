@@ -1,0 +1,120 @@
+# ==========================================
+# Taskfile.yml — monitoring-lab タスクランナー
+# ==========================================
+# 使い方:
+#   task                   # タスク一覧表示
+#   task start             # WSL2 Docker + 開発コンテナ起動
+#   task sync:prometheus   # Prometheus 設定同期
+#   task tg:plan           # terragrunt run --all plan
+#
+# インストール: https://taskfile.dev/installation/
+#   Windows: winget install Task.Task
+#   WSL2:    sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+
+version: '3'
+
+vars:
+  WSL_DISTRO: Ubuntu-24.04
+  REMOTE_HOST: 10.0.0.220
+  REMOTE_USER: ubuntu
+  SYNC_SCRIPT: ./scripts/sync-config.sh
+
+# WSL2 経由でコマンドを実行するラッパー
+# Windows の task から WSL2 コマンドを実行するために使用
+env:
+  COMPOSE_FILE: docker-compose.yml
+
+tasks:
+
+  # ========== 開発環境管理 ==========
+
+  start:
+    desc: "WSL2 Docker 起動 + 開発コンテナ起動"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "sudo service docker start"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && docker compose up -d"
+    silent: false
+
+  stop:
+    desc: "開発コンテナ停止"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && docker compose stop"
+
+  status:
+    desc: "リモートサーバーのコンテナ状態確認"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'"
+
+  logs:
+    desc: "コンテナログを表示 (例: task logs -- grafana)"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} 'docker logs --tail 50 monitoring-lab-{{.CLI_ARGS}}'"
+
+  # ========== 設定ファイル同期 ==========
+
+  sync:prometheus:
+    desc: "Prometheus 設定を同期・ホットリロード"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} prometheus"
+
+  sync:alertmanager:
+    desc: "Alertmanager 設定を同期・ホットリロード（Webhook URL を .env から注入）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} alertmanager"
+
+  sync:grafana:
+    desc: "Grafana ダッシュボード・データソースを同期・再起動"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} grafana"
+
+  sync:snmp:
+    desc: "SNMP Exporter 設定を同期・再起動"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} snmp"
+
+  sync:all:
+    desc: "全サービスの設定を同期"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} all"
+
+  tekken:update:
+    desc: "tekken_bot プロジェクトから tekken.json をコピー（その後 sync:grafana で反映）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} tekken-update"
+
+  # ========== Terragrunt ==========
+
+  tg:plan:
+    desc: "terragrunt run --all plan（全サービス差分確認）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker exec monitoring-lab-terragrunt sh -c 'cd /workspace/terraform/envs/local && TG_NON_INTERACTIVE=true terragrunt run --all plan 2>&1'"
+
+  tg:plan:svc:
+    desc: "特定サービスの plan（例: task tg:plan:svc -- prometheus）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker exec monitoring-lab-terragrunt sh -c 'cd /workspace/terraform/envs/local/{{.CLI_ARGS}} && terragrunt plan 2>&1'"
+
+  tg:apply:svc:
+    desc: "特定サービスの apply（例: task tg:apply:svc -- alertmanager）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker exec monitoring-lab-terragrunt sh -c 'cd /workspace/terraform/envs/local/{{.CLI_ARGS}} && terragrunt apply -auto-approve 2>&1'"
+
+  # ========== 監視・確認 ==========
+
+  health:
+    desc: "各サービスの死活確認（HTTP ヘルスチェック）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c |
+          echo "=== Prometheus ===" && curl -sf http://{{.REMOTE_HOST}}:9090/-/healthy && echo "OK" || echo "FAIL"
+          echo "=== Alertmanager ===" && curl -sf http://{{.REMOTE_HOST}}:9093/-/healthy && echo "OK" || echo "FAIL"
+          echo "=== Grafana ===" && curl -sf http://{{.REMOTE_HOST}}:3000/api/health | grep -q '"database": "ok"' && echo "OK" || echo "FAIL"
+
+  reload:prometheus:
+    desc: "Prometheus をホットリロード（設定ファイルは変更せず）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} 'curl -sf -X POST http://localhost:9090/-/reload'"
+
+  reload:alertmanager:
+    desc: "Alertmanager をホットリロード（設定ファイルは変更せず）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} 'curl -sf -X POST http://localhost:9093/-/reload'"
