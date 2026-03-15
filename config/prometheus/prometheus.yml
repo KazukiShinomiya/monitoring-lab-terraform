@@ -24,6 +24,13 @@ global:
 rule_files:
   - '/etc/prometheus/alerts.yml'
 
+# ----- Alertmanager 連携設定 -----
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
 # ----- スクレイプ設定 -----
 scrape_configs:
   # ==========================================
@@ -109,3 +116,24 @@ scrape_configs:
           - 'YOUR_LINUX_HOST_2:9100'
         labels:
           env: 'local'
+
+  # ==========================================
+  # Job 6: Tekken Bot（バトル統計）
+  # ==========================================
+  # YOUR_LINUX_HOST_2 上の exporter.py が battles.db を集計して公開
+  # レーティング推移・勝率・対面別成績などゲーム統計メトリクス
+  - job_name: 'tekken_bot'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['YOUR_LINUX_HOST_2:9877']
+        labels:
+          instance: 'tekken-bot'
+
+  # ==========================================
+  # Job 7: Alertmanager（自己監視 SC-004）
+  # ==========================================
+  # Alertmanager 自身のメトリクスを収集
+  # 既存の TargetDown アラートが Alertmanager ダウンを検知する
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
