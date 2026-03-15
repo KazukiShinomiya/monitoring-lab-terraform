@@ -6,13 +6,14 @@ Claude Code から監視基盤を直接操作するための MCP (Model Context 
 
 ## 概要
 
-3つの MCP Server が連携して「観測 → AI分析 → 提案 → 承認 → 適用」のループを実現します。
+4つの MCP Server が連携して「観測 → AI分析 → 提案 → 承認 → 適用」のループを実現します。
 
 ```
 Claude Code
-  ├── prometheus-server  メトリクス取得・アラート確認・改善提案生成
-  ├── docker-server      コンテナ操作・ログ取得・リソース確認
-  └── terragrunt-server  設定確認・承認フロー管理・インフラ変更適用
+  ├── prometheus-server     メトリクス取得・アラート確認・改善提案生成
+  ├── docker-server         コンテナ操作・ログ取得・リソース確認
+  ├── terragrunt-server     設定確認・承認フロー管理・インフラ変更適用
+  └── alertmanager-server   アラート確認・サイレンス操作
 ```
 
 ### 自己成長ループ
@@ -47,9 +48,10 @@ prometheus-server: compare_metrics   → 変更前後の比較
 # WSL2 上で実行
 cd /mnt/e/work/labo
 
-docker build -t monitoring-lab-prometheus-mcp  mcp/prometheus-server/
-docker build -t monitoring-lab-docker-mcp      mcp/docker-server/
-docker build -t monitoring-lab-terragrunt-mcp  mcp/terragrunt-server/
+docker build -t monitoring-lab-prometheus-mcp     mcp/prometheus-server/
+docker build -t monitoring-lab-docker-mcp         mcp/docker-server/
+docker build -t monitoring-lab-terragrunt-mcp     mcp/terragrunt-server/
+docker build -t monitoring-lab-alertmanager-mcp   mcp/alertmanager-server/
 ```
 
 ### Claude Code への登録
@@ -59,9 +61,10 @@ docker build -t monitoring-lab-terragrunt-mcp  mcp/terragrunt-server/
 ```json
 {
   "mcpServers": {
-    "docker":      { ... },
-    "prometheus":  { ... },
-    "terragrunt":  { ... }
+    "docker":        { ... },
+    "prometheus":    { ... },
+    "terragrunt":    { ... },
+    "alertmanager":  { ... }
   }
 }
 ```
@@ -218,6 +221,54 @@ rollback_service: {
 
 ---
 
+## Alertmanager MCP Server
+
+**イメージ**: `monitoring-lab-alertmanager-mcp`
+**接続先**: `http://10.0.0.220:9093`（環境変数 `ALERTMANAGER_HOST` で変更可）
+
+### ツール一覧
+
+| ツール | 説明 |
+|--------|------|
+| `alertmanager_get_alerts` | アクティブなアラート一覧（severity でフィルタ可） |
+| `alertmanager_silence_alert` | アラートのサイレンス作成（`confirmed: true` 必須） |
+| `alertmanager_list_silences` | 有効なサイレンス一覧 |
+| `alertmanager_delete_silence` | サイレンスの削除（`confirmed: true` 必須） |
+
+### 使い方
+
+**発火中のアラートを確認する**
+```
+alertmanager_get_alerts: {}
+alertmanager_get_alerts: { severity: "critical" }  # クリティカルのみ
+```
+
+**誤検知アラートをサイレンスする（まずドライランで確認）**
+```
+alertmanager_silence_alert: {
+  alertname: "HighMemoryUsage",
+  duration_hours: 2,
+  comment: "メンテナンス中のため一時抑制",
+  confirmed: false  # ドライラン
+}
+```
+内容を確認したら `confirmed: true` で実際に作成します。
+
+**有効なサイレンスを確認する**
+```
+alertmanager_list_silences: {}
+```
+
+**不要なサイレンスを削除する**
+```
+alertmanager_delete_silence: {
+  silence_id: "一覧で確認したUUID",
+  confirmed: true
+}
+```
+
+---
+
 ## 典型的なワークフロー
 
 ### アラートを確認して対処する
@@ -228,6 +279,15 @@ rollback_service: {
 3. docker: docker_get_logs              → 問題のあるコンテナのログを確認
 4. docker: docker_restart_container     → 必要であれば再起動
 5. prometheus: get_active_alerts        → アラートが解消したか確認
+```
+
+### 誤検知アラートを一時抑制する
+
+```
+1. alertmanager: alertmanager_get_alerts      → アクティブなアラートを確認
+2. alertmanager: alertmanager_silence_alert   → confirmed: false でドライラン確認
+3. alertmanager: alertmanager_silence_alert   → confirmed: true でサイレンス作成
+4. alertmanager: alertmanager_list_silences   → サイレンスが登録されたか確認
 ```
 
 ### インフラ設定を変更する
