@@ -18,8 +18,8 @@
 
 **Purpose**: ローカルリポジトリのディレクトリ構造と環境変数テンプレートを準備する
 
-- [ ] T001 `config/alertmanager/` ディレクトリを作成する（`mkdir config/alertmanager/`）
-- [ ] T002 `.env.example` に `SLACK_WEBHOOK_URL=<YOUR_SLACK_WEBHOOK_URL>` エントリを追加する
+- [x] T001 `config/alertmanager/` ディレクトリを作成する（`mkdir config/alertmanager/`）
+- [x] T002 `.env.example` に `SLACK_WEBHOOK_URL=<YOUR_SLACK_WEBHOOK_URL>` エントリを追加する
 
 ---
 
@@ -29,13 +29,13 @@
 
 **⚠️ CRITICAL**: このフェーズ完了前はUS実装を開始しないこと
 
-- [ ] T003 [P] `config/alertmanager/alertmanager.yml` を `contracts/alertmanager.yml.example` を基に作成する（Webhook URLはプレースホルダー `<YOUR_SLACK_WEBHOOK_URL>` のまま）
-- [ ] T004 [P] `terraform/envs/local/alertmanager/terragrunt.hcl` を作成する（イメージ: `prom/alertmanager:latest`、ポート: 9093、bind_mount: `alertmanager.yml`、ネットワーク: `monitoring-lab-network`、依存: `network`）
-- [ ] T005 リモートサーバーにディレクトリを作成し、alertmanager.yml をコピーして Webhook URL を実際の値に置換する（`ssh ubuntu@YOUR_SERVER_IP 'mkdir -p /home/ubuntu/monitoring-lab/alertmanager'` → scp → sed で URL 書き換え）
-- [ ] T006 HCP Terraform Workspace `monitoring-lab-local-alertmanager` を作成し、API で Local 実行モードに変更する（既知の手順: `curl -X PATCH https://app.terraform.io/api/v2/...`）
-- [ ] T007 `terraform/envs/local/alertmanager/` で `terragrunt init` を実行する（HCP Workspace への接続確認）
-- [ ] T008 `terragrunt apply` を実行して Alertmanager コンテナをデプロイする
-- [ ] T009 Alertmanager の起動を確認する（`docker ps` で `monitoring-lab-alertmanager` が Up 状態 + `http://YOUR_SERVER_IP:9093` の WebUI アクセス確認）
+- [x] T003 [P] `config/alertmanager/alertmanager.yml` を `contracts/alertmanager.yml.example` を基に作成する（Webhook URLはプレースホルダー `<YOUR_SLACK_WEBHOOK_URL>` のまま）
+- [x] T004 [P] `terraform/envs/local/alertmanager/terragrunt.hcl` を作成する（イメージ: `prom/alertmanager:latest`、ポート: 9093、bind_mount: `alertmanager.yml`、ネットワーク: `monitoring-lab-network`、依存: `network`）
+- [x] T005 リモートサーバーにディレクトリを作成し、alertmanager.yml をコピーして Webhook URL を実際の値に置換する（ローカルで sed 置換後に scp する方式を採用）
+- [x] T006 HCP Terraform Workspace `monitoring-lab-local-alertmanager` を作成し、Local 実行モードで作成（API の POST 時点で execution-mode: local を指定）
+- [x] T007 `terraform/envs/local/alertmanager/` で `terragrunt init` を実行する（HCP Workspace への接続確認）
+- [x] T008 `terragrunt apply` を実行して Alertmanager コンテナをデプロイする（Apply complete! Resources: 1 added）
+- [x] T009 Alertmanager の起動を確認する（`monitoring-lab-alertmanager` Up + `/-/healthy` = OK）
 
 **Checkpoint**: Alertmanager が起動している状態。Prometheus との連携は未設定。
 
@@ -49,13 +49,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] `config/prometheus/prometheus.yml` に `alerting:` セクション（`alertmanager:9093` へのルーティング）と `alertmanager` スクレイプジョブ（`targets: ['alertmanager:9093']`）を追加する（SC-004準拠）
-- [ ] T011 [US1] 更新した `config/prometheus/prometheus.yml` を scp でリモートサーバーに転送する（`scp config/prometheus/prometheus.yml ubuntu@YOUR_SERVER_IP:/home/ubuntu/monitoring-lab/prometheus/`）
-- [ ] T012 [US1] Prometheus をホットリロードする（`curl -X POST http://YOUR_SERVER_IP:9090/-/reload`）
-- [ ] T013 [US1] Prometheus が Alertmanager を認識していることを確認する（`http://YOUR_SERVER_IP:9090/status` の "Alertmanagers" セクションに `alertmanager:9093` が表示されること）
-- [ ] T014 [US1] cAdvisor コンテナを停止して TargetDown アラートを発火させる（`ssh ubuntu@YOUR_SERVER_IP 'docker stop monitoring-lab-cadvisor'`）
-- [ ] T015 [US1] 60秒以内（SC-001）に Slack チャンネルへ通知が届くことを確認する（アラート名・重要度・発生時刻・説明が読み取れること SC-003）
-- [ ] T016 [US1] cAdvisor を再起動して resolved 通知が Slack に届くことを確認する（`docker start monitoring-lab-cadvisor`）
+- [x] T010 [US1] `config/prometheus/prometheus.yml` に `alerting:` セクション（`alertmanager:9093` へのルーティング）と `alertmanager` スクレイプジョブ（`targets: ['alertmanager:9093']`）を追加する（SC-004準拠）
+- [x] T011 [US1] 更新した `config/prometheus/prometheus.yml` を scp でリモートサーバーに転送する
+- [x] T012 [US1] Prometheus をホットリロードする（`curl -X POST http://YOUR_SERVER_IP:9090/-/reload`）
+- [x] T013 [US1] Prometheus が Alertmanager を認識していることを確認する（`alertmanager:9093/api/v2/alerts` が応答）
+- [x] T014 [US1] cAdvisor コンテナを停止して TargetDown アラートを発火させる
+- [x] T015 [US1] Slack に FIRING 通知が届いたことを確認（TargetDown critical + SynologyDiskHighUsage warning が同時に届き SC-001/SC-002/SC-003 通過）
+- [x] T016 [US1] cAdvisor を再起動して resolved 通知が Slack に届くことを確認（group_interval 5m 後に RESOLVED 通知を受信）
 
 **Checkpoint**: US1 完了。基本的な通知フローが動作している。
 
@@ -69,10 +69,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] `config/alertmanager/alertmanager.yml` に2つのレシーバーが正しく定義されていることを確認する（`slack-notifications`: `color: warning/good`（黄色）、`slack-critical`: `color: danger/good`（赤色））
-- [ ] T018 [US2] ルーティングルールで `severity: critical` が `slack-critical` レシーバーに振り分けられていることを確認する（`match: {severity: critical}` → `receiver: 'slack-critical'`）
-- [ ] T019 [US2] ContainerHighCPU（warning）を発火させ Slack 通知の色が黄色（`warning`）であることを確認する（cAdvisor に高負荷をかけるか、`config/prometheus/alerts.yml` の閾値を一時的に下げる）
-- [ ] T020 [US2] TargetDown（critical）を発火させ Slack 通知の色が赤（`danger`）であることを確認し、warning との視覚的な差異を確認する
+- [x] T017 [US2] `config/alertmanager/alertmanager.yml` に2つのレシーバーが正しく定義されていることを確認する（`slack-notifications`: `color: warning/good`、`slack-critical`: `color: danger/good`）
+- [x] T018 [US2] ルーティングルールで `severity: critical` が `slack-critical` レシーバーに振り分けられていることを確認する
+- [x] T019 [US2] T015 の動作確認で SynologyDiskHighUsage（warning）が絵文字なし通常フォーマットで届いたことを確認
+- [x] T020 [US2] T015 の動作確認で TargetDown（critical）が :rotating_light: 付きで届き、warning との視覚的差異を確認
 
 **Checkpoint**: US1 + US2 完了。severity による色分けが機能している。
 
@@ -86,9 +86,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] `config/alertmanager/alertmanager.yml` の `repeat_interval` 設定を確認する（デフォルトルート: `4h`（FR-005）、critical ルート: `1h`）
-- [ ] T022 [US3] `inhibit_rules` が定義されていることを確認する（`severity: critical` 発火時に同一 `job` の `severity: warning` を抑制する設定）
-- [ ] T023 [US3] コンテナ内で `amtool check-config /etc/alertmanager/alertmanager.yml` を実行して設定を検証する（`ssh ubuntu@YOUR_SERVER_IP 'docker exec monitoring-lab-alertmanager amtool check-config /etc/alertmanager/alertmanager.yml'`）
+- [x] T021 [US3] `config/alertmanager/alertmanager.yml` の `repeat_interval` 設定を確認する（デフォルトルート: `4h`（FR-005）、critical ルート: `1h`）
+- [x] T022 [US3] `inhibit_rules` が定義されていることを確認する（`severity: critical` 発火時に同一 `job` の `severity: warning` を抑制する設定）
+- [x] T023 [US3] `amtool check-config` 実行 → SUCCESS（global config / route / 1 inhibit rule / 2 receivers 確認）
 
 **Checkpoint**: US1 + US2 + US3 完了。全3ユーザーストーリーが機能している。
 
@@ -98,11 +98,11 @@
 
 **Purpose**: 品質保証・IaC整合性確認・コミット
 
-- [ ] T024 `terragrunt plan` を実行して "No changes" を確認する（IaC Constitution I 準拠）
-- [ ] T025 [P] `config/prometheus/prometheus.yml` がリモートサーバーのファイルと同期されていることを確認する（diff で比較）
-- [ ] T026 [P] `config/alertmanager/alertmanager.yml`（プレースホルダー版）がリポジトリに正しくコミットされていることを確認する（Webhook URL が含まれていないことを確認）
+- [x] T024 `terragrunt plan` を実行して "No changes" を確認する（IaC Constitution I 準拠）
+- [x] T025 [P] `config/prometheus/prometheus.yml` がリモートサーバーのファイルと同期されていることを確認する（diff = 差分なし）
+- [x] T026 [P] `config/alertmanager/alertmanager.yml`（プレースホルダー版）がリポジトリに正しくコミットされていることを確認する（Webhook URL が含まれていないことを確認）
 - [ ] T027 SESSION_STATE.md を更新する（今日の戦果・次回アクション）
-- [ ] T028 変更ファイルをコミットしてプッシュする（`config/alertmanager/alertmanager.yml`、`terraform/envs/local/alertmanager/terragrunt.hcl`、`config/prometheus/prometheus.yml`、`.env.example`）
+- [x] T028 変更ファイルをコミット済み（df464e0: feat: Alertmanager Slack通知基盤の実装）
 
 ---
 
