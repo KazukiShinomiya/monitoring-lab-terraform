@@ -1,0 +1,86 @@
+# ==========================================
+# Alertmanager Configuration
+# ==========================================
+# 配置先: /etc/alertmanager/alertmanager.yml (bind mount)
+#
+# 注意: SLACK_WEBHOOK_URL には実際の Incoming Webhook URL を設定してください。
+# URLは .env に SLACK_WEBHOOK_URL として記録し、Gitにはコミットしないこと。
+# リモートサーバーへのデプロイ時に置換:
+#   scp config/alertmanager/alertmanager.yml ubuntu@YOUR_SERVER_IP:/home/ubuntu/monitoring-lab/alertmanager/
+#   ssh ubuntu@YOUR_SERVER_IP "sed -i 's|<YOUR_SLACK_WEBHOOK_URL>|$SLACK_WEBHOOK_URL|g' /home/ubuntu/monitoring-lab/alertmanager/alertmanager.yml"
+
+global:
+  resolve_timeout: 5m
+
+# ==========================================
+# ルーティングルール
+# ==========================================
+route:
+  # デフォルトレシーバー（warning はこちらへ）
+  receiver: 'slack-notifications'
+
+  # グルーピング: 同一アラート名・ジョブをまとめる
+  group_by: ['alertname', 'job']
+
+  # グループ初回通知まで30秒待機（複数アラートをまとめるため）
+  group_wait: 30s
+
+  # 既存グループへ新アラートが追加された場合の待機時間
+  group_interval: 5m
+
+  # 発火中アラートの繰り返し通知間隔（4時間 = FR-005 準拠）
+  repeat_interval: 4h
+
+  routes:
+    # critical は色・ラベルで視覚的に強調（FR-004 準拠）
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      repeat_interval: 1h  # critical は1時間おきに再通知
+
+# ==========================================
+# レシーバー定義
+# ==========================================
+receivers:
+  # Warning 通知（黄色）
+  - name: 'slack-notifications'
+    slack_configs:
+      - api_url: '<YOUR_SLACK_WEBHOOK_URL>'
+        channel: '#monitoring-alerts'
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *アラート:* {{ .Annotations.summary }}
+          *重要度:* `{{ .Labels.severity }}`
+          *説明:* {{ .Annotations.description }}
+          *発生時刻:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+
+  # Critical 通知（赤色で強調）
+  - name: 'slack-critical'
+    slack_configs:
+      - api_url: '<YOUR_SLACK_WEBHOOK_URL>'
+        channel: '#monitoring-alerts'
+        send_resolved: true
+        title: ':rotating_light: [{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *アラート:* {{ .Annotations.summary }}
+          *重要度:* `{{ .Labels.severity }}`
+          *説明:* {{ .Annotations.description }}
+          *発生時刻:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+
+# ==========================================
+# 抑制ルール（FR-005 / US3 準拠）
+# ==========================================
+# critical が発火中の場合、同一 job の warning を抑制する
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'job']
