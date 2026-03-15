@@ -24,6 +24,14 @@
         "bash", "-c",
         "TF_TOKEN=$(grep -m1 '^TF_TOKEN_app_terraform_io=' /mnt/e/work/labo/.env | cut -d= -f2-) && docker run --rm -i --mount type=bind,src=/home/ubuntu/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly --mount type=bind,src=/mnt/e/work/labo/.mcp-data,dst=/app/.mcp-data --env TF_TOKEN_app_terraform_io=$TF_TOKEN monitoring-lab-terragrunt-mcp"
       ]
+    },
+    "alertmanager": {
+      "command": "wsl",
+      "args": [
+        "-d", "Ubuntu-24.04", "--",
+        "docker", "run", "--rm", "-i",
+        "monitoring-lab-alertmanager-mcp"
+      ]
     }
   }
 }

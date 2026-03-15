@@ -19,6 +19,7 @@ jobs:
           - docker-server
           - prometheus-server
           - terragrunt-server
+          - alertmanager-server
 
     steps:
       - uses: actions/checkout@v4
