@@ -12,6 +12,8 @@ deleteDatasources:
     orgId: 1
   - name: Zabbix
     orgId: 1
+  - name: Loki
+    orgId: 1
 
 datasources:
   # ==========================================
@@ -62,6 +64,21 @@ datasources:
       password: zabbix  # Zabbixのパスワード
       # TODO: Vault連携実装後は以下のように変更
       # password: ${ZABBIX_PASSWORD}  # 環境変数から取得
+
+  # ==========================================
+  # Loki データソース
+  # ==========================================
+  # ログ集約サービス Loki への接続設定
+  # プロビジョニングにより Grafana 起動時に自動追加される（FR-004）
+  - name: Loki
+    type: loki
+    access: proxy  # Grafanaサーバー経由でアクセス
+    url: http://loki:3100  # Docker Network内のホスト名
+    isDefault: false  # Prometheusがデフォルトを維持
+    editable: true
+    version: 1
+    jsonData:
+      maxLines: 1000  # Explore での最大表示行数
 
   # ==========================================
   # PostgreSQL データソース（オプション）
