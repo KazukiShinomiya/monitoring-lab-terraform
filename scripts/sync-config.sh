@@ -9,6 +9,8 @@
 #   ./scripts/sync-config.sh alertmanager   # alertmanager.yml (URL置換) → ホットリロード
 #   ./scripts/sync-config.sh grafana        # dashboards/ + datasources.yml → 再起動
 #   ./scripts/sync-config.sh snmp           # snmp.yml → SNMP Exporter 再起動
+#   ./scripts/sync-config.sh loki           # loki.yml → Loki 再起動
+#   ./scripts/sync-config.sh promtail       # promtail.yml → Promtail 再起動
 #   ./scripts/sync-config.sh tekken-update  # tekken_bot プロジェクトから tekken.json をコピー
 #   ./scripts/sync-config.sh all            # 全サービス（tekken-update は含まない）
 #
@@ -101,6 +103,26 @@ sync_snmp() {
   info "snmp 同期完了"
 }
 
+sync_loki() {
+  step "loki: 設定ファイルを転送中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/loki"
+  scp "${REPO_ROOT}/config/loki/loki.yml" \
+      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/loki/loki.yml"
+  step "loki: コンテナを再起動中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-loki"
+  info "loki 同期完了"
+}
+
+sync_promtail() {
+  step "promtail: 設定ファイルを転送中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/promtail"
+  scp "${REPO_ROOT}/config/promtail/promtail.yml" \
+      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/promtail/promtail.yml"
+  step "promtail: コンテナを再起動中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-promtail"
+  info "promtail 同期完了"
+}
+
 sync_tekken_update() {
   step "tekken: ソースプロジェクトから tekken.json をコピー中..."
   if [ ! -f "${TEKKEN_SOURCE}" ]; then
@@ -120,21 +142,27 @@ case "${SERVICE}" in
   alertmanager)    sync_alertmanager ;;
   grafana)         sync_grafana ;;
   snmp)            sync_snmp ;;
+  loki)            sync_loki ;;
+  promtail)        sync_promtail ;;
   tekken-update)   sync_tekken_update ;;
   all)
     sync_prometheus
     sync_alertmanager
     sync_grafana
     sync_snmp
+    sync_loki
+    sync_promtail
     info "全サービス同期完了"
     ;;
   *)
-    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|tekken-update|all}"
+    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tekken-update|all}"
     echo ""
     echo "  prometheus      prometheus.yml + alerts.yml → ホットリロード"
     echo "  alertmanager    alertmanager.yml (URL置換) → ホットリロード"
     echo "  grafana         dashboards/ + datasources.yml → コンテナ再起動"
     echo "  snmp            snmp.yml → コンテナ再起動"
+    echo "  loki            loki.yml → コンテナ再起動"
+    echo "  promtail        promtail.yml → コンテナ再起動"
     echo "  tekken-update   tekken_bot プロジェクトから tekken.json をリポジトリにコピー"
     echo "  all             全サービス（tekken-update は含まない）"
     exit 1
