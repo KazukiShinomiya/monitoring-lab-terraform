@@ -1,0 +1,44 @@
+# ==========================================
+# Promtail Configuration
+# ==========================================
+# ログ収集エージェント Promtail の設定ファイル
+# 収集方式: Docker Socket 経由（docker_sd_configs）
+# 配置先: /etc/promtail/promtail.yml (bind mount)
+
+server:
+  http_listen_port: 9080   # Prometheus メトリクス公開ポート
+  grpc_listen_port: 0
+
+# 読み取り済みログ位置の記録ファイル（Docker Volume で永続化済み）
+positions:
+  filename: /tmp/positions.yaml
+
+# Loki へのプッシュ先
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ==========================================
+  # Docker Socket 経由のコンテナログ収集
+  # ==========================================
+  - job_name: containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s  # コンテナ一覧の更新間隔
+    relabel_configs:
+      # コンテナ名をラベルとして付与（先頭の "/" を除去）
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container_name'
+
+      # Dockerイメージ名をラベルとして付与
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'
+
+      # ログストリーム種別（stdout/stderr）をラベルとして付与
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'logstream'
+
+      # Docker Compose サービス名をラベルとして付与（存在する場合）
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'

@@ -137,3 +137,12 @@ scrape_configs:
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['alertmanager:9093']
+
+  # ==========================================
+  # Job 8: Loki（自己監視 FR-009）
+  # ==========================================
+  # Loki 自身のメトリクスを収集（取り込みレート・クエリレイテンシ・ストレージ使用量）
+  # 既存の TargetDown アラートが Loki ダウンを検知する
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
