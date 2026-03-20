@@ -1,0 +1,45 @@
+# ==========================================
+# Loki Configuration
+# ==========================================
+# ログ集約サービス Loki の設定ファイル
+# 配置先: /etc/loki/loki.yml (bind mount)
+
+# 認証無効（学習環境）
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+# スキーマ設定（TSDB v13 - Loki 3.x 推奨）
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# ログ保持期間: 7日間（学習環境として十分な量を保持しつつストレージを節約）
+limits_config:
+  retention_period: 168h
+
+# コンパクタ設定（保持期間の強制適用に必要）
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem
