@@ -72,6 +72,16 @@ tasks:
     cmds:
       - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} snmp"
 
+  sync:tempo:
+    desc: "Grafana Tempo 設定を同期・再起動"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} tempo"
+
+  sync:otel-collector:
+    desc: "OTel Collector 設定を同期・再起動"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} otel-collector"
+
   sync:all:
     desc: "全サービスの設定を同期"
     cmds:

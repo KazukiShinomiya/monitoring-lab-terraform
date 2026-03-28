@@ -20,6 +20,21 @@ global:
     cluster: 'monitoring-lab'
     environment: 'local'
 
+  # Exemplar 収集に必要 — OpenMetrics フォーマットを優先してスクレイプ
+  # Prometheus クライアントが Exemplar を付与している場合に収集される
+  scrape_protocols:
+    - OpenMetricsText1.0.0
+    - OpenMetricsText0.0.1
+    - PrometheusText0.0.4
+
+# ----- Exemplar ストレージ設定 -----
+# Exemplar: メトリクスに紐付く TraceID を保持する特殊データポイント
+# Grafana で Exemplar マーカーをクリックすると Tempo のトレースに直接ジャンプできる
+storage:
+  exemplar_storage:
+    enable_exemplar_storage: true
+    max_exemplars: 100000  # 最大保持 Exemplar 数
+
 # ----- ルールファイルの読み込み -----
 rule_files:
   - '/etc/prometheus/alerts.yml'
@@ -146,3 +161,21 @@ scrape_configs:
   - job_name: 'loki'
     static_configs:
       - targets: ['loki:3100']
+
+  # ==========================================
+  # Job 9: Grafana Tempo（自己監視）
+  # ==========================================
+  # Tempo 自身のメトリクスを収集（取り込みレート・クエリレイテンシ・ブロック数等）
+  # 既存の TargetDown アラートが Tempo ダウンを検知する
+  - job_name: 'tempo'
+    static_configs:
+      - targets: ['tempo:3200']
+
+  # ==========================================
+  # Job 10: OTel Collector（自己監視 — Constitution 原則 V）
+  # ==========================================
+  # OTel Collector 自身のメトリクスを収集（受信スパン数・エクスポート失敗数等）
+  # 既存の TargetDown アラートが OTel Collector ダウンを検知する
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888']
