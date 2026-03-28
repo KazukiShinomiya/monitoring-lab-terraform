@@ -59,10 +59,11 @@ task logs -- otel-collector
 ## Step 4: テスト用トレースを送信
 
 ```bash
-# telemetrygen を使ってサンプルトレース送信
-wsl -d Ubuntu-24.04 -e bash -c "docker run --rm --network host \
+# telemetrygen を使ってサンプルトレース送信 (Docker ネットワーク経由)
+wsl -d Ubuntu-24.04 -e bash -c "ssh ubuntu@YOUR_SERVER_IP 'docker run --rm \
+  --network monitoring-lab-network \
   ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest \
-  traces --otlp-endpoint localhost:4317 --otlp-insecure --traces 5"
+  traces --otlp-endpoint otel-collector:4317 --otlp-insecure --duration 5s --rate 5'"
 ```
 
 ## Step 5: Grafana で確認

@@ -36,7 +36,9 @@ inputs = {
   services = {
     tempo = {
       # Grafana Tempo 公式イメージ
-      image = "grafana/tempo:latest"
+      # v2.10+ は Kafka ベースの新アーキテクチャに移行したため
+      # Kafka 不要の学習環境では v2.6.1 (classic single-binary) を使用
+      image = "grafana/tempo:2.6.1"
 
       # HTTP API ポート (Grafana データソース + /ready ヘルスチェック)
       # OTLP ポート (4317/4318) は docker_container モジュールの単一ポート制約により
