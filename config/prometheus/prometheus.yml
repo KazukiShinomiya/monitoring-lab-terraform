@@ -27,14 +27,6 @@ global:
     - OpenMetricsText0.0.1
     - PrometheusText0.0.4
 
-# ----- Exemplar ストレージ設定 -----
-# Exemplar: メトリクスに紐付く TraceID を保持する特殊データポイント
-# Grafana で Exemplar マーカーをクリックすると Tempo のトレースに直接ジャンプできる
-storage:
-  exemplar_storage:
-    enable_exemplar_storage: true
-    max_exemplars: 100000  # 最大保持 Exemplar 数
-
 # ----- ルールファイルの読み込み -----
 rule_files:
   - '/etc/prometheus/alerts.yml'

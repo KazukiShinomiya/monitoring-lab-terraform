@@ -39,8 +39,8 @@
 
 **⚠️ CRITICAL**: HCP Terraform UI または API で手動実施。デフォルトは Remote モードのため、terragrunt apply が失敗する。
 
-- [ ] T005 HCP Terraform UI (app.terraform.io) で workspace `monitoring-lab-local-tempo` の Execution Mode を **Local** に変更する
-- [ ] T006 HCP Terraform UI (app.terraform.io) で workspace `monitoring-lab-local-otel-collector` の Execution Mode を **Local** に変更する
+- [x] T005 HCP Terraform UI (app.terraform.io) で workspace `monitoring-lab-local-tempo` の Execution Mode を **Local** に変更する
+- [x] T006 HCP Terraform UI (app.terraform.io) で workspace `monitoring-lab-local-otel-collector` の Execution Mode を **Local** に変更する
 
 **Checkpoint**: 2つの Workspace が Local モードになったことを HCP UI で確認してから次フェーズへ
 
@@ -56,10 +56,10 @@
 
 - [x] T007 [US1] `config/tempo/tempo.yml` を作成する。内容: single binary モード、http_listen_port: 3200、OTLP gRPC (4317) + HTTP (4318) レシーバー、local backend (`/var/tempo`)、WAL (`/var/tempo/wal`)、metrics_generator (service-graphs, span-metrics)、block_retention: 336h
 - [x] T008 [US1] `terraform/envs/local/tempo/terragrunt.hcl` を作成する。内容: `docker_container` モジュール参照、dependency: network、volume: `tempo_data` → `/var/tempo`、bind_mount: `~/monitoring-lab/tempo/tempo.yml` → `/etc/tempo/tempo.yml`、port: 3200→3200、command: `["-config.file=/etc/tempo/tempo.yml"]`
-- [ ] T009 [US1] リモートサーバーにディレクトリを作成し設定ファイルを **apply 前に** 転送する (bind_mount のファイルが存在しないと起動失敗するため必須): `ssh ubuntu@10.0.0.220 'mkdir -p ~/monitoring-lab/tempo'` → `scp config/tempo/tempo.yml ubuntu@10.0.0.220:~/monitoring-lab/tempo/tempo.yml` (T007, T005 完了後)
-- [ ] T010 [US1] `task tg:apply:svc -- tempo` を実行して Tempo コンテナをリモートサーバーにデプロイする (T008, T009 完了後)
-- [ ] T011 [US1] Tempo ヘルスチェックを実行して動作を確認する: `curl -s http://10.0.0.220:3200/ready` が `"ready"` を返すことを確認する (T010 完了後)
-- [ ] T012 [US1] データ永続化を検証する (FR-007, SC-006): `task logs -- otel-collector` でトレースが記録されていることを確認後、`ssh ubuntu@10.0.0.220 'docker restart monitoring-lab-tempo'` を実行し、再起動後も Tempo HTTP API でトレースが参照可能であることを確認する (T011 完了後、T016 完了後が望ましい)
+- [x] T009 [US1] リモートサーバーにディレクトリを作成し設定ファイルを **apply 前に** 転送する (bind_mount のファイルが存在しないと起動失敗するため必須): `ssh ubuntu@10.0.0.220 'mkdir -p ~/monitoring-lab/tempo'` → `scp config/tempo/tempo.yml ubuntu@10.0.0.220:~/monitoring-lab/tempo/tempo.yml` (T007, T005 完了後)
+- [x] T010 [US1] `task tg:apply:svc -- tempo` を実行して Tempo コンテナをリモートサーバーにデプロイする (T008, T009 完了後)
+- [x] T011 [US1] Tempo ヘルスチェックを実行して動作を確認する: `curl -s http://10.0.0.220:3200/ready` が `"ready"` を返すことを確認する (T010 完了後)
+- [x] T012 [US1] データ永続化を検証する (FR-007, SC-006): `task logs -- otel-collector` でトレースが記録されていることを確認後、`ssh ubuntu@10.0.0.220 'docker restart monitoring-lab-tempo'` を実行し、再起動後も Tempo HTTP API でトレースが参照可能であることを確認する (T011 完了後、T016 完了後が望ましい)
 
 **Checkpoint**: Tempo コンテナが UP かつ `/ready` が通る。US1 は独立してテスト可能。
 
@@ -77,11 +77,11 @@
 
 - [x] T013 [US3] `config/otel-collector/otel-collector.yml` を作成する。内容: receivers: otlp (gRPC 0.0.0.0:4317, HTTP 0.0.0.0:4318)、processors: batch (timeout: 1s, send_batch_size: 1024)、exporters: otlp/tempo (endpoint: tempo:4317, tls.insecure: true)、pipeline: traces (otlp → batch → otlp/tempo)
 - [x] T014 [US3] `terraform/envs/local/otel-collector/terragrunt.hcl` を作成する。内容: `docker_container` モジュール参照、dependency: network と tempo、volumes: []（ステートレス）、bind_mount: `~/monitoring-lab/otel-collector/otel-collector.yml` → `/etc/otel-collector/otel-collector.yml`、port: 4317→4317、image: `otel/opentelemetry-collector-contrib:latest`
-- [ ] T015 [US3] リモートサーバーにディレクトリを作成し設定ファイルを **apply 前に** 転送する (H3 修正): `ssh ubuntu@10.0.0.220 'mkdir -p ~/monitoring-lab/otel-collector'` → `scp config/otel-collector/otel-collector.yml ubuntu@10.0.0.220:~/monitoring-lab/otel-collector/otel-collector.yml` (T013, T006 完了後)
-- [ ] T016 [US3] `task tg:apply:svc -- otel-collector` を実行して OTel Collector コンテナをデプロイする (T014, T015 完了後)
+- [x] T015 [US3] リモートサーバーにディレクトリを作成し設定ファイルを **apply 前に** 転送する (H3 修正): `ssh ubuntu@10.0.0.220 'mkdir -p ~/monitoring-lab/otel-collector'` → `scp config/otel-collector/otel-collector.yml ubuntu@10.0.0.220:~/monitoring-lab/otel-collector/otel-collector.yml` (T013, T006 完了後)
+- [x] T016 [US3] `task tg:apply:svc -- otel-collector` を実行して OTel Collector コンテナをデプロイする (T014, T015 完了後)
 - [x] T017 [US3] `config/prometheus/prometheus.yml` に Job 10 (OTel Collector 自己監視) を追加する: `job_name: 'otel-collector'`、`targets: ['otel-collector:8888']` — **Constitution 原則 V 対応** (T016 完了後)
-- [ ] T018 [US3] telemetrygen でサンプルトレースを送信し、OTel Collector 経由で Tempo に到達することを確認する: `docker run --rm --network host ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest traces --otlp-endpoint localhost:4317 --otlp-insecure --traces 5` (T016 完了後)
-- [ ] T019 [US3] `task logs -- otel-collector` でログを確認し `"Everything is ready."` と転送成功ログを確認する (T018 完了後)
+- [x] T018 [US3] telemetrygen でサンプルトレースを送信し、OTel Collector 経由で Tempo に到達することを確認する: `docker run --rm --network host ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest traces --otlp-endpoint localhost:4317 --otlp-insecure --traces 5` (T016 完了後)
+- [x] T019 [US3] `task logs -- otel-collector` でログを確認し `"Everything is ready."` と転送成功ログを確認する (T018 完了後)
 
 **Checkpoint**: OTel Collector → Tempo のパイプラインが動作。OTel Collector が prometheus.yml のスクレイプ対象に追加済み。US3 は独立してテスト可能。
 
@@ -98,15 +98,15 @@
 ### Implementation for User Story 2
 
 - [x] T020 [US2] `config/prometheus/prometheus.yml` の `global:` セクションに `scrape_protocols` を追加する: `[OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4]`
-- [x] T021 [US2] `config/prometheus/prometheus.yml` に `storage.exemplar_storage` セクションを追加する: `enable_exemplar_storage: true`、`max_exemplars: 100000` **(T020 完了後 — 同一ファイル、順次実行)**
+- [x] T021 [US2] `config/prometheus/prometheus.yml` に `storage.exemplar_storage` セクションを追加する: `enable_exemplar_storage: true`、`max_exemplars: 100000` **(T020 完了後 — 同一ファイル、順次実行)** ※Prometheus 3.x では不要のため削除済み
 - [x] T022 [US2] `config/prometheus/prometheus.yml` に Job 9 (Tempo スクレイプ) を追加する: `job_name: 'tempo'`、`targets: ['tempo:3200']` **(T021 完了後 — 同一ファイル、順次実行)**
 - [x] T023 [P] [US2] `config/grafana/provisioning/datasources/datasources.yml` の `deleteDatasources:` リストに `{name: Tempo, orgId: 1}` を追加する
 - [x] T024 [US2] `config/grafana/provisioning/datasources/datasources.yml` に Tempo データソースを追加する (T023 後): name: Tempo、type: tempo、uid: tempo、url: http://tempo:3200、jsonData: serviceMap (datasourceUid: prometheus)、nodeGraph.enabled: true、tracesToLogs (datasourceUid: loki)、tracesToMetrics (datasourceUid: prometheus)
 - [x] T025 [US2] `config/grafana/provisioning/datasources/datasources.yml` の Prometheus データソースの `jsonData:` に `exemplarTraceIdDestinations` を追加する (T024 後): `[{name: traceID, datasourceUid: tempo}]`
-- [ ] T026 [US2] `task sync:prometheus` を実行して Prometheus 設定を同期・ホットリロードする (T017, T020, T021, T022 完了後)
-- [ ] T027 [US2] `task sync:grafana` を実行して Grafana 設定を同期・再起動する (T025 完了後)
-- [ ] T028 [US2] Grafana (http://10.0.0.220:3000) の Explore → Tempo データソース → Search → Run query でトレース一覧が表示されることを確認する (T027 完了後)
-- [ ] T029 [US2] Prometheus (http://10.0.0.220:9090/targets) で `tempo` と `otel-collector` ジョブが **UP** 状態であることを確認する (T026 完了後)
+- [x] T026 [US2] `task sync:prometheus` を実行して Prometheus 設定を同期・ホットリロードする (T017, T020, T021, T022 完了後)
+- [x] T027 [US2] `task sync:grafana` を実行して Grafana 設定を同期・再起動する (T025 完了後)
+- [x] T028 [US2] Grafana (http://10.0.0.220:3000) の Explore → Tempo データソース → Search → Run query でトレース一覧が表示されることを確認する (T027 完了後)
+- [x] T029 [US2] Prometheus (http://10.0.0.220:9090/targets) で `tempo` と `otel-collector` ジョブが **UP** 状態であることを確認する (T026 完了後)
 
 **Checkpoint**: Grafana からトレースが可視化され、Prometheus が Tempo と OTel Collector をスクレイプしている。US2 独立テスト完了。
 
@@ -122,7 +122,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T030 [US4] `task tg:plan` を実行し、`monitoring-lab-local-tempo` と `monitoring-lab-local-otel-collector` を含む全ワークスペースで **No changes** になることを確認する
+- [x] T030 [US4] `task tg:plan` を実行し、`monitoring-lab-local-tempo` と `monitoring-lab-local-otel-collector` を含む全ワークスペースで **No changes** になることを確認する
 
 **Checkpoint**: IaC 状態が収束している。全 US が独立してテスト完了。
 
@@ -138,8 +138,8 @@
 - [x] T034 `scripts/sync-config.sh` のヘルプテキスト (usage 部分) に `tempo` と `otel-collector` の説明行を追加する (T033 完了後)
 - [x] T035 [P] `Taskfile.yml` に `sync:tempo` タスクを追加する: desc + wsl コマンドパターンで `sync-config.sh tempo` を実行
 - [x] T036 [P] `Taskfile.yml` に `sync:otel-collector` タスクを追加する: desc + wsl コマンドパターンで `sync-config.sh otel-collector` を実行
-- [ ] T037 `quickstart.md` の全ステップを通して最終動作確認を行い、`sync-config.sh tempo` と `sync-config.sh otel-collector` の動作も確認する (US3 Acceptance Scenario 3 対応)
-- [ ] T038 `.claude/SESSION_STATE.md` を 011-tempo の完了状態に更新し、次フェーズ (012-gitops) を次推奨アクションとして記録する
+- [x] T037 `quickstart.md` の全ステップを通して最終動作確認を行い、`sync-config.sh tempo` と `sync-config.sh otel-collector` の動作も確認する (US3 Acceptance Scenario 3 対応)
+- [x] T038 `.claude/SESSION_STATE.md` を 011-tempo の完了状態に更新し、次フェーズ (012-gitops) を次推奨アクションとして記録する
 
 ---
 

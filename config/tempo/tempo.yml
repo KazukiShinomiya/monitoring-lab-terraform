@@ -27,7 +27,7 @@ ingester:
 # ----- コンパクター設定 -----
 compactor:
   compaction:
-    block_retention: 336h  # ブロック保持期間: 14日 (デフォルト)
+    block_retention: 336h  # ブロック保持期間: 14日
 
 # ----- ストレージ設定 -----
 storage:
@@ -47,9 +47,6 @@ metrics_generator:
       cluster: monitoring-lab
   storage:
     path: /var/tempo/generator/wal    # ジェネレーター WAL 保存先
-  processors:
-    - service-graphs   # サービス間依存グラフのメトリクスを生成
-    - span-metrics     # スパンレベルのメトリクスを生成 (レイテンシ・エラーレート等)
 
 # ----- オーバーライド設定 -----
 # テナント別オーバーライド (学習環境ではデフォルト設定)

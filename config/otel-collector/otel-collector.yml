@@ -38,7 +38,13 @@ service:
 
   # Prometheus スクレイプ用テレメトリーエンドポイント (Constitution 原則 V)
   # Prometheus が otel-collector:8888 をスクレイプして自己監視する
+  # v0.100+ では readers ベースの設定が必要 (address フィールドは廃止)
   telemetry:
     metrics:
       level: detailed
-      address: "0.0.0.0:8888"  # Prometheus がスクレイプするメトリクスポート
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "0.0.0.0"
+                port: 8888
