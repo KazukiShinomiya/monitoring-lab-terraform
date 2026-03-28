@@ -2,26 +2,6 @@
 # Variables for Vault Secret Module
 # ==========================================
 
-# ----- Vault接続設定 -----
-
-variable "vault_address" {
-  type        = string
-  description = "Vaultサーバーのアドレス（例: http://localhost:8200）"
-  default     = "http://localhost:8200"
-}
-
-variable "vault_token" {
-  type        = string
-  description = "Vaultの認証トークン（開発モードでは初期化時に表示される）"
-  sensitive   = true
-}
-
-variable "skip_tls_verify" {
-  type        = bool
-  description = "TLS証明書の検証をスキップするか（開発環境のみtrue）"
-  default     = true
-}
-
 # ----- マウント設定 -----
 
 variable "mount_path" {
@@ -59,6 +39,14 @@ variable "db_host" {
   type        = string
   description = "PostgreSQLのホスト名（Dockerネットワーク内）"
   default     = "postgres"
+}
+
+# ----- Alertmanager設定 -----
+
+variable "alertmanager_slack_webhook_url" {
+  type        = string
+  description = "AlertmanagerのSlack Webhook URL"
+  sensitive   = true
 }
 
 # ----- Grafana認証情報 -----
