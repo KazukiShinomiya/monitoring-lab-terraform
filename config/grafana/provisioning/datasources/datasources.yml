@@ -14,6 +14,8 @@ deleteDatasources:
     orgId: 1
   - name: Loki
     orgId: 1
+  - name: Tempo
+    orgId: 1
 
 datasources:
   # ==========================================
@@ -21,6 +23,7 @@ datasources:
   # ==========================================
   - name: Prometheus
     type: prometheus
+    uid: prometheus
     access: proxy  # Grafanaサーバー経由でアクセス
     url: http://prometheus:9090  # Docker Network内のホスト名
     isDefault: true  # デフォルトのデータソースに設定
@@ -32,6 +35,10 @@ datasources:
       queryTimeout: 60s
       # カスタムHTTPヘッダー（必要に応じて）
       # customQueryParameters: ''
+      # Exemplar → Tempo トレースリンク (SC-003 対応)
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo  # Tempo データソースの uid と一致させる
 
   # ==========================================
   # Zabbix データソース
@@ -72,6 +79,7 @@ datasources:
   # プロビジョニングにより Grafana 起動時に自動追加される（FR-004）
   - name: Loki
     type: loki
+    uid: loki
     access: proxy  # Grafanaサーバー経由でアクセス
     url: http://loki:3100  # Docker Network内のホスト名
     isDefault: false  # Prometheusがデフォルトを維持
@@ -79,6 +87,38 @@ datasources:
     version: 1
     jsonData:
       maxLines: 1000  # Explore での最大表示行数
+
+  # ==========================================
+  # Grafana Tempo データソース
+  # ==========================================
+  # 分散トレーシングバックエンド Tempo への接続設定 (FR-003 対応)
+  # uid: tempo — Prometheus の exemplarTraceIdDestinations から参照される
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy  # Grafanaサーバー経由でアクセス
+    url: http://tempo:3200  # Docker Network内のホスト名 + HTTP API ポート
+    isDefault: false
+    editable: true
+    version: 1
+    jsonData:
+      httpMethod: GET
+      # サービスグラフ表示 — metrics_generator が生成したサービス間依存グラフ
+      serviceMap:
+        datasourceUid: prometheus  # Prometheus データソースの uid
+      # ノードグラフ可視化 (サービスグラフ表示に必要)
+      nodeGraph:
+        enabled: true
+      # トレース → ログ相関 (SC-003 対応: ウォーターフォールから Loki ログへジャンプ)
+      tracesToLogs:
+        datasourceUid: loki        # Loki データソースの uid
+        filterByTraceID: true
+        filterBySpanID: false
+      # トレース → メトリクス相関 (Exemplar 逆引き)
+      tracesToMetrics:
+        datasourceUid: prometheus  # Prometheus データソースの uid
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
 
   # ==========================================
   # PostgreSQL データソース（オプション）

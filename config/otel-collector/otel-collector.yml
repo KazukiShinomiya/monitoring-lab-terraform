@@ -1,0 +1,44 @@
+# ==========================================
+# OpenTelemetry Collector Configuration
+# ==========================================
+# OTLP トレースを受信して Grafana Tempo に転送するコレクター設定
+# 配置先: /home/ubuntu/monitoring-lab/otel-collector/otel-collector.yml (bind mount)
+# コンテナ内マウント先: /etc/otel-collector/otel-collector.yml
+
+# ----- 受信者設定 -----
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"   # OTLP gRPC — 外部公開 (アプリからのトレース受信)
+      http:
+        endpoint: "0.0.0.0:4318"   # OTLP HTTP — Docker ネットワーク内のみ
+
+# ----- プロセッサー設定 -----
+processors:
+  batch:
+    timeout: 1s            # バッチ送信タイムアウト
+    send_batch_size: 1024  # バッチサイズ上限 (パフォーマンス最適化)
+
+# ----- エクスポーター設定 -----
+exporters:
+  otlp/tempo:
+    endpoint: "tempo:4317"   # Docker ネットワーク内の Tempo コンテナ (gRPC)
+    tls:
+      insecure: true         # 学習環境: TLS なし (本番では証明書設定が必要)
+
+# ----- サービス設定 -----
+service:
+  # トレースパイプライン: 受信 → バッチ処理 → Tempo へ転送
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo]
+
+  # Prometheus スクレイプ用テレメトリーエンドポイント (Constitution 原則 V)
+  # Prometheus が otel-collector:8888 をスクレイプして自己監視する
+  telemetry:
+    metrics:
+      level: detailed
+      address: "0.0.0.0:8888"  # Prometheus がスクレイプするメトリクスポート

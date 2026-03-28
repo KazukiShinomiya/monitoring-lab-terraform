@@ -1,0 +1,61 @@
+# ==========================================
+# Grafana Tempo Configuration
+# ==========================================
+# single binary モードで動作する Tempo の設定
+# 配置先: /home/ubuntu/monitoring-lab/tempo/tempo.yml (bind mount)
+# コンテナ内マウント先: /etc/tempo/tempo.yml
+
+# ----- サーバー設定 -----
+server:
+  http_listen_port: 3200  # HTTP API / Grafana データソース接続ポート
+
+# ----- ディストリビューター設定 -----
+# OTLP トレースを受け取る受信者を定義する
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"   # OTLP gRPC — Docker ネットワーク内のみ (外部非公開)
+        http:
+          endpoint: "0.0.0.0:4318"   # OTLP HTTP — Docker ネットワーク内のみ (外部非公開)
+
+# ----- インジェスター設定 -----
+ingester:
+  max_block_duration: 5m  # フラッシュ前の最大ブロック期間
+
+# ----- コンパクター設定 -----
+compactor:
+  compaction:
+    block_retention: 336h  # ブロック保持期間: 14日 (デフォルト)
+
+# ----- ストレージ設定 -----
+storage:
+  trace:
+    backend: local                    # ローカルファイルシステムバックエンド (学習環境)
+    local:
+      path: /var/tempo/blocks         # ブロックデータ保存先 (Docker Volume にマウント)
+    wal:
+      path: /var/tempo/wal            # Write-Ahead Log 保存先 (障害復旧用)
+
+# ----- メトリクスジェネレーター設定 -----
+# トレースからメトリクスを生成する (Exemplar 連携に必要)
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: monitoring-lab
+  storage:
+    path: /var/tempo/generator/wal    # ジェネレーター WAL 保存先
+  processors:
+    - service-graphs   # サービス間依存グラフのメトリクスを生成
+    - span-metrics     # スパンレベルのメトリクスを生成 (レイテンシ・エラーレート等)
+
+# ----- オーバーライド設定 -----
+# テナント別オーバーライド (学習環境ではデフォルト設定)
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics

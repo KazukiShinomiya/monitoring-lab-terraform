@@ -1,0 +1,44 @@
+# ==========================================
+# OTel Collector 設定ファイル スキーマ定義
+# ==========================================
+# このファイルは OTel Collector の設定ファイル (otel-collector.yml) の
+# 期待される構造と制約を定義する。
+# 実際の設定ファイルは config/otel-collector/otel-collector.yml に配置する。
+
+schema:
+  file: config/otel-collector/otel-collector.yml
+  remote_path: /home/ubuntu/monitoring-lab/otel-collector/otel-collector.yml
+  container_mount: /etc/otel-collector/otel-collector.yml
+
+required_sections:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"   # 外部公開ポート (アプリからのトレース受信)
+        http:
+          endpoint: "0.0.0.0:4318"   # Docker ネットワーク内のみ
+
+  processors:
+    batch:
+      timeout: 1s
+      send_batch_size: 1024           # パフォーマンス向上のためのバッチ処理
+
+  exporters:
+    otlp/tempo:
+      endpoint: "tempo:4317"          # Docker ネットワーク内の Tempo コンテナ
+      tls:
+        insecure: true                # 学習環境: TLS なし
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [otlp/tempo]
+
+constraints:
+  - exporter endpoint MUST be "tempo:4317" (Docker network DNS resolution)
+  - tls.insecure MUST be true (学習環境, TLS 未設定)
+  - receiver gRPC endpoint MUST be 0.0.0.0:4317 (外部ポートマッピングと一致)
+  - Tempo コンテナが先に起動している必要がある (Terragrunt dependency で制御)
