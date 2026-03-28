@@ -1,0 +1,49 @@
+# ==========================================
+# Grafana データソース変更スキーマ
+# ==========================================
+# datasources.yml への変更内容を定義する
+
+file: config/grafana/provisioning/datasources/datasources.yml
+
+additions:
+  deleteDatasources:
+    - name: Tempo
+      orgId: 1
+
+  new_datasource:
+    name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: "http://tempo:3200"
+    isDefault: false
+    editable: true
+    version: 1
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: prometheus    # サービスグラフ表示用
+      nodeGraph:
+        enabled: true
+      tracesToLogs:
+        datasourceUid: loki          # トレース → ログ相関
+        filterByTraceID: true
+        filterBySpanID: false
+      tracesToMetrics:
+        datasourceUid: prometheus    # トレース → メトリクス相関
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
+
+modifications:
+  prometheus_datasource:
+    # 既存の Prometheus データソース jsonData に追記
+    jsonData:
+      # 既存設定を維持しつつ以下を追加
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo       # Exemplar → Tempo トレース リンク
+
+constraints:
+  - Tempo の uid は "tempo" に固定 (Prometheus の exemplarTraceIdDestinations と一致させる)
+  - Prometheus データソースの uid は "prometheus" である必要がある (Tempo の serviceMap と一致)
+  - Loki データソースの uid は "loki" である必要がある (Tempo の tracesToLogs と一致)

@@ -11,6 +11,8 @@
 #   ./scripts/sync-config.sh snmp           # snmp.yml → SNMP Exporter 再起動
 #   ./scripts/sync-config.sh loki           # loki.yml → Loki 再起動
 #   ./scripts/sync-config.sh promtail       # promtail.yml → Promtail 再起動
+#   ./scripts/sync-config.sh tempo          # tempo.yml → Tempo 再起動
+#   ./scripts/sync-config.sh otel-collector # otel-collector.yml → OTel Collector 再起動
 #   ./scripts/sync-config.sh tekken-update  # tekken_bot プロジェクトから tekken.json をコピー
 #   ./scripts/sync-config.sh all            # 全サービス（tekken-update は含まない）
 #
@@ -146,6 +148,26 @@ sync_promtail() {
   info "promtail 同期完了"
 }
 
+sync_tempo() {
+  step "tempo: 設定ファイルを転送中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/tempo"
+  scp "${REPO_ROOT}/config/tempo/tempo.yml" \
+      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/tempo/tempo.yml"
+  step "tempo: コンテナを再起動中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-tempo"
+  info "tempo 同期完了"
+}
+
+sync_otel_collector() {
+  step "otel-collector: 設定ファイルを転送中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/otel-collector"
+  scp "${REPO_ROOT}/config/otel-collector/otel-collector.yml" \
+      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/otel-collector/otel-collector.yml"
+  step "otel-collector: コンテナを再起動中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-otel-collector"
+  info "otel-collector 同期完了"
+}
+
 sync_tekken_update() {
   step "tekken: ソースプロジェクトから tekken.json をコピー中..."
   if [ ! -f "${TEKKEN_SOURCE}" ]; then
@@ -167,6 +189,8 @@ case "${SERVICE}" in
   snmp)            sync_snmp ;;
   loki)            sync_loki ;;
   promtail)        sync_promtail ;;
+  tempo)           sync_tempo ;;
+  otel-collector)  sync_otel_collector ;;
   tekken-update)   sync_tekken_update ;;
   all)
     sync_prometheus
@@ -175,10 +199,12 @@ case "${SERVICE}" in
     sync_snmp
     sync_loki
     sync_promtail
+    sync_tempo
+    sync_otel_collector
     info "全サービス同期完了"
     ;;
   *)
-    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tekken-update|all}"
+    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tempo|otel-collector|tekken-update|all}"
     echo ""
     echo "  prometheus      prometheus.yml + alerts.yml → ホットリロード"
     echo "  alertmanager    alertmanager.yml (URL置換) → ホットリロード"
@@ -186,6 +212,8 @@ case "${SERVICE}" in
     echo "  snmp            snmp.yml → コンテナ再起動"
     echo "  loki            loki.yml → コンテナ再起動"
     echo "  promtail        promtail.yml → コンテナ再起動"
+    echo "  tempo           tempo.yml → コンテナ再起動"
+    echo "  otel-collector  otel-collector.yml → コンテナ再起動"
     echo "  tekken-update   tekken_bot プロジェクトから tekken.json をリポジトリにコピー"
     echo "  all             全サービス（tekken-update は含まない）"
     exit 1

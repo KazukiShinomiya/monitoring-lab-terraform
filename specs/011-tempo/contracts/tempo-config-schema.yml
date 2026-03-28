@@ -1,0 +1,48 @@
+# ==========================================
+# Tempo 設定ファイル スキーマ定義
+# ==========================================
+# このファイルは Tempo の設定ファイル (tempo.yml) の
+# 期待される構造と制約を定義する。
+# 実際の設定ファイルは config/tempo/tempo.yml に配置する。
+
+schema:
+  file: config/tempo/tempo.yml
+  remote_path: /home/ubuntu/monitoring-lab/tempo/tempo.yml
+  container_mount: /etc/tempo/tempo.yml
+
+required_sections:
+  server:
+    http_listen_port: 3200  # Grafana / Prometheus が接続するポート
+
+  distributor:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+
+  storage:
+    trace:
+      backend: local          # 学習環境: local (本番では s3/gcs)
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+
+optional_sections:
+  metrics_generator:
+    # Service Graph / Span Metrics 生成。有効化するとメトリクスが増えるが有益
+    processors: [service-graphs, span-metrics]
+
+  compactor:
+    compaction:
+      block_retention: 336h   # デフォルト 336h (14日)
+
+constraints:
+  - http_listen_port MUST be 3200 (Grafana datasource URL と一致)
+  - storage.backend MUST be "local" for this learning environment
+  - OTLP gRPC MUST listen on 4317 (OTel Collector が接続)
+  - OTLP HTTP MUST listen on 4318
+  - Docker volume "monitoring-lab-tempo_data" が /var/tempo にマウントされること
