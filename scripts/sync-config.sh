@@ -60,13 +60,36 @@ sync_prometheus() {
 }
 
 sync_alertmanager() {
-  step "alertmanager: 設定ファイルを転送中（Webhook URL を置換）..."
-  if [ -z "${SLACK_WEBHOOK_URL}" ]; then
-    error ".env に SLACK_WEBHOOK_URL が設定されていません"
+  step "alertmanager: Webhook URL を解決中..."
+
+  local WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
+  local VAULT_API="${VAULT_ADDR:-http://10.0.0.220:8200}"
+  local VAULT_TK="${VAULT_TOKEN:-root}"
+
+  # Vault から取得を試みる
+  if [ -z "${WEBHOOK_URL}" ]; then
+    step "alertmanager: Vault から Webhook URL を取得中 (${VAULT_API})..."
+    WEBHOOK_URL=$(curl -sf \
+      -H "X-Vault-Token: ${VAULT_TK}" \
+      "${VAULT_API}/v1/secret/data/monitoring-lab/alertmanager" \
+      2>/dev/null | python3 -c 'import sys,json; print(json.load(sys.stdin)["data"]["data"]["slack_webhook_url"])' 2>/dev/null || true)
+
+    if [ -n "${WEBHOOK_URL}" ]; then
+      info "alertmanager: Vault から Webhook URL を取得しました"
+    else
+      warn "alertmanager: Vault からの取得に失敗しました"
+    fi
   fi
+
+  # 両方未設定の場合はエラー
+  if [ -z "${WEBHOOK_URL}" ]; then
+    error "Webhook URL を解決できませんでした。\n  方法1: .env に SLACK_WEBHOOK_URL を設定する\n  方法2: VAULT_ADDR + VAULT_TOKEN を設定して Vault から取得する"
+  fi
+
+  step "alertmanager: 設定ファイルを転送中（Webhook URL を置換）..."
   # ローカルで URL 置換 → /tmp に一時ファイル → scp → 削除
   TMPFILE=$(mktemp /tmp/alertmanager_deploy.XXXXXX.yml)
-  sed "s|<YOUR_SLACK_WEBHOOK_URL>|${SLACK_WEBHOOK_URL}|g" \
+  sed "s|<YOUR_SLACK_WEBHOOK_URL>|${WEBHOOK_URL}|g" \
       "${REPO_ROOT}/config/alertmanager/alertmanager.yml" > "${TMPFILE}"
   scp "${TMPFILE}" "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/alertmanager/alertmanager.yml"
   rm -f "${TMPFILE}"

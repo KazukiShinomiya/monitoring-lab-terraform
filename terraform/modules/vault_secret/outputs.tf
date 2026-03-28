@@ -22,7 +22,7 @@ output "app_policy_name" {
   value       = vault_policy.app_read_policy.name
 }
 
-output "db_credentials_version" {
-  description = "Database認証情報の現在のバージョン"
-  value       = vault_kv_secret_v2.db_credentials.data["version"]
+output "alertmanager_secret_path" {
+  description = "Alertmanager Webhook URLのシークレットパス"
+  value       = vault_kv_secret_v2.alertmanager_slack.path
 }

@@ -4,29 +4,6 @@
 # このモジュールは、HashiCorp VaultのKV Secrets Engine v2を使用して
 # 機密情報を安全に管理するためのモジュールです。
 
-terraform {
-  required_version = ">= 1.0"
-
-  required_providers {
-    vault = {
-      source  = "hashicorp/vault"
-      version = "~> 4.0"
-    }
-  }
-}
-
-# ==========================================
-# Vault Provider設定
-# ==========================================
-# 開発モードのVaultに接続（本番環境では認証方式を変更すること）
-provider "vault" {
-  address = var.vault_address
-  token   = var.vault_token
-
-  # 自己署名証明書の警告を回避（開発環境のみ）
-  skip_tls_verify = var.skip_tls_verify
-}
-
 # ==========================================
 # KV Secret Engine v2の有効化
 # ==========================================
@@ -92,6 +69,26 @@ resource "vault_kv_secret_v2" "grafana_admin" {
 }
 
 # ==========================================
+# Alertmanager Slack Webhook URL
+# ==========================================
+resource "vault_kv_secret_v2" "alertmanager_slack" {
+  mount = vault_mount.kv_v2.path
+  name  = "${var.project_name}/alertmanager"
+
+  data_json = jsonencode({
+    slack_webhook_url = var.alertmanager_slack_webhook_url
+  })
+
+  custom_metadata {
+    max_versions = 5
+    data = {
+      managed_by = "terraform"
+      purpose    = "alertmanager-slack-notification"
+    }
+  }
+}
+
+# ==========================================
 # Vault Policy for Applications
 # ==========================================
 # アプリケーションがシークレットを読み取るためのポリシー
@@ -106,6 +103,11 @@ path "${vault_mount.kv_v2.path}/data/${var.project_name}/postgres" {
 
 # Grafana認証情報の読み取り権限
 path "${vault_mount.kv_v2.path}/data/${var.project_name}/grafana" {
+  capabilities = ["read"]
+}
+
+# Alertmanager Webhook URLの読み取り権限
+path "${vault_mount.kv_v2.path}/data/${var.project_name}/alertmanager" {
   capabilities = ["read"]
 }
 
