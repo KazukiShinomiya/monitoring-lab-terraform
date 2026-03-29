@@ -29,6 +29,14 @@ jobs:
       TF_IN_AUTOMATION: "true"
       # self-hosted runner は YOUR_SERVER_IP 上で動作するため unix socket 経由で Docker に接続
       DOCKER_HOST: "unix:///var/run/docker.sock"
+      # Terraform Docker プロバイダー専用の接続先（DOCKER_HOST は Docker CLI が使用するため分離）
+      TF_DOCKER_HOST: "unix:///var/run/docker.sock"
+      # コンテナ env 変数の drift 防止（plan で false positive を排除）
+      POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
+      GRAFANA_ADMIN_PASSWORD: "${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+      SWITCHBOT_TOKEN: "${{ secrets.SWITCHBOT_TOKEN }}"
+      SWITCHBOT_SECRET: "${{ secrets.SWITCHBOT_SECRET }}"
+      NEW_RELIC_LICENSE_KEY: "${{ secrets.NEW_RELIC_LICENSE_KEY }}"
 
     steps:
       - name: Checkout
@@ -50,12 +58,19 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
+      - name: Clear Terragrunt Cache
+        working-directory: terraform/envs/local
+        run: find . -name ".terragrunt-cache" -type d -exec rm -rf {} + 2>/dev/null || true
+
       - name: Terragrunt Plan
         id: plan
         working-directory: terraform/envs/local
         run: |
           set +e
-          TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true terragrunt run-all plan 2>&1 | tee /tmp/plan_output_raw.txt
+          TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true terragrunt run-all plan \
+            --terragrunt-parallelism 6 \
+            -lock=false \
+            2>&1 | tee /tmp/plan_output_raw.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
           # ANSI エスケープコードを除去してクリーンな出力を生成

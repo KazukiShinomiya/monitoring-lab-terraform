@@ -2,7 +2,6 @@
 # Prometheus Service Configuration
 # ==========================================
 # 時系列メトリクス収集・保存を行うPrometheusの設定
-# TEST: plan workflow 動作確認用コメント
 
 # ----- 親設定の継承 -----
 include "root" {
