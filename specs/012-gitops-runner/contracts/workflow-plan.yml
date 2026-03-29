@@ -1,0 +1,113 @@
+# Contract: terraform-plan.yml
+# ワークフロー仕様 (実装の参照定義)
+#
+# Trigger: PR に terraform/config ファイルの変更が含まれる場合
+# Action: terragrunt run --all plan を実行し PR にコメント投稿
+
+name: "Terraform Plan"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+      - "config/**"
+
+# 同一 PR の古い plan ジョブはキャンセル
+concurrency:
+  group: "terraform-plan-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: "Terragrunt Plan"
+    runs-on:
+      - self-hosted
+      - monitoring-lab
+
+    env:
+      TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+      # Step 1: ソースコードのチェックアウト
+      - name: Checkout
+        uses: "actions/checkout@v4"
+
+      # Step 2: Terraform のインストール（バージョン固定）
+      - name: Setup Terraform
+        uses: "hashicorp/setup-terraform@v3"
+        with:
+          terraform_version: "1.10.5"
+          terraform_wrapper: false  # plan出力を直接キャプチャするため
+
+      # Step 3: Terragrunt のインストール（バージョン固定）
+      - name: Install Terragrunt
+        run: |
+          TG_VERSION="0.68.0"
+          wget -q -O /tmp/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
+          terragrunt --version
+
+      # Step 4: Terragrunt Plan の実行（出力をファイルに保存）
+      - name: Terragrunt Plan
+        id: plan
+        working-directory: terraform/envs/local
+        run: |
+          set +e
+          terragrunt run --all plan --terragrunt-non-interactive 2>&1 | tee /tmp/plan_output.txt
+          PLAN_EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=${PLAN_EXIT_CODE}" >> $GITHUB_OUTPUT
+          # 出力を GitHub Output に保存（コメント投稿用）
+          {
+            echo 'plan_output<<PLAN_EOF'
+            cat /tmp/plan_output.txt
+            echo 'PLAN_EOF'
+          } >> $GITHUB_OUTPUT
+          exit ${PLAN_EXIT_CODE}
+        continue-on-error: true
+
+      # Step 5: 既存の plan コメントを検索（重複防止）
+      - name: Find existing comment
+        uses: "peter-evans/find-comments@v3"
+        id: find_comment
+        with:
+          issue-number: "${{ github.event.pull_request.number }}"
+          comment-author: "github-actions[bot]"
+          body-includes: "Terragrunt Plan Results"
+
+      # Step 6: PR に plan 結果をコメント投稿/更新
+      - name: Post Plan Comment
+        uses: "peter-evans/create-or-update-comment@v4"
+        with:
+          comment-id: "${{ steps.find_comment.outputs.comment-id }}"
+          issue-number: "${{ github.event.pull_request.number }}"
+          edit-mode: replace
+          body: |
+            ## Terragrunt Plan Results
+
+            **Status**: ${{ steps.plan.outputs.exit_code == '0' && '✅ Success' || '❌ Failed' }}
+            **Commit**: `${{ github.sha }}`
+
+            <details>
+            <summary>Plan Output (click to expand)</summary>
+
+            ```hcl
+            ${{ steps.plan.outputs.plan_output }}
+            ```
+
+            </details>
+
+      # Step 7: plan が失敗した場合はワークフロー全体を失敗にする
+      - name: Fail if plan failed
+        if: steps.plan.outputs.exit_code != '0'
+        run: |
+          echo "Terragrunt plan failed with exit code ${{ steps.plan.outputs.exit_code }}"
+          exit 1
