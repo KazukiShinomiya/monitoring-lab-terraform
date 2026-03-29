@@ -29,6 +29,8 @@ jobs:
       TF_IN_AUTOMATION: "true"
       # self-hosted runner は YOUR_SERVER_IP 上で動作するため unix socket 経由で Docker に接続
       DOCKER_HOST: "unix:///var/run/docker.sock"
+      # Terraform Docker プロバイダー専用の接続先（DOCKER_HOST は Docker CLI が使用するため分離）
+      TF_DOCKER_HOST: "unix:///var/run/docker.sock"
 
     steps:
       - name: Checkout
