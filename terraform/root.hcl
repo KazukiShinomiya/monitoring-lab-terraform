@@ -22,10 +22,11 @@ locals {
   state_file_dir = "${get_parent_terragrunt_dir()}/.terraform-state/${local.environment}"
 
   # Docker プロバイダー接続先
-  # DOCKER_HOST が設定されていればそれを使用（CI/self-hosted runner: unix socket経由）
+  # TF_DOCKER_HOST が設定されていればそれを使用（CI/self-hosted runner: unix socket経由）
   # 未設定の場合は SSH 経由でリモートDockerに接続（開発環境）
+  # NOTE: DOCKER_HOST は Docker CLI 用の予約変数のため使用しない（競合防止）
   _ssh_target = "ssh://${get_env("TARGET_USER", "ubuntu")}@${get_env("TARGET_HOST", "10.0.0.220")}:${get_env("TARGET_PORT", "22")}"
-  docker_host = get_env("DOCKER_HOST", local._ssh_target)
+  docker_host = get_env("TF_DOCKER_HOST", local._ssh_target)
 }
 
 # ----- Terraform Backend設定 -----
@@ -86,7 +87,7 @@ generate "provider" {
 
   contents = <<EOF
 provider "docker" {
-  # DOCKER_HOST が設定されていればそれを使用（CI/self-hosted runner環境）
+  # TF_DOCKER_HOST が設定されていればそれを使用（CI/self-hosted runner環境）
   # 未設定の場合は SSH 経由でリモートDockerに接続（開発環境）
   host = "${local.docker_host}"
 
