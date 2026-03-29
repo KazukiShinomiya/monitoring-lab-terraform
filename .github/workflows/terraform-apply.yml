@@ -49,11 +49,19 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
-      - name: Terragrunt Apply
+      - name: Terragrunt Apply (監視基盤モジュール)
         working-directory: terraform/envs/local
         run: |
-          TF_INPUT=false terragrunt run-all apply -auto-approve 2>&1 | tee /tmp/apply_output.txt
+          # github-runner を除外して監視基盤モジュールを先に apply
+          # 理由: github-runner を先に apply するとランナー自身が再起動して接続が切れる
+          TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true \
+            terragrunt run-all apply -auto-approve \
+            --terragrunt-exclude-dir github-runner \
+            2>&1 | tee /tmp/apply_output.txt
           APPLY_EXIT_CODE=${PIPESTATUS[0]}
+
+          # ANSI コード除去
+          sed -i 's/\x1b\[[0-9;]*[mGKHF]//g' /tmp/apply_output.txt
 
           # Job Summary に結果を出力
           {
@@ -63,9 +71,20 @@ jobs:
             echo "**Commit**: \`${{ github.sha }}\`"
             echo "**Triggered by**: @${{ github.actor }}"
             echo ""
+            echo '### Apply Output'
             echo '```'
-            tail -100 /tmp/apply_output.txt
+            grep -E "Apply complete|No changes|Plan:|ERROR|to add|to destroy|to change" /tmp/apply_output.txt \
+              || tail -50 /tmp/apply_output.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
           exit "${APPLY_EXIT_CODE}"
+
+      - name: Terragrunt Apply (github-runner)
+        working-directory: terraform/envs/local/github-runner
+        # runner が再起動しても後続ジョブで拾えるよう continue-on-error を設定
+        continue-on-error: true
+        run: |
+          echo "Applying github-runner module (runner may restart)..."
+          TF_INPUT=false terragrunt apply -auto-approve 2>&1 | tee /tmp/runner_apply_output.txt
+          echo "github-runner apply exit code: ${PIPESTATUS[0]}"
