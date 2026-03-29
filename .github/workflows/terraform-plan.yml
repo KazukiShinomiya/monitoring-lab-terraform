@@ -63,6 +63,7 @@ jobs:
           set +e
           TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true terragrunt run-all plan \
             --terragrunt-parallelism 6 \
+            -lock=false \
             2>&1 | tee /tmp/plan_output_raw.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
