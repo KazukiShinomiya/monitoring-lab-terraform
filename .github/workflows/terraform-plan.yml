@@ -55,13 +55,15 @@ jobs:
         working-directory: terraform/envs/local
         run: |
           set +e
-          terragrunt run-all plan --terragrunt-non-interactive 2>&1 | tee /tmp/plan_output.txt
+          terragrunt run-all plan --terragrunt-non-interactive 2>&1 | tee /tmp/plan_output_raw.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
-          # 出力が長い場合は末尾 200 行に絞る（PR コメント文字数制限対策）
+          # ANSI エスケープコードを除去してクリーンな出力を生成
+          sed 's/\x1b\[[0-9;]*[mGKHF]//g' /tmp/plan_output_raw.txt > /tmp/plan_output.txt
+          # 出力が長い場合は末尾 150 行に絞る（PR コメント文字数制限対策）
           {
             echo 'plan_output<<PLAN_EOF'
-            tail -200 /tmp/plan_output.txt
+            tail -150 /tmp/plan_output.txt
             echo 'PLAN_EOF'
           } >> "$GITHUB_OUTPUT"
           exit "${PLAN_EXIT_CODE}"
