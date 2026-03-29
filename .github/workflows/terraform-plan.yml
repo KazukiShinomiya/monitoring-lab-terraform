@@ -53,7 +53,7 @@ jobs:
         working-directory: terraform/envs/local
         run: |
           set +e
-          terragrunt run --all plan --terragrunt-non-interactive 2>&1 | tee /tmp/plan_output.txt
+          terragrunt run-all plan --terragrunt-non-interactive 2>&1 | tee /tmp/plan_output.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
           # 出力が長い場合は末尾 200 行に絞る（PR コメント文字数制限対策）
