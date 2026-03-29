@@ -39,7 +39,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.10.5"
+          terraform_version: "1.14.8"
           # wrapper を無効化して plan 出力を直接キャプチャ
           terraform_wrapper: false
 
@@ -61,7 +61,9 @@ jobs:
         working-directory: terraform/envs/local
         run: |
           set +e
-          TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true terragrunt run-all plan 2>&1 | tee /tmp/plan_output_raw.txt
+          TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true terragrunt run-all plan \
+            --terragrunt-parallelism 6 \
+            2>&1 | tee /tmp/plan_output_raw.txt
           PLAN_EXIT_CODE=${PIPESTATUS[0]}
           echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
           # ANSI エスケープコードを除去してクリーンな出力を生成
