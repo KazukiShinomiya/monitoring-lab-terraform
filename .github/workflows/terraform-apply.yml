@@ -37,6 +37,8 @@ jobs:
       SWITCHBOT_TOKEN: "${{ secrets.SWITCHBOT_TOKEN }}"
       SWITCHBOT_SECRET: "${{ secrets.SWITCHBOT_SECRET }}"
       NEW_RELIC_LICENSE_KEY: "${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+      # github-runner コンテナの ACCESS_TOKEN drift 防止（未設定だと空文字 → destroy/recreate）
+      GH_RUNNER_PAT: "${{ secrets.GH_RUNNER_PAT }}"
 
     steps:
       - name: Checkout
