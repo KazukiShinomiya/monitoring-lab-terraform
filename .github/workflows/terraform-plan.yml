@@ -39,7 +39,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.14.8"
+          terraform_version: "1.10.5"
           # wrapper を無効化して plan 出力を直接キャプチャ
           terraform_wrapper: false
 
