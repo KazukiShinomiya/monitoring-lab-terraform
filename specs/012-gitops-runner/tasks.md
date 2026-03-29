@@ -60,10 +60,10 @@
   - permissions: `contents: read`, `pull-requests: write`
   - env: `TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}`
   - steps: checkout@v4 → setup-terraform@v3(1.10.5) → install-terragrunt(0.68.0) → plan(working-dir: terraform/envs/local) → find-comments → create-or-update-comment → fail-on-error
-- [ ] T013 [US1] テスト用ブランチ `test/plan-workflow-check` を作成し `terraform/envs/local/prometheus/terragrunt.hcl` にコメント行を追加して PR を作成
-- [ ] T014 [US1] GitHub Actions の `Terraform Plan` ワークフローが起動し 2 分以内に PR コメントに `Terragrunt Plan Results` が投稿されることを確認
-- [ ] T015 [US1] plan 結果が `No changes` または変更サマリーを含む形式で表示されていることを確認
-- [ ] T016 [US1] plan 失敗シナリオ確認: `terragrunt.hcl` に意図的な構文エラーを追加してコミット → plan ワークフローが ❌ になり PR の Checks がブロック状態になることを確認
+- [x] T013 [US1] テスト用ブランチ `test/plan-workflow-check` を作成し `terraform/envs/local/prometheus/terragrunt.hcl` にコメント行を追加して PR を作成
+- [x] T014 [US1] GitHub Actions の `Terraform Plan` ワークフローが起動し 2 分以内に PR コメントに `Terragrunt Plan Results` が投稿されることを確認
+- [x] T015 [US1] plan 結果が `No changes` または変更サマリーを含む形式で表示されていることを確認
+- [x] T016 [US1] plan 失敗シナリオ確認: `terragrunt.hcl` に意図的な構文エラーを追加してコミット → plan ワークフローが ❌ になり PR の Checks がブロック状態になることを確認
 - [ ] T017 [US1] IaC ファイル以外の変更（例: `README.md`）だけの PR では plan ワークフローが起動しないことを確認（paths フィルタ動作）
 
 **Checkpoint**: US1 完了 — IaC 変更のある PR で plan 結果が自動コメントされる
