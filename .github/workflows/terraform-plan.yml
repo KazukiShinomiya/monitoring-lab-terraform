@@ -31,6 +31,12 @@ jobs:
       DOCKER_HOST: "unix:///var/run/docker.sock"
       # Terraform Docker プロバイダー専用の接続先（DOCKER_HOST は Docker CLI が使用するため分離）
       TF_DOCKER_HOST: "unix:///var/run/docker.sock"
+      # コンテナ env 変数の drift 防止（plan で false positive を排除）
+      POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
+      GRAFANA_ADMIN_PASSWORD: "${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+      SWITCHBOT_TOKEN: "${{ secrets.SWITCHBOT_TOKEN }}"
+      SWITCHBOT_SECRET: "${{ secrets.SWITCHBOT_SECRET }}"
+      NEW_RELIC_LICENSE_KEY: "${{ secrets.NEW_RELIC_LICENSE_KEY }}"
 
     steps:
       - name: Checkout
