@@ -60,11 +60,7 @@ jobs:
           echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
           # ANSI エスケープコードを除去してクリーンな出力を生成
           sed 's/\x1b\[[0-9;]*[mGKHF]//g' /tmp/plan_output_raw.txt > /tmp/plan_output.txt
-          echo "DEBUG: plan output lines: $(wc -l < /tmp/plan_output.txt)"
-          echo "=== FULL PLAN OUTPUT ==="
-          cat /tmp/plan_output.txt
-          echo "=== END PLAN OUTPUT ==="
-          # plan 結果サマリー行のみ抽出: "No changes", "Plan:", モジュール別エラー、INFO WARN ERR
+          # plan 結果サマリー行のみ抽出: "No changes", "Plan:", モジュール別エラー
           {
             echo 'plan_output<<PLAN_EOF'
             grep -E "No changes|Plan:|changes\.|ERROR|WARN|to add|to destroy|to change|module finished" /tmp/plan_output.txt \
