@@ -1,0 +1,106 @@
+name: "Terraform Workspace Unlock"
+
+on:
+  workflow_dispatch:
+    inputs:
+      workspace_names:
+        description: "解除するワークスペース名（カンマ区切り。空の場合は全ワークスペース）"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  unlock:
+    name: "Force Unlock Workspaces"
+    runs-on:
+      - self-hosted
+      - monitoring-lab
+
+    env:
+      TF_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+      TF_ORG: "k1981-learning-lab"
+
+    steps:
+      - name: Resolve workspace list
+        id: resolve
+        run: |
+          DEFAULT_WORKSPACES="network,postgres,vault,vault-secrets,prometheus,alertmanager,cadvisor,snmp-exporter,loki,promtail,tempo,otel-collector,newrelic,zabbix,zabbix-agent,grafana,github-runner"
+          INPUT="${{ github.event.inputs.workspace_names }}"
+          if [ -z "${INPUT}" ]; then
+            echo "workspaces=${DEFAULT_WORKSPACES}" >> "$GITHUB_OUTPUT"
+            echo "Using all workspaces: ${DEFAULT_WORKSPACES}"
+          else
+            echo "workspaces=${INPUT}" >> "$GITHUB_OUTPUT"
+            echo "Using specified workspaces: ${INPUT}"
+          fi
+
+      - name: Force unlock workspaces
+        run: |
+          IFS=',' read -ra WORKSPACES <<< "${{ steps.resolve.outputs.workspaces }}"
+          FAILED=()
+          UNLOCKED=()
+          SKIPPED=()
+
+          for WS_NAME in "${WORKSPACES[@]}"; do
+            WS_NAME=$(echo "${WS_NAME}" | xargs)  # trim whitespace
+            FULL_NAME="monitoring-lab-local-${WS_NAME}"
+
+            # ワークスペースIDを取得
+            WS_ID=$(curl -s \
+              --header "Authorization: Bearer ${TF_TOKEN}" \
+              --header "Content-Type: application/vnd.api+json" \
+              "https://app.terraform.io/api/v2/organizations/${TF_ORG}/workspaces/${FULL_NAME}" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['id'])" 2>/dev/null)
+
+            if [ -z "${WS_ID}" ]; then
+              echo "⚠️  ${FULL_NAME}: workspace not found, skipping"
+              SKIPPED+=("${FULL_NAME}")
+              continue
+            fi
+
+            # ロック状態を確認
+            LOCKED=$(curl -s \
+              --header "Authorization: Bearer ${TF_TOKEN}" \
+              --header "Content-Type: application/vnd.api+json" \
+              "https://app.terraform.io/api/v2/workspaces/${WS_ID}" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['attributes']['locked'])" 2>/dev/null)
+
+            if [ "${LOCKED}" != "True" ]; then
+              echo "✅  ${FULL_NAME}: not locked, skipping"
+              SKIPPED+=("${FULL_NAME}")
+              continue
+            fi
+
+            # ロック解除
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              --header "Authorization: Bearer ${TF_TOKEN}" \
+              --header "Content-Type: application/vnd.api+json" \
+              --request POST \
+              "https://app.terraform.io/api/v2/workspaces/${WS_ID}/actions/force-unlock")
+
+            if [ "${HTTP_CODE}" = "200" ]; then
+              echo "🔓  ${FULL_NAME}: unlocked (HTTP ${HTTP_CODE})"
+              UNLOCKED+=("${FULL_NAME}")
+            else
+              echo "❌  ${FULL_NAME}: failed (HTTP ${HTTP_CODE})"
+              FAILED+=("${FULL_NAME}")
+            fi
+          done
+
+          # サマリー出力
+          {
+            echo "## Workspace Unlock Results"
+            echo ""
+            echo "| ワークスペース | 結果 |"
+            echo "|---|---|"
+            for ws in "${UNLOCKED[@]}"; do echo "| ${ws} | 🔓 Unlocked |"; done
+            for ws in "${SKIPPED[@]}"; do echo "| ${ws} | ✅ Not locked |"; done
+            for ws in "${FAILED[@]}"; do echo "| ${ws} | ❌ Failed |"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ${#FAILED[@]} -gt 0 ]; then
+            echo "::error::Failed to unlock: ${FAILED[*]}"
+            exit 1
+          fi
