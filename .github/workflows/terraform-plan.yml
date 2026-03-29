@@ -50,6 +50,10 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
+      - name: Clear Terragrunt Cache
+        working-directory: terraform/envs/local
+        run: find . -name ".terragrunt-cache" -type d -exec rm -rf {} + 2>/dev/null || true
+
       - name: Terragrunt Plan
         id: plan
         working-directory: terraform/envs/local
