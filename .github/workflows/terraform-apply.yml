@@ -50,7 +50,7 @@ jobs:
       - name: Terragrunt Apply
         working-directory: terraform/envs/local
         run: |
-          terragrunt run --all apply --terragrunt-non-interactive 2>&1 | tee /tmp/apply_output.txt
+          terragrunt run-all apply --terragrunt-non-interactive 2>&1 | tee /tmp/apply_output.txt
           APPLY_EXIT_CODE=${PIPESTATUS[0]}
 
           # Job Summary に結果を出力
