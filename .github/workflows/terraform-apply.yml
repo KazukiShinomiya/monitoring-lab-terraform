@@ -1,0 +1,71 @@
+name: "Terraform Apply"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "terraform/**"
+      - "config/**"
+
+# apply の同時実行を防止
+# CRITICAL: cancel-in-progress: false — 実行中の apply は絶対にキャンセルしない
+concurrency:
+  group: "terraform-apply"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: "Terragrunt Apply"
+    runs-on:
+      - self-hosted
+      - monitoring-lab
+
+    env:
+      TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
+      TF_IN_AUTOMATION: "true"
+      # self-hosted runner は 10.0.0.220 上で動作するため unix socket 経由で Docker に接続
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          TG_VERSION="0.68.0"
+          wget -q -O /tmp/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: Terragrunt Apply
+        working-directory: terraform/envs/local
+        run: |
+          TF_INPUT=false terragrunt run-all apply -auto-approve 2>&1 | tee /tmp/apply_output.txt
+          APPLY_EXIT_CODE=${PIPESTATUS[0]}
+
+          # Job Summary に結果を出力
+          {
+            echo "## Terragrunt Apply Results"
+            echo ""
+            echo "**Status**: $([ ${APPLY_EXIT_CODE} -eq 0 ] && echo '✅ Success' || echo '❌ Failed')"
+            echo "**Commit**: \`${{ github.sha }}\`"
+            echo "**Triggered by**: @${{ github.actor }}"
+            echo ""
+            echo '```'
+            tail -100 /tmp/apply_output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit "${APPLY_EXIT_CODE}"

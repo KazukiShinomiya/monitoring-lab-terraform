@@ -1,0 +1,108 @@
+name: "Terraform Plan"
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "terraform/**"
+      - "config/**"
+
+# 同一 PR の古い plan ジョブはキャンセルして最新のみ実行
+concurrency:
+  group: "terraform-plan-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: "Terragrunt Plan"
+    runs-on:
+      - self-hosted
+      - monitoring-lab
+
+    env:
+      TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
+      TF_IN_AUTOMATION: "true"
+      # self-hosted runner は 10.0.0.220 上で動作するため unix socket 経由で Docker に接続
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+          # wrapper を無効化して plan 出力を直接キャプチャ
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          TG_VERSION="0.68.0"
+          wget -q -O /tmp/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: Terragrunt Plan
+        id: plan
+        working-directory: terraform/envs/local
+        run: |
+          set +e
+          TF_INPUT=false TERRAGRUNT_FORWARD_TF_STDOUT=true terragrunt run-all plan 2>&1 | tee /tmp/plan_output_raw.txt
+          PLAN_EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
+          # ANSI エスケープコードを除去してクリーンな出力を生成
+          sed 's/\x1b\[[0-9;]*[mGKHF]//g' /tmp/plan_output_raw.txt > /tmp/plan_output.txt
+          # plan 結果サマリー行のみ抽出: "No changes", "Plan:", モジュール別エラー
+          {
+            echo 'plan_output<<PLAN_EOF'
+            grep -E "No changes|Plan:|changes\.|ERROR|WARN|to add|to destroy|to change|module finished" /tmp/plan_output.txt \
+              || tail -50 /tmp/plan_output.txt
+            echo 'PLAN_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit "${PLAN_EXIT_CODE}"
+        continue-on-error: true
+
+      - name: Find existing plan comment
+        uses: peter-evans/find-comment@v3
+        id: find_comment
+        with:
+          issue-number: "${{ github.event.pull_request.number }}"
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- terragrunt-plan-comment -->"
+
+      - name: Post Plan Comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: "${{ steps.find_comment.outputs.comment-id }}"
+          issue-number: "${{ github.event.pull_request.number }}"
+          edit-mode: replace
+          body: |
+            <!-- terragrunt-plan-comment -->
+            ## Terragrunt Plan Results
+
+            **Status**: ${{ steps.plan.outputs.exit_code == '0' && '✅ Success' || '❌ Failed' }}
+            **Commit**: `${{ github.sha }}`
+            **Triggered by**: @${{ github.actor }}
+
+            <details>
+            <summary>Plan Output (click to expand)</summary>
+
+            ```
+            ${{ steps.plan.outputs.plan_output }}
+            ```
+
+            </details>
+
+      - name: Fail if plan failed
+        if: steps.plan.outputs.exit_code != '0'
+        run: |
+          echo "::error::Terragrunt plan failed (exit code: ${{ steps.plan.outputs.exit_code }})"
+          exit 1

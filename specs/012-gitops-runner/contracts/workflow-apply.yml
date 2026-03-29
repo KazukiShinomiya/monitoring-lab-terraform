@@ -1,0 +1,72 @@
+# Contract: terraform-apply.yml
+# ワークフロー仕様 (実装の参照定義)
+#
+# Trigger: main への push に terraform/config ファイルの変更が含まれる場合
+# Action: terragrunt run --all apply を実行
+
+name: "Terraform Apply"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+      - "config/**"
+
+# apply の同時実行を防止（キャンセル禁止）
+concurrency:
+  group: "terraform-apply"
+  cancel-in-progress: false  # CRITICAL: 実行中の apply はキャンセル禁止
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: "Terragrunt Apply"
+    runs-on:
+      - self-hosted
+      - monitoring-lab
+
+    env:
+      TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+      # Step 1: ソースコードのチェックアウト
+      - name: Checkout
+        uses: "actions/checkout@v4"
+
+      # Step 2: Terraform のインストール（バージョン固定）
+      - name: Setup Terraform
+        uses: "hashicorp/setup-terraform@v3"
+        with:
+          terraform_version: "1.10.5"
+          terraform_wrapper: false
+
+      # Step 3: Terragrunt のインストール（バージョン固定）
+      - name: Install Terragrunt
+        run: |
+          TG_VERSION="0.68.0"
+          wget -q -O /tmp/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
+          terragrunt --version
+
+      # Step 4: Terragrunt Apply の実行
+      - name: Terragrunt Apply
+        working-directory: terraform/envs/local
+        run: |
+          terragrunt run --all apply --terragrunt-non-interactive 2>&1 | tee /tmp/apply_output.txt
+          APPLY_EXIT_CODE=${PIPESTATUS[0]}
+          # サマリーに結果を出力
+          echo "## Terragrunt Apply Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -50 /tmp/apply_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit ${APPLY_EXIT_CODE}

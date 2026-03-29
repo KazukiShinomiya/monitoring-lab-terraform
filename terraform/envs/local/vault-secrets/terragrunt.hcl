@@ -66,7 +66,8 @@ inputs = {
   mount_path   = "secret"
 
   # Alertmanager Slack Webhook URL（必須: .envの SLACK_WEBHOOK_URL から取得）
-  alertmanager_slack_webhook_url = get_env("SLACK_WEBHOOK_URL")
+  # CI環境では SLACK_WEBHOOK_URL が未設定の場合があるため空文字列をデフォルト値として使用
+  alertmanager_slack_webhook_url = get_env("SLACK_WEBHOOK_URL", "")
 
   # PostgreSQL認証情報
   db_password = get_env("POSTGRES_PASSWORD", "zabbix_password")
