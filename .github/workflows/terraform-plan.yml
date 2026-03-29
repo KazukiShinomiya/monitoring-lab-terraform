@@ -27,6 +27,8 @@ jobs:
     env:
       TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
       TF_IN_AUTOMATION: "true"
+      # self-hosted runner は YOUR_SERVER_IP 上で動作するため unix socket 経由で Docker に接続
+      DOCKER_HOST: "unix:///var/run/docker.sock"
 
     steps:
       - name: Checkout

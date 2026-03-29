@@ -80,10 +80,11 @@ generate "provider" {
 
   contents = <<EOF
 provider "docker" {
-  # SSH経由でリモートDockerに接続
-  host = "ssh://${get_env("TARGET_USER", "ubuntu")}@${get_env("TARGET_HOST", "YOUR_SERVER_IP")}:${get_env("TARGET_PORT", "22")}"
+  # DOCKER_HOST が設定されていればそれを使用（CI/self-hosted runner環境）
+  # 未設定の場合は SSH 経由でリモートDockerに接続（開発環境）
+  host = get_env("DOCKER_HOST", "ssh://${get_env("TARGET_USER", "ubuntu")}@${get_env("TARGET_HOST", "YOUR_SERVER_IP")}:${get_env("TARGET_PORT", "22")}")
 
-  # SSH鍵のパス指定 + StrictHostKeyCheckingを無効化
+  # SSH接続時のみ有効（unix socket使用時は無視される）
   ssh_opts = [
     "-i", "${get_env("SSH_PRIVATE_KEY", "/tmp/.ssh/id_rsa")}",
     "-o", "StrictHostKeyChecking=no",
