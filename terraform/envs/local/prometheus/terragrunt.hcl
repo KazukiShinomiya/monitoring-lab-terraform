@@ -3,6 +3,7 @@
 # ==========================================
 # 時系列メトリクス収集・保存を行うPrometheusの設定
 # TEST: plan workflow 動作確認用コメント
+INTENTIONAL_SYNTAX_ERROR_FOR_TESTING = "this will break plan"
 
 # ----- 親設定の継承 -----
 include "root" {
