@@ -1,0 +1,103 @@
+name: "Terraform Plan"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+      - "config/**"
+
+# 同一 PR の古い plan ジョブはキャンセルして最新のみ実行
+concurrency:
+  group: "terraform-plan-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: "Terragrunt Plan"
+    runs-on:
+      - self-hosted
+      - monitoring-lab
+
+    env:
+      TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+          # wrapper を無効化して plan 出力を直接キャプチャ
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          TG_VERSION="0.68.0"
+          wget -q -O /tmp/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: Terragrunt Plan
+        id: plan
+        working-directory: terraform/envs/local
+        run: |
+          set +e
+          terragrunt run --all plan --terragrunt-non-interactive 2>&1 | tee /tmp/plan_output.txt
+          PLAN_EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=${PLAN_EXIT_CODE}" >> "$GITHUB_OUTPUT"
+          # 出力が長い場合は末尾 200 行に絞る（PR コメント文字数制限対策）
+          {
+            echo 'plan_output<<PLAN_EOF'
+            tail -200 /tmp/plan_output.txt
+            echo 'PLAN_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit "${PLAN_EXIT_CODE}"
+        continue-on-error: true
+
+      - name: Find existing plan comment
+        uses: peter-evans/find-comments@v3
+        id: find_comment
+        with:
+          issue-number: "${{ github.event.pull_request.number }}"
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- terragrunt-plan-comment -->"
+
+      - name: Post Plan Comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: "${{ steps.find_comment.outputs.comment-id }}"
+          issue-number: "${{ github.event.pull_request.number }}"
+          edit-mode: replace
+          body: |
+            <!-- terragrunt-plan-comment -->
+            ## Terragrunt Plan Results
+
+            **Status**: ${{ steps.plan.outputs.exit_code == '0' && '✅ Success' || '❌ Failed' }}
+            **Commit**: `${{ github.sha }}`
+            **Triggered by**: @${{ github.actor }}
+
+            <details>
+            <summary>Plan Output (click to expand)</summary>
+
+            ```
+            ${{ steps.plan.outputs.plan_output }}
+            ```
+
+            </details>
+
+      - name: Fail if plan failed
+        if: steps.plan.outputs.exit_code != '0'
+        run: |
+          echo "::error::Terragrunt plan failed (exit code: ${{ steps.plan.outputs.exit_code }})"
+          exit 1
