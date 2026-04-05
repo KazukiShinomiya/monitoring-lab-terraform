@@ -1,0 +1,117 @@
+# ==========================================
+# Sloth SLO 定義 — monitoring-lab
+# ==========================================
+# 用途: 監視基盤コア4サービスの可用性 SLO を定義する
+# SLI:  up メトリクス（スクレイプ成功 = 正常、失敗 = エラー）
+# 期間: 30日ローリングウィンドウ
+#
+# ルール生成: task slo:generate
+# 検証:       task slo:validate
+# 反映:       task sync:prometheus
+# ==========================================
+
+version: "prometheus/v1"
+
+service: "monitoring-lab"
+
+labels:
+  team: "platform"
+  environment: "local"
+
+slos:
+
+  # ------------------------------------------
+  # Prometheus 可用性 SLO
+  # 目標: 99.5% (月 216分の障害まで許容)
+  # ------------------------------------------
+  - name: "prometheus-availability"
+    objective: 99.5
+    description: "Prometheus instance is up and scraping targets successfully"
+    sli:
+      raw:
+        error_ratio_query: '1 - avg_over_time(up{job="prometheus"}[{{.window}}])'
+    alerting:
+      name: "MonitoringLabPrometheus"
+      labels:
+        category: "availability"
+      annotations:
+        summary: "Prometheus SLO error budget burn rate is too high"
+        description: "Prometheus availability SLO is burning error budget faster than expected"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"
+
+  # ------------------------------------------
+  # Grafana 可用性 SLO
+  # 目標: 99.5% (月 216分の障害まで許容)
+  # ------------------------------------------
+  - name: "grafana-availability"
+    objective: 99.5
+    description: "Grafana instance is up and accessible"
+    sli:
+      raw:
+        error_ratio_query: '1 - avg_over_time(up{job="grafana"}[{{.window}}])'
+    alerting:
+      name: "MonitoringLabGrafana"
+      labels:
+        category: "availability"
+      annotations:
+        summary: "Grafana SLO error budget burn rate is too high"
+        description: "Grafana availability SLO is burning error budget faster than expected"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"
+
+  # ------------------------------------------
+  # Alertmanager 可用性 SLO
+  # 目標: 99.5% (月 216分の障害まで許容)
+  # ------------------------------------------
+  - name: "alertmanager-availability"
+    objective: 99.5
+    description: "Alertmanager instance is up and routing alerts"
+    sli:
+      raw:
+        error_ratio_query: '1 - avg_over_time(up{job="alertmanager"}[{{.window}}])'
+    alerting:
+      name: "MonitoringLabAlertmanager"
+      labels:
+        category: "availability"
+      annotations:
+        summary: "Alertmanager SLO error budget burn rate is too high"
+        description: "Alertmanager availability SLO is burning error budget faster than expected"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"
+
+  # ------------------------------------------
+  # Loki 可用性 SLO
+  # 目標: 99.0% (月 432分の障害まで許容、ログ収集は若干の許容度あり)
+  # ------------------------------------------
+  - name: "loki-availability"
+    objective: 99.0
+    description: "Loki instance is up and accepting log streams"
+    sli:
+      raw:
+        error_ratio_query: '1 - avg_over_time(up{job="loki"}[{{.window}}])'
+    alerting:
+      name: "MonitoringLabLoki"
+      labels:
+        category: "availability"
+      annotations:
+        summary: "Loki SLO error budget burn rate is too high"
+        description: "Loki availability SLO is burning error budget faster than expected"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"

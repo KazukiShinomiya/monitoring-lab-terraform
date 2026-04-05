@@ -609,6 +609,8 @@ MIT License
 - N/A（Alertmanagerはステートレス動作。silencesは再起動時にリセット許容） (004-alertmanager-slack)
 - HCL (Terraform/Terragrunt), YAML (設定ファイル), Bash (sync スクリプト) + grafana/tempo:latest, otel/opentelemetry-collector-contrib:latest, 既存 docker_container モジュール (011-tempo)
 - Docker Volume (tempo_data) — local filesystem バックエンド (011-tempo)
+- HCL (Terragrunt), YAML (Sloth v0.11.0 `prometheus/v1` スキーマ) + `ghcr.io/slok/sloth:v0.11.0`, Prometheus, Grafana, Alertmanager (013-slo-sloth)
+- N/A（Sloth はステートレス・ファイル生成のみ） (013-slo-sloth)
 
 ## Recent Changes
 - 001-mcp-self-growth: Added TypeScript 5.x + Node.js v22.20.0（Windows Git Bash環境で利用可能）
