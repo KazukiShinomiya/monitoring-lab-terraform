@@ -32,6 +32,18 @@ route:
   repeat_interval: 4h
 
   routes:
+    # SLO Page アラート: 即時対応が必要（Sloth Fast Burn）
+    - match:
+        severity: page
+      receiver: 'slack-critical'
+      repeat_interval: 1h
+
+    # SLO Ticket アラート: 翌業務日対応（Sloth Slow Burn）
+    - match:
+        severity: ticket
+      receiver: 'slack-notifications'
+      repeat_interval: 4h
+
     # critical は色・ラベルで視覚的に強調（FR-004 準拠）
     - match:
         severity: critical

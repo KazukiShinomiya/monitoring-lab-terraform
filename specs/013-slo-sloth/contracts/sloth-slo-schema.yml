@@ -1,0 +1,74 @@
+# Sloth SLO 定義スキーマ（インターフェース契約）
+#
+# このファイルは config/sloth/monitoring-lab.yml の期待形式を定義する。
+# Sloth v0.11.0 の prometheus/v1 スキーマに準拠。
+#
+# 参考: https://sloth.dev/specs/
+
+version: "prometheus/v1"  # 必須: スキーマバージョン
+
+service: "<string>"       # 必須: サービスグループ名（例: "monitoring-lab"）
+
+# 省略可能: 全 SLO に付与される共通ラベル
+labels:
+  team: "<string>"
+  environment: "<string>"
+
+slos:
+  - name: "<string>"          # 必須: SLO識別子（英数字・ハイフン）
+    objective: <float>        # 必須: SLO目標値（例: 99.5 = 99.5%）
+    description: "<string>"   # 省略可能: 人間向け説明
+
+    sli:
+      # up メトリクス向け: raw タイプを使用
+      raw:
+        # 必須: エラー率を返す PromQL 式（0〜1の値）
+        # {{.window}} は Sloth が各ウィンドウ（1h/6h/3d/30d）に自動展開
+        error_ratio_query: "1 - avg_over_time(up{job=\"<job_name>\"}[{{.window}}])"
+
+    alerting:
+      name: "<string>"        # 必須: アラートルール名プレフィックス（CamelCase推奨）
+      labels:
+        category: "availability"
+      annotations:
+        summary: "<string>"   # アラートサマリー
+        runbook: "<string>"   # 省略可能: ランブックURL
+
+      # Fast Burn アラート: 即時対応が必要な急速消費
+      page_alert:
+        labels:
+          severity: "page"
+
+      # Slow Burn アラート: 翌業務日対応で可の緩慢消費
+      ticket_alert:
+        labels:
+          severity: "ticket"
+
+---
+# 実装例（Prometheus 可用性 SLO）
+
+version: "prometheus/v1"
+service: "monitoring-lab"
+labels:
+  team: "platform"
+  environment: "local"
+
+slos:
+  - name: "prometheus-availability"
+    objective: 99.5
+    description: "Prometheus instance is up and scraping targets successfully"
+    sli:
+      raw:
+        error_ratio_query: "1 - avg_over_time(up{job=\"prometheus\"}[{{.window}}])"
+    alerting:
+      name: "MonitoringLabPrometheusAvailability"
+      labels:
+        category: "availability"
+      annotations:
+        summary: "Prometheus SLO burn rate is too high"
+      page_alert:
+        labels:
+          severity: "page"
+      ticket_alert:
+        labels:
+          severity: "ticket"

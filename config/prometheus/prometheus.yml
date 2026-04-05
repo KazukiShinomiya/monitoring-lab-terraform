@@ -30,6 +30,7 @@ global:
 # ----- ルールファイルの読み込み -----
 rule_files:
   - '/etc/prometheus/alerts.yml'
+  - '/etc/prometheus/slo-rules.yml'
 
 # ----- Alertmanager 連携設定 -----
 alerting:
