@@ -56,6 +56,10 @@ sync_prometheus() {
       "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/prometheus/prometheus.yml"
   scp "${REPO_ROOT}/config/prometheus/alerts.yml" \
       "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/prometheus/alerts.yml"
+  if [ -f "${REPO_ROOT}/config/prometheus/slo-rules.yml" ]; then
+    scp "${REPO_ROOT}/config/prometheus/slo-rules.yml" \
+        "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/prometheus/slo-rules.yml"
+  fi
   step "prometheus: ホットリロード中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "curl -sf -X POST http://localhost:9090/-/reload"
   info "prometheus 同期完了"
