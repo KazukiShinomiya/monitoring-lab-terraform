@@ -27,6 +27,16 @@ global:
     - OpenMetricsText0.0.1
     - PrometheusText0.0.4
 
+# ----- 長期ストレージへの転送設定 -----
+# VictoriaMetrics に全メトリクスを remote_write で転送（FR-001）
+# VM 停止中も Prometheus の通常動作は継続する（FR-007）
+remote_write:
+  - url: "http://victoriametrics:8428/api/v1/write"
+    queue_config:
+      min_backoff: 30ms
+      max_backoff: 60s
+      max_shards: 4
+
 # ----- ルールファイルの読み込み -----
 rule_files:
   - '/etc/prometheus/alerts.yml'
@@ -172,3 +182,12 @@ scrape_configs:
   - job_name: 'otel-collector'
     static_configs:
       - targets: ['otel-collector:8888']
+
+  # ==========================================
+  # Job 11: VictoriaMetrics（自己監視 — Constitution 原則 V）
+  # ==========================================
+  # VictoriaMetrics 自身のメトリクスを収集（取り込み行数・エラー数・キャッシュ使用量等）
+  # 既存の TargetDown アラートが VictoriaMetrics ダウンを検知する
+  - job_name: 'victoriametrics'
+    static_configs:
+      - targets: ['victoriametrics:8428']
