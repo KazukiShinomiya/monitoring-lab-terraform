@@ -611,6 +611,8 @@ MIT License
 - Docker Volume (tempo_data) — local filesystem バックエンド (011-tempo)
 - HCL (Terragrunt), YAML (Sloth v0.11.0 `prometheus/v1` スキーマ) + `ghcr.io/slok/sloth:v0.11.0`, Prometheus, Grafana, Alertmanager (013-slo-sloth)
 - N/A（Sloth はステートレス・ファイル生成のみ） (013-slo-sloth)
+- HCL (Terragrunt/Terraform), YAML + `victoriametrics/victoria-metrics:v1.140.0`, 既存 `docker_container` モジュール (`terraform/modules/docker_container/`) (014-victoria-metrics)
+- Docker Volume `vm_data` — local filesystem backend (`/victoria-metrics-data`) (014-victoria-metrics)
 
 ## Recent Changes
 - 001-mcp-self-growth: Added TypeScript 5.x + Node.js v22.20.0（Windows Git Bash環境で利用可能）

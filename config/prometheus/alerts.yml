@@ -116,3 +116,37 @@ groups:
         annotations:
           summary: "Synology NAS ディスク残量不足: {{ $labels.hrStorageDescr }}"
           description: "ボリューム {{ $labels.hrStorageDescr }} の使用率が {{ $value | printf \"%.1f\" }}% です。"
+
+      # NAS 外付けドライブ 読み取り専用（USB切断/EXT4ジャーナルアボート）
+      # EXT4がジャーナルをアボートするとマウントポイントが read-only に落ちる。
+      # /mnt/ 配下を対象とし、NAS本体の rootfs は除外する。
+      - alert: NASFilesystemReadOnly
+        expr: node_filesystem_readonly{instance="10.0.0.254:9100", mountpoint=~"/mnt/.+"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NAS 外付けドライブが読み取り専用: {{ $labels.mountpoint }}"
+          description: "{{ $labels.mountpoint }} が read-only 状態です。USB 切断またはディスクエラーの可能性があります。"
+
+      # NAS 外付けドライブ ディスク使用率高
+      - alert: NASExternalDiskHighUsage
+        expr: |
+          (1 - node_filesystem_avail_bytes{instance="10.0.0.254:9100", mountpoint=~"/mnt/.+"}
+             / node_filesystem_size_bytes{instance="10.0.0.254:9100", mountpoint=~"/mnt/.+"}) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NAS 外付けドライブ残量不足: {{ $labels.mountpoint }}"
+          description: "{{ $labels.mountpoint }} の使用率が {{ $value | printf \"%.1f\" }}% です。"
+
+      # NAS 高 I/O ウェイト（ディスク障害の前兆）
+      - alert: NASHighIOWait
+        expr: rate(node_cpu_seconds_total{instance="10.0.0.254:9100", mode="iowait"}[5m]) * 100 > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NAS I/O ウェイト高騰"
+          description: "10.0.0.254 の I/O ウェイトが {{ $value | printf \"%.1f\" }}% です。ディスク障害の前兆の可能性があります。"

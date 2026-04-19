@@ -16,6 +16,8 @@ deleteDatasources:
     orgId: 1
   - name: Tempo
     orgId: 1
+  - name: VictoriaMetrics
+    orgId: 1
 
 datasources:
   # ==========================================
@@ -119,6 +121,25 @@ datasources:
         datasourceUid: prometheus  # Prometheus データソースの uid
         spanStartTimeShift: '-5m'
         spanEndTimeShift: '5m'
+
+  # ==========================================
+  # VictoriaMetrics データソース（長期ストレージ）
+  # ==========================================
+  # Prometheus remote_write で蓄積された長期メトリクスデータへのアクセス
+  # type: prometheus — VM は Prometheus 互換 API を提供（追加プラグイン不要）
+  # uid: victoriametrics — 将来の Correlations 設定用
+  - name: VictoriaMetrics
+    type: prometheus
+    uid: victoriametrics
+    access: proxy
+    url: http://victoriametrics:8428
+    isDefault: false  # Prometheus がデフォルトを維持（SC-003）
+    editable: true
+    version: 1
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s  # Prometheus と同じスクレイプ間隔
+      queryTimeout: 60s
 
   # ==========================================
   # PostgreSQL データソース（オプション）
