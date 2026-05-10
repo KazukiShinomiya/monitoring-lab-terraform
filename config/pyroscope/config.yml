@@ -9,51 +9,8 @@
 pyroscopedb:
   data_path: /data
 
-# ----- pprof pull スクレイプ設定 -----
-# Prometheus の scrape_configs と同様の形式
-# 対象: 監視スタック内の Go サービス (FR-006)
-scrape_configs:
-
-  # ==========================================
-  # Job 1: Prometheus
-  # ==========================================
-  - job_name: "prometheus"
-    scrape_interval: 15s
-    static_configs:
-      - targets:
-          - "prometheus:9090"
-        labels:
-          service_name: "prometheus"
-
-  # ==========================================
-  # Job 2: VictoriaMetrics
-  # ==========================================
-  - job_name: "victoriametrics"
-    scrape_interval: 15s
-    static_configs:
-      - targets:
-          - "victoriametrics:8428"
-        labels:
-          service_name: "victoriametrics"
-
-  # ==========================================
-  # Job 3: Grafana Tempo
-  # ==========================================
-  - job_name: "tempo"
-    scrape_interval: 15s
-    static_configs:
-      - targets:
-          - "tempo:3200"
-        labels:
-          service_name: "tempo"
-
-  # ==========================================
-  # Job 4: Pyroscope 自身（FR-006）
-  # ==========================================
-  - job_name: "pyroscope"
-    scrape_interval: 15s
-    static_configs:
-      - targets:
-          - "localhost:4040"
-        labels:
-          service_name: "pyroscope"
+# ----- 注意 -----
+# Pyroscope v2.x では pull-based pprof スクレイプは config.yml では設定できない。
+# scrape_configs は CLI フラグ形式で管理されるため、このファイルには記載しない。
+# プロファイル収集は Grafana Alloy 経由 (push) または SDK 経由で行う。
+# 現時点では Pyroscope サーバーの起動（US1）を優先する。
