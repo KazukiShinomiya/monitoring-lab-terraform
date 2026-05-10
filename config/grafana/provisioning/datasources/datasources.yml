@@ -18,6 +18,8 @@ deleteDatasources:
     orgId: 1
   - name: VictoriaMetrics
     orgId: 1
+  - name: Pyroscope
+    orgId: 1
 
 datasources:
   # ==========================================
@@ -140,6 +142,21 @@ datasources:
       httpMethod: POST
       timeInterval: 15s  # Prometheus と同じスクレイプ間隔
       queryTimeout: 60s
+
+  # ==========================================
+  # Grafana Pyroscope データソース（継続的プロファイリング）
+  # ==========================================
+  # LGTM+P スタックの P — CPU・メモリ・goroutine プロファイルを Explore で可視化 (FR-003)
+  # uid: pyroscope — 将来の Prometheus Exemplar → Profile 相関リンク用 (US3)
+  # type: grafana-pyroscope-datasource — Grafana 10+ 組み込み（追加プラグイン不要）
+  - name: Pyroscope
+    type: grafana-pyroscope-datasource
+    uid: pyroscope
+    access: proxy
+    url: http://pyroscope:4040
+    isDefault: false
+    editable: true
+    version: 1
 
   # ==========================================
   # PostgreSQL データソース（オプション）
