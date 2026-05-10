@@ -172,6 +172,16 @@ sync_otel_collector() {
   info "otel-collector 同期完了"
 }
 
+sync_pyroscope() {
+  step "pyroscope: 設定ファイルを転送中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/pyroscope"
+  scp "${REPO_ROOT}/config/pyroscope/config.yml" \
+      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/pyroscope/config.yml"
+  step "pyroscope: コンテナを再起動中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-pyroscope"
+  info "pyroscope 同期完了"
+}
+
 sync_tekken_update() {
   step "tekken: ソースプロジェクトから tekken.json をコピー中..."
   if [ ! -f "${TEKKEN_SOURCE}" ]; then
@@ -195,6 +205,7 @@ case "${SERVICE}" in
   promtail)        sync_promtail ;;
   tempo)           sync_tempo ;;
   otel-collector)  sync_otel_collector ;;
+  pyroscope)       sync_pyroscope ;;
   tekken-update)   sync_tekken_update ;;
   all)
     sync_prometheus
@@ -205,10 +216,11 @@ case "${SERVICE}" in
     sync_promtail
     sync_tempo
     sync_otel_collector
+    sync_pyroscope
     info "全サービス同期完了"
     ;;
   *)
-    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tempo|otel-collector|tekken-update|all}"
+    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tempo|otel-collector|pyroscope|tekken-update|all}"
     echo ""
     echo "  prometheus      prometheus.yml + alerts.yml → ホットリロード"
     echo "  alertmanager    alertmanager.yml (URL置換) → ホットリロード"
@@ -218,6 +230,7 @@ case "${SERVICE}" in
     echo "  promtail        promtail.yml → コンテナ再起動"
     echo "  tempo           tempo.yml → コンテナ再起動"
     echo "  otel-collector  otel-collector.yml → コンテナ再起動"
+    echo "  pyroscope       config.yml → コンテナ再起動"
     echo "  tekken-update   tekken_bot プロジェクトから tekken.json をリポジトリにコピー"
     echo "  all             全サービス（tekken-update は含まない）"
     exit 1

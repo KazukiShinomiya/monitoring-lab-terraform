@@ -191,3 +191,13 @@ scrape_configs:
   - job_name: 'victoriametrics'
     static_configs:
       - targets: ['victoriametrics:8428']
+
+  # ==========================================
+  # Job 12: Grafana Pyroscope（自己監視 — FR-005 / Constitution 原則 V）
+  # ==========================================
+  # Pyroscope 自身のメトリクスを収集（受信プロファイル数・取り込みレート等）
+  # pyroscope_distributor_received_profiles_total の増加で動作確認 (SC-002)
+  # 既存の TargetDown アラートが Pyroscope ダウンを自動検知する
+  - job_name: 'pyroscope'
+    static_configs:
+      - targets: ['pyroscope:4040']
