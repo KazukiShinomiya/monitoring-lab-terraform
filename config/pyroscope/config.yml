@@ -1,0 +1,16 @@
+# ==========================================
+# Grafana Pyroscope Configuration
+# ==========================================
+# pull モードで Go サービスの pprof エンドポイントを定期スクレイプし
+# プロファイルデータを /data に蓄積する
+
+# ----- ストレージ設定 -----
+# Docker Volume pyroscope_data を /data にマウント (FR-004)
+pyroscopedb:
+  data_path: /data
+
+# ----- 注意 -----
+# Pyroscope v2.x では pull-based pprof スクレイプは config.yml では設定できない。
+# scrape_configs は CLI フラグ形式で管理されるため、このファイルには記載しない。
+# プロファイル収集は Grafana Alloy 経由 (push) または SDK 経由で行う。
+# 現時点では Pyroscope サーバーの起動（US1）を優先する。
