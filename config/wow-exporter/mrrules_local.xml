@@ -1,0 +1,406 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  mrrules_local.xml - WOWHoneypot カスタムルール
+  既存ルール(1001-1044)と重複しないよう 2001番から開始
+  実際のアクセスログ(2020年〜)に出現した攻撃パターンを網羅
+-->
+<mrrs version='1.4'>
+
+  <!-- ===== Git リポジトリ露出スキャン ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2001</mrrid>
+      <enable>True</enable>
+      <note>Git repository exposure scan - .git/HEAD</note>
+    </meta>
+    <trigger>
+      <uri>\.git/</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[ref: refs/heads/master]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== ThinkPHP RCE ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2002</mrrid>
+      <enable>True</enable>
+      <note>ThinkPHP RCE - invokefunction</note>
+    </meta>
+    <trigger>
+      <uri>invokefunction</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[{"status":1,"info":"operation success","data":null}]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== ThinkCMF RCE ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2003</mrrid>
+      <enable>True</enable>
+      <note>ThinkCMF RCE - fetch content</note>
+    </meta>
+    <trigger>
+      <uri>fetch.*content.*php.*die</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[HelloThinkCMF]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== XDEBUG 悪用 ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2004</mrrid>
+      <enable>True</enable>
+      <note>PHP XDEBUG exploitation</note>
+    </meta>
+    <trigger>
+      <uri>XDEBUG_SESSION_START</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[<?php phpinfo(); ?>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Apache Solr RCE ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2005</mrrid>
+      <enable>True</enable>
+      <note>Apache Solr admin access</note>
+    </meta>
+    <trigger>
+      <uri>/solr/admin/</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <header>
+        <name>Server</name>
+        <value>Jetty(9.4.z-SNAPSHOT)</value>
+      </header>
+      <body><![CDATA[{"responseHeader":{"status":0,"QTime":1},"lucene":{"solr-spec-version":"8.11.0"}}]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== ルーター設定漏洩 (Zyxel etc.) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2006</mrrid>
+      <enable>True</enable>
+      <note>Router config disclosure - getuser</note>
+    </meta>
+    <trigger>
+      <uri>/config/getuser</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[{"result":"SUCCESS","name":"admin","password":"1234","privilege":"9"}]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== phpMyAdmin (小文字) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2007</mrrid>
+      <enable>True</enable>
+      <note>phpMyAdmin scan (lowercase)</note>
+    </meta>
+    <trigger>
+      <uri>/phpmyadmin/</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <header>
+        <name>Set-Cookie</name>
+        <value>phpMyAdmin=abc123def456; path=/phpmyadmin/; HttpOnly</value>
+      </header>
+      <body><![CDATA[<html><head><title>phpMyAdmin</title></head><body>Welcome to phpMyAdmin</body></html>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Liferay Portal RCE ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2008</mrrid>
+      <enable>True</enable>
+      <note>Liferay Portal JSON API exploit</note>
+    </meta>
+    <trigger>
+      <uri>/api/jsonws/invoke</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[{"exception":"java.lang.Exception"}]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== CGI コマンドインジェクション (ルーター系) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2009</mrrid>
+      <enable>True</enable>
+      <note>CGI command injection - mainfunction.cgi</note>
+    </meta>
+    <trigger>
+      <uri>mainfunction\.cgi</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[<html><body>Error</body></html>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== WordPress xmlrpc ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2010</mrrid>
+      <enable>True</enable>
+      <note>WordPress xmlrpc brute force</note>
+    </meta>
+    <trigger>
+      <uri>/xmlrpc\.php</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[<?xml version="1.0" encoding="UTF-8"?><methodResponse><fault><value><struct><member><name>faultCode</name><value><int>403</int></value></member><member><name>faultString</name><value><string>Incorrect username or password.</string></value></member></struct></value></fault></methodResponse>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== WordPress admin ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2011</mrrid>
+      <enable>True</enable>
+      <note>WordPress admin access</note>
+    </meta>
+    <trigger>
+      <uri>/wp-admin/</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <header>
+        <name>Set-Cookie</name>
+        <value>wordpress_test_cookie=WP+Cookie+check; path=/</value>
+      </header>
+      <body><![CDATA[<html><head><title>WordPress &rsaquo; Dashboard</title></head><body></body></html>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Shellshock ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2012</mrrid>
+      <enable>True</enable>
+      <note>Shellshock exploit attempt</note>
+    </meta>
+    <trigger>
+      <header><![CDATA[\(\)\s*\{]]></header>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[uid=0(root) gid=0(root) groups=0(root)]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== /etc/passwd LFI (URI経由) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2013</mrrid>
+      <enable>True</enable>
+      <note>LFI - passwd via URI traversal</note>
+    </meta>
+    <trigger>
+      <uri>\.\./etc/passwd</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Spring Boot Actuator ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2014</mrrid>
+      <enable>True</enable>
+      <note>Spring Boot Actuator probe</note>
+    </meta>
+    <trigger>
+      <uri>/actuator/</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[{"_links":{"self":{"href":"http://localhost:8080/actuator","templated":false},"health":{"href":"http://localhost:8080/actuator/health","templated":false}}}]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Netgear ルーター RCE ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2015</mrrid>
+      <enable>True</enable>
+      <note>Netgear router RCE - kerbynet</note>
+    </meta>
+    <trigger>
+      <uri>kerbynet</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[<SSL_STATUS>OK</SSL_STATUS>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Tomcat text/list ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2016</mrrid>
+      <enable>True</enable>
+      <note>Tomcat manager text interface</note>
+    </meta>
+    <trigger>
+      <uri>/manager/text/list</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <header>
+        <name>Server</name>
+        <value>Apache-Coyote/1.1</value>
+      </header>
+      <body><![CDATA[OK - Listed applications for virtual host [localhost]
+/:running:0:ROOT
+/manager:running:0:manager]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== .env ファイル露出 ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2017</mrrid>
+      <enable>True</enable>
+      <note>Environment file exposure - .env credential theft</note>
+    </meta>
+    <trigger>
+      <uri>/\.env</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[APP_NAME=Laravel
+APP_ENV=production
+APP_KEY=base64:kDwqTCEBMDsVvFwNs5E2aBcD3eFgHiJkLmNoPqRs=
+APP_DEBUG=false
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=production_db
+DB_USERNAME=root
+DB_PASSWORD=Str0ngP@ssw0rd!
+
+MAIL_USERNAME=admin@example.com
+MAIL_PASSWORD=mail_secret_123
+
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== Hikvision RCE (CVE-2021-36260) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2018</mrrid>
+      <enable>True</enable>
+      <note>Hikvision camera RCE probe - CVE-2021-36260</note>
+    </meta>
+    <trigger>
+      <uri>/SDK/webLanguage</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <header>
+        <name>Server</name>
+        <value>-</value>
+      </header>
+      <body><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<language version="2.0" xmlns="http://www.hikvision.com/ver20/XMLSchema">
+<language>English</language>
+</language>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== URLエンコードLFI (%2e%2e パストラバーサル) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2019</mrrid>
+      <enable>True</enable>
+      <note>URL-encoded path traversal - LFI via %2e encoding</note>
+    </meta>
+    <trigger>
+      <uri>%2e%2e|\.%2e|%2e\.</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+ubuntu:x:1000:1000:ubuntu:/home/ubuntu:/bin/bash]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== GeoServer RCE (CVE-2024-36401) ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2020</mrrid>
+      <enable>True</enable>
+      <note>GeoServer OGC eval RCE probe - CVE-2024-36401</note>
+    </meta>
+    <trigger>
+      <uri>/geoserver/</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <header>
+        <name>Server</name>
+        <value>Apache-Coyote/1.1</value>
+      </header>
+      <body><![CDATA[<!DOCTYPE html>
+<html><head><title>GeoServer 2.23.0</title></head>
+<body><h1>Welcome to GeoServer</h1>
+<p>GeoServer 2.23.0</p>
+<p><a href="web/">Web Administration Interface</a></p>
+</body></html>]]></body>
+    </response>
+  </mrr>
+
+  <!-- ===== secrets.json / 機密ファイル露出 ===== -->
+  <mrr>
+    <meta>
+      <mrrid>2021</mrrid>
+      <enable>True</enable>
+      <note>Secrets file exposure - secrets.json credential theft</note>
+    </meta>
+    <trigger>
+      <uri>secrets\.json|credentials\.json|config\.json</uri>
+    </trigger>
+    <response>
+      <status>200</status>
+      <body><![CDATA[{
+  "api_key": "sk-proj-xK9mN2pQ8rT5vW3yA6bC1dE4fG7hJ0lM",
+  "db_password": "Pr0duct10n$ecret!",
+  "aws_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+  "jwt_secret": "hs256-secret-key-do-not-share-abcdef123456"
+}]]></body>
+    </response>
+  </mrr>
+
+</mrrs>

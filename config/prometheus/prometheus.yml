@@ -191,3 +191,26 @@ scrape_configs:
   - job_name: 'victoriametrics'
     static_configs:
       - targets: ['victoriametrics:8428']
+
+  # ==========================================
+  # Job 12: Grafana Pyroscope（自己監視 — FR-005 / Constitution 原則 V）
+  # ==========================================
+  # Pyroscope 自身のメトリクスを収集（受信プロファイル数・取り込みレート等）
+  # pyroscope_distributor_received_profiles_total の増加で動作確認 (SC-002)
+  # 既存の TargetDown アラートが Pyroscope ダウンを自動検知する
+  - job_name: 'pyroscope'
+    static_configs:
+      - targets: ['pyroscope:4040']
+
+  # ==========================================
+  # Job 13: WoW Honeypot（攻撃ログ分析）
+  # ==========================================
+  # wow-exporter が WoW ハニーポットのアクセスログを集計して公開
+  # ASN/ISP 分析・UA 分類・攻撃マッチ率などセキュリティメトリクス
+  - job_name: 'wow-honeypot'
+    scrape_interval: 60s
+    static_configs:
+      - targets: ['10.0.0.220:9200']
+        labels:
+          service: 'wow-honeypot'
+          tier: 'security'
