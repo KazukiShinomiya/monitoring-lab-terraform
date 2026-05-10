@@ -97,8 +97,14 @@ docker-compose.override.yml
 terraform-state-backup-*.tar.gz
 
 # ----- AI Agent関連 -----
-# Claude Code エージェントフォルダ（認証情報、プライベート情報を含む可能性）
-.claude/
+# settings.local.json はローカル専用パーミッション設定（Anthropicベストプラクティス）
+# settings.json（プロジェクト共有）はコミット対象
+.claude/settings.local.json
+# セッション記録・スクリーンショット（ローカル専用）
+.claude/SESSION_STATE.md
+.claude/QUICKSTART_SESSION.md
+.claude/sessions/
+.claude/screenshots/
 
 # Claude Code プロジェクト設定（キャラクター設定・個人ワークフローを含む）
 CLAUDE.md
