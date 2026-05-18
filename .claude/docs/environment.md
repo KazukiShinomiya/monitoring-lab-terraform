@@ -16,8 +16,8 @@ wsl -d Ubuntu -- bash -c "ssh ubuntu@YOUR_SERVER_IP 'docker ps'"
 
 | 環境 | パス |
 |------|------|
-| Windows | `C:\work\repos\monitoring-lab-terraform` |
-| WSL2 | `/mnt/c/work/repos/monitoring-lab-terraform` |
+| Windows | `<your-local-path>\monitoring-lab-terraform` |
+| WSL2 | `/mnt/<drive>/<your-local-path>/monitoring-lab-terraform` |
 | WSL2ホーム | `/home/ubuntu/` |
 | リモート監視基盤 | `ubuntu@YOUR_SERVER_IP:/home/ubuntu/monitoring-lab/` |
 | VPS (WOWHoneypot) | `root@your-vps-hostname.example.com` |
