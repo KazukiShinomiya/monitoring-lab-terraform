@@ -110,6 +110,7 @@ terraform-state-backup-*.tar.gz
 
 # Claude Code プロジェクト設定（キャラクター設定・個人ワークフローを含む）
 CLAUDE.md
+claude.md
 
 # GitHub Spec Kit（仕様ファイルはコミット、一時ファイルは除外）
 .specify/.cache/
