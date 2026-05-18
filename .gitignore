@@ -105,6 +105,8 @@ terraform-state-backup-*.tar.gz
 .claude/QUICKSTART_SESSION.md
 .claude/sessions/
 .claude/screenshots/
+# キャラクター設定・個人情報（dotfilesで管理）
+.claude/docs/persona.md
 
 # Claude Code プロジェクト設定（キャラクター設定・個人ワークフローを含む）
 CLAUDE.md
