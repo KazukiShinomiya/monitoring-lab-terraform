@@ -1,7 +1,11 @@
 {
   "uid": "wow-honeypot-attacks",
   "title": "WOWHoneypot - Attack Dashboard",
-  "tags": ["honeypot", "security", "wow"],
+  "tags": [
+    "honeypot",
+    "security",
+    "wow"
+  ],
   "timezone": "browser",
   "schemaVersion": 38,
   "version": 4,
@@ -15,7 +19,12 @@
       "id": 101,
       "title": "",
       "type": "text",
-      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 0},
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "options": {
         "mode": "markdown",
         "content": "## 📊 サマリー — 攻撃全体統計\nVPSのWOWHoneypotに届いた累積リクエストの概要。**Total HTTP Requests**: 全リクエスト総数 / **Unique Source IPs**: ユニーク送信元IP数 / **Matched Attack Requests**: 攻撃ルールにマッチした累積数 / **Last Log Sync**: 最終ログ同期日時"
@@ -23,10 +32,15 @@
     },
     {
       "id": 1,
-      "title": "Total HTTP Requests (累積)",
-      "description": "エクスポーター起動以来の累積リクエスト数。時系列グラフが0でもこの値は高い — 時系列は「現在の処理レート」、この値は「これまでの合計」を示す。",
+      "title": "Total Requests (累積)",
+      "description": "エクスポーター起動以来の累積リクエスト数（HTTP + HTTPS 合計）。時系列グラフが0でもこの値は高い — 時系列は「現在の処理レート」、この値は「これまでの合計」を示す。",
       "type": "stat",
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 2},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 2
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -35,7 +49,11 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "colorMode": "background",
         "graphMode": "none",
         "textMode": "auto"
@@ -46,7 +64,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "blue", "value": null}
+              {
+                "color": "blue",
+                "value": null
+              }
             ]
           }
         }
@@ -56,7 +77,12 @@
       "id": 2,
       "title": "Unique Source IPs",
       "type": "stat",
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 2},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 2
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -65,7 +91,11 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "colorMode": "background",
         "graphMode": "none",
         "textMode": "auto"
@@ -76,7 +106,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "orange", "value": null}
+              {
+                "color": "orange",
+                "value": null
+              }
             ]
           }
         }
@@ -86,7 +119,12 @@
       "id": 3,
       "title": "Matched Attack Requests",
       "type": "stat",
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 2},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 2
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -95,7 +133,11 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "colorMode": "background",
         "graphMode": "none",
         "textMode": "auto"
@@ -106,7 +148,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": null}
+              {
+                "color": "red",
+                "value": null
+              }
             ]
           }
         }
@@ -116,7 +161,12 @@
       "id": 4,
       "title": "Last Log Sync",
       "type": "stat",
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 2},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 2
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -125,7 +175,11 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "colorMode": "background",
         "graphMode": "none",
         "textMode": "auto"
@@ -136,7 +190,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null}
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           }
         }
@@ -147,7 +204,12 @@
       "title": "HTTP リクエスト数 (時系列) ※ログ処理タイミング基準",
       "description": "注意: このグラフはログの実際の攻撃タイムラインではなく、wow-exporterがログを処理したタイミングを示します。ログ同期(10分おき)の直後にスパイクが発生します。",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 6},
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -160,8 +222,14 @@
         }
       ],
       "options": {
-        "tooltip": {"mode": "multi", "sort": "desc"},
-        "legend": {"displayMode": "list", "placement": "bottom"}
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -174,9 +242,18 @@
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "攻撃マッチ数"},
+            "matcher": {
+              "id": "byName",
+              "options": "攻撃マッチ数"
+            },
             "properties": [
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
             ]
           }
         ]
@@ -186,7 +263,12 @@
       "id": 102,
       "title": "",
       "type": "text",
-      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 14},
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
       "options": {
         "mode": "markdown",
         "content": "## 🌍 地理・手法分析\n**Top Attacking Countries**: GeoIPによる攻撃元の国別リクエスト数（上位15カ国） / **HTTP Method Distribution**: GET・POST・HEAD等のメソッド別リクエスト分布 / **Matched vs Unmatched**: 攻撃ルールにマッチしたリクエストとそれ以外の比率"
@@ -196,7 +278,12 @@
       "id": 5,
       "title": "Top Attacking Countries",
       "type": "bargauge",
-      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -206,20 +293,37 @@
       ],
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "displayMode": "gradient",
         "showUnfilled": true
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {"mode": "continuous-RdYlGr", "fixedColor": "red", "seriesBy": "last"},
+          "color": {
+            "mode": "continuous-RdYlGr",
+            "fixedColor": "red",
+            "seriesBy": "last"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 1000},
-              {"color": "red", "value": 10000}
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 10000
+              }
             ]
           }
         }
@@ -229,7 +333,12 @@
       "id": 6,
       "title": "HTTP Method Distribution",
       "type": "piechart",
-      "gridPos": {"h": 10, "w": 6, "x": 12, "y": 16},
+      "gridPos": {
+        "h": 10,
+        "w": 6,
+        "x": 12,
+        "y": 16
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -238,19 +347,33 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "pieType": "donut",
-        "legend": {"displayMode": "table", "placement": "right"}
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
       },
       "fieldConfig": {
-        "defaults": {"unit": "short"}
+        "defaults": {
+          "unit": "short"
+        }
       }
     },
     {
       "id": 7,
       "title": "Matched vs Unmatched",
       "type": "piechart",
-      "gridPos": {"h": 10, "w": 6, "x": 18, "y": 16},
+      "gridPos": {
+        "h": 10,
+        "w": 6,
+        "x": 18,
+        "y": 16
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -259,19 +382,33 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "pieType": "donut",
-        "legend": {"displayMode": "table", "placement": "right"}
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
       },
       "fieldConfig": {
-        "defaults": {"unit": "short"}
+        "defaults": {
+          "unit": "short"
+        }
       }
     },
     {
       "id": 103,
       "title": "",
       "type": "text",
-      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 26},
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
       "options": {
         "mode": "markdown",
         "content": "## 🔍 攻撃パターン詳細\n**Top Attack Paths**: 最も多くアクセスされたURLパス上位20件。既知の脆弱性スキャン（.git露出・phpMyAdmin・Solr等）の傾向を確認できる / **Top Source IPs**: リクエスト数が多い送信元IPアドレス上位20件"
@@ -281,7 +418,12 @@
       "id": 8,
       "title": "Top Attack Paths",
       "type": "bargauge",
-      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 28},
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -291,7 +433,11 @@
       ],
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "displayMode": "basic",
         "showUnfilled": true
       },
@@ -301,7 +447,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "blue", "value": null}
+              {
+                "color": "blue",
+                "value": null
+              }
             ]
           }
         }
@@ -311,7 +460,12 @@
       "id": 9,
       "title": "Top Source IPs",
       "type": "bargauge",
-      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 28},
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -321,7 +475,11 @@
       ],
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "displayMode": "basic",
         "showUnfilled": true
       },
@@ -331,7 +489,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "orange", "value": null}
+              {
+                "color": "orange",
+                "value": null
+              }
             ]
           }
         }
@@ -341,7 +502,12 @@
       "id": 104,
       "title": "",
       "type": "text",
-      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 38},
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
       "options": {
         "mode": "markdown",
         "content": "## 🛡️ セキュリティイベント & 処理状況\n**HTTP Status Code Distribution**: WOWHoneypotが返したステータスコード別の分布（200/401/404等） / **Blocklist Denials by IP**: ブロックリストにより接続拒否されたIP別の累積件数 / **Processed Log Lines**: wow-exporterが処理したログのバイトオフセット（ログ読み取り進捗の確認用）"
@@ -351,7 +517,12 @@
       "id": 10,
       "title": "HTTP Status Code Distribution",
       "type": "piechart",
-      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 40},
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 40
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -360,19 +531,33 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "pieType": "pie",
-        "legend": {"displayMode": "table", "placement": "right"}
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
       },
       "fieldConfig": {
-        "defaults": {"unit": "short"}
+        "defaults": {
+          "unit": "short"
+        }
       }
     },
     {
       "id": 11,
       "title": "Blocklist Denials by IP",
       "type": "bargauge",
-      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 40},
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 40
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -382,7 +567,11 @@
       ],
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "displayMode": "basic",
         "showUnfilled": true
       },
@@ -392,7 +581,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": null}
+              {
+                "color": "red",
+                "value": null
+              }
             ]
           }
         }
@@ -402,7 +594,12 @@
       "id": 12,
       "title": "Processed Log Lines",
       "type": "stat",
-      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 40},
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 40
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -411,7 +608,11 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "colorMode": "value",
         "graphMode": "none",
         "textMode": "auto",
@@ -423,7 +624,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null}
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           }
         }
@@ -433,7 +637,12 @@
       "id": 106,
       "title": "",
       "type": "text",
-      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 48},
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
       "options": {
         "mode": "markdown",
         "content": "## 🔬 攻撃インフラ分析\n**UA Category Distribution**: User-Agentをスキャナーツール別に分類した分布。`browser-like`はブラウザに偽装した攻撃ツール / **Top Attacking ASNs**: 攻撃元ASN（クラウド事業者・ホスティング会社）別のリクエスト数上位15件 / **Top User Agents**: 生のUser-Agent文字列ランキング上位20件"
@@ -443,7 +652,12 @@
       "id": 13,
       "title": "UA Category Distribution",
       "type": "piechart",
-      "gridPos": {"h": 10, "w": 8, "x": 0, "y": 50},
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 50
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -452,19 +666,33 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "pieType": "donut",
-        "legend": {"displayMode": "table", "placement": "right"}
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
       },
       "fieldConfig": {
-        "defaults": {"unit": "short"}
+        "defaults": {
+          "unit": "short"
+        }
       }
     },
     {
       "id": 14,
       "title": "Top Attacking ASNs",
       "type": "bargauge",
-      "gridPos": {"h": 10, "w": 16, "x": 8, "y": 50},
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 8,
+        "y": 50
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -474,20 +702,35 @@
       ],
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "displayMode": "gradient",
         "showUnfilled": true
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {"mode": "continuous-RdYlGr"},
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 5000},
-              {"color": "red", "value": 20000}
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5000
+              },
+              {
+                "color": "red",
+                "value": 20000
+              }
             ]
           }
         }
@@ -497,7 +740,12 @@
       "id": 15,
       "title": "Top User Agents",
       "type": "bargauge",
-      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 60},
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -507,7 +755,11 @@
       ],
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "displayMode": "basic",
         "showUnfilled": true
       },
@@ -517,7 +769,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "blue", "value": null}
+              {
+                "color": "blue",
+                "value": null
+              }
             ]
           }
         }
@@ -527,7 +782,12 @@
       "id": 107,
       "title": "",
       "type": "text",
-      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 70},
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
       "options": {
         "mode": "markdown",
         "content": "## 📈 攻撃トレンド分析\n**Attack Match Rate**: 全リクエストに占める攻撃ルールマッチ率（%）の時系列推移。値が上昇すれば既知の攻撃手法が増加している / **Scanner Tool Activity**: スキャナーカテゴリ別リクエスト数の推移。新ツールの台頭を時系列で検知できる / **Timeout Errors**: タイムアウト接続数（スロースキャナー・帯域調査の指標）"
@@ -537,7 +797,12 @@
       "id": 16,
       "title": "Attack Match Rate (%) Over Time",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 72},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 72
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -546,13 +811,21 @@
         }
       ],
       "options": {
-        "tooltip": {"mode": "single"},
-        "legend": {"displayMode": "list", "placement": "bottom"}
+        "tooltip": {
+          "mode": "single"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "color": {"mode": "fixed", "fixedColor": "red"},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
           "custom": {
             "lineWidth": 2,
             "fillOpacity": 15,
@@ -561,9 +834,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 10},
-              {"color": "red", "value": 30}
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
             ]
           }
         }
@@ -573,7 +855,12 @@
       "id": 17,
       "title": "Scanner Tool Activity Trend",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 72},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 72
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -582,8 +869,14 @@
         }
       ],
       "options": {
-        "tooltip": {"mode": "multi", "sort": "desc"},
-        "legend": {"displayMode": "list", "placement": "bottom"}
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -600,7 +893,12 @@
       "id": 18,
       "title": "Timeout Errors",
       "type": "stat",
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 80},
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 80
+      },
       "datasource": "Prometheus",
       "targets": [
         {
@@ -609,7 +907,11 @@
         }
       ],
       "options": {
-        "reduceOptions": {"calcs": ["lastNotNull"]},
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
         "colorMode": "background",
         "graphMode": "none",
         "textMode": "auto"
@@ -620,11 +922,218 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "yellow", "value": null},
-              {"color": "orange", "value": 10},
-              {"color": "red", "value": 100}
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
             ]
           }
+        }
+      }
+    },
+    {
+      "id": 200,
+      "title": "",
+      "type": "text",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 84
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## 🔒 HTTP / HTTPS 比較\n**HTTP vs HTTPS 内訳**:  ラベルによる HTTP・HTTPS 別リクエスト数の比較。HTTPS インスタンス (WOWHoneypot-new, port 443) のトラフィックが増加すると HTTPS 側が伸びる。"
+      }
+    },
+    {
+      "id": 201,
+      "title": "HTTP Requests (累積)",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 86
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(wowhoneypot_http_requests_total{protocol=\"http\"})",
+          "legendFormat": "HTTP"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 202,
+      "title": "HTTPS Requests (累積)",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 86
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(wowhoneypot_http_requests_total{protocol=\"https\"})",
+          "legendFormat": "HTTPS"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 204,
+      "title": "HTTP vs HTTPS リクエスト数 (時系列)",
+      "description": "HTTP (port 80) と HTTPS (port 443) の処理レート比較。ログ同期タイミング基準。",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 90
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(wowhoneypot_http_requests_total{protocol=\"http\"}[20m])) * 60",
+          "legendFormat": "HTTP (port 80)"
+        },
+        {
+          "expr": "sum(rate(wowhoneypot_http_requests_total{protocol=\"https\"}[20m])) * 60",
+          "legendFormat": "HTTPS (port 443)"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqpm",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "HTTPS (port 443)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 205,
+      "title": "HTTP vs HTTPS 分布",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 90
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (protocol) (wowhoneypot_http_requests_total{protocol=~\"http|https\"})",
+          "legendFormat": "{{protocol}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
         }
       }
     }
