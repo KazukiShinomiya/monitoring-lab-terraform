@@ -4,7 +4,7 @@ from prometheus_client import Counter, Gauge
 http_requests_total = Counter(
     "wowhoneypot_http_requests_total",
     "Total HTTP requests received by honeypot",
-    ["method", "path", "status", "matched"],
+    ["method", "path", "status", "matched", "protocol"],
 )
 
 unique_ips_gauge = Gauge(

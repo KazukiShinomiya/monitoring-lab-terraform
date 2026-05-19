@@ -23,7 +23,9 @@ STATE_FILE = os.environ.get("STATE_FILE", "/data/wow-logs/wow-exporter.state.jso
 
 STATE = {
     "access_offset": 0,
+    "access_https_offset": 0,
     "wow_offset": 0,
+    "wow_https_offset": 0,
     "unique_ips": set(),
     "path_counts": Counter(),
     "ip_counts": Counter(),
@@ -52,7 +54,9 @@ def load_state():
         with open(STATE_FILE) as f:
             data = json.load(f)
         STATE["access_offset"] = data.get("access_offset", 0)
+        STATE["access_https_offset"] = data.get("access_https_offset", 0)
         STATE["wow_offset"] = data.get("wow_offset", 0)
+        STATE["wow_https_offset"] = data.get("wow_https_offset", 0)
         STATE["unique_ips"] = set(data.get("unique_ips", []))
         STATE["path_counts"] = Counter(data.get("path_counts", {}))
         STATE["ip_counts"] = Counter(data.get("ip_counts", {}))
@@ -76,7 +80,9 @@ def save_state():
     try:
         data = {
             "access_offset": STATE["access_offset"],
+            "access_https_offset": STATE["access_https_offset"],
             "wow_offset": STATE["wow_offset"],
+            "wow_https_offset": STATE["wow_https_offset"],
             "unique_ips": list(STATE["unique_ips"]),
             "path_counts": dict(STATE["path_counts"]),
             "ip_counts": dict(STATE["ip_counts"]),
@@ -92,13 +98,14 @@ def save_state():
         logger.exception("Failed to save state")
 
 
-def _process_access_entry(entry) -> None:
+def _process_access_entry(entry, protocol: str = "http") -> None:
     label_path = entry.path[:64]
     metrics.http_requests_total.labels(
         method=entry.method,
         path=label_path,
         status=str(entry.status),
         matched=str(entry.matched),
+        protocol=protocol,
     ).inc()
 
     if entry.matched:
@@ -144,30 +151,32 @@ def _flush_access_gauges() -> None:
         metrics.requests_by_ua_category.labels(category=category).set(count)
 
 
-def process_access_log() -> None:
-    path = os.path.join(LOG_DIR, "access_log")
+def process_access_log(log_file: str = "access_log", protocol: str = "http") -> None:
+    path = os.path.join(LOG_DIR, log_file)
     if not os.path.exists(path):
         return
 
-    if os.path.getsize(path) < STATE["access_offset"]:
-        logger.warning("access_log has shrunk (rotation detected), resetting offset")
-        STATE["access_offset"] = 0
+    offset_key = "access_offset" if protocol == "http" else "access_https_offset"
+
+    if os.path.getsize(path) < STATE[offset_key]:
+        logger.warning("%s has shrunk (rotation detected), resetting offset", log_file)
+        STATE[offset_key] = 0
 
     new_lines = 0
     with open(path, "r", encoding="utf-8", errors="replace") as f:
-        f.seek(STATE["access_offset"])
+        f.seek(STATE[offset_key])
         for line in f:
             entry = parse_access_line(line)
             if entry:
-                _process_access_entry(entry)
+                _process_access_entry(entry, protocol=protocol)
                 new_lines += 1
-        STATE["access_offset"] = f.tell()
+        STATE[offset_key] = f.tell()
 
-    metrics.processed_lines_gauge.labels(log_file="access_log").set(STATE["access_offset"])
+    metrics.processed_lines_gauge.labels(log_file=log_file).set(STATE[offset_key])
     _flush_access_gauges()
 
     if new_lines:
-        logger.info("access_log: processed %d new lines", new_lines)
+        logger.info("%s: processed %d new lines", log_file, new_lines)
 
 
 def _flush_wow_gauges() -> None:
@@ -175,18 +184,20 @@ def _flush_wow_gauges() -> None:
         metrics.top_blocklisted_ips_gauge.labels(src_ip=ip).set(count)
 
 
-def process_wow_log() -> None:
-    path = os.path.join(LOG_DIR, "wowhoneypot.log")
+def process_wow_log(log_file: str = "wowhoneypot.log", protocol: str = "http") -> None:
+    path = os.path.join(LOG_DIR, log_file)
     if not os.path.exists(path):
         return
 
-    if os.path.getsize(path) < STATE["wow_offset"]:
-        logger.warning("wowhoneypot.log has shrunk (rotation detected), resetting offset")
-        STATE["wow_offset"] = 0
+    offset_key = "wow_offset" if protocol == "http" else "wow_https_offset"
+
+    if os.path.getsize(path) < STATE[offset_key]:
+        logger.warning("%s has shrunk (rotation detected), resetting offset", log_file)
+        STATE[offset_key] = 0
 
     new_lines = 0
     with open(path, "r", encoding="utf-8", errors="replace") as f:
-        f.seek(STATE["wow_offset"])
+        f.seek(STATE[offset_key])
         for line in f:
             entry = parse_wow_line(line)
             if not entry:
@@ -198,13 +209,13 @@ def process_wow_log() -> None:
                     STATE["blocklist_ip_counts"][entry.ip] += 1
             elif entry.event_type == "timeout":
                 metrics.timeout_errors_total.inc()
-        STATE["wow_offset"] = f.tell()
+        STATE[offset_key] = f.tell()
 
-    metrics.processed_lines_gauge.labels(log_file="wowhoneypot.log").set(STATE["wow_offset"])
+    metrics.processed_lines_gauge.labels(log_file=log_file).set(STATE[offset_key])
     _flush_wow_gauges()
 
     if new_lines:
-        logger.info("wowhoneypot.log: processed %d new lines", new_lines)
+        logger.info("%s: processed %d new lines", log_file, new_lines)
 
 
 def main():
@@ -216,8 +227,10 @@ def main():
 
     while True:
         try:
-            process_access_log()
-            process_wow_log()
+            process_access_log("access_log", "http")
+            process_access_log("access_log_https", "https")
+            process_wow_log("wowhoneypot.log", "http")
+            process_wow_log("wowhoneypot_https.log", "https")
             metrics.last_sync_timestamp.set(time.time())
             save_state()
         except Exception:
