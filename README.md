@@ -88,60 +88,73 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 ## 📁 ディレクトリ構成
 
 ```
-E:\work\labo/
+monitoring-lab-terraform/
 ├── docs/
 │   ├── network-topology.drawio     # ネットワークトポロジー図（物理構成・LAN/WAN）
 │   └── monitoring-stack.drawio     # 監視スタック構成図（コンポーネント・データフロー）
 ├── config/
 │   ├── prometheus/
 │   │   ├── prometheus.yml          # スクレイプ設定（SNMP / cAdvisor / Prometheus self）
-│   │   └── alerts.yml              # アラートルール（6ルール）
+│   │   └── alerts.yml              # アラートルール
 │   ├── snmp/
 │   │   └── snmp.yml                # SNMP Exporter 設定（RTX830 / Synology）
-│   └── grafana/
-│       └── provisioning/
-│           ├── datasources/
-│           │   └── datasources.yml # Prometheus + Zabbix データソース定義
-│           └── dashboards/
-│               ├── dashboards.yml
-│               ├── cadvisor.json
-│               ├── physical-devices.json
-│               └── integrated-monitoring.json
+│   ├── alertmanager/
+│   │   └── alertmanager.yml        # Alertmanager Slack 通知設定
+│   ├── grafana/
+│   │   └── provisioning/
+│   │       ├── datasources/
+│   │       │   └── datasources.yml # Prometheus + Zabbix データソース定義
+│   │       └── dashboards/
+│   │           ├── dashboards.yml
+│   │           └── *.json          # 各種ダッシュボード
+│   ├── loki/                       # Loki ログ集約設定
+│   ├── promtail/                   # Promtail ログ収集設定
+│   ├── tempo/                      # Tempo 分散トレーシング設定
+│   ├── otel-collector/             # OpenTelemetry Collector 設定
+│   └── sloth/                      # Sloth SLO 定義
 ├── terraform/
 │   ├── root.hcl                     # ルート設定（HCP Terraform backend、Docker Provider）
 │   ├── modules/
 │   │   ├── docker_container/        # 共通 Docker コンテナモジュール
 │   │   ├── network/                 # Docker ネットワークモジュール
-│   │   └── vault_secret/            # Vault シークレット管理モジュール（将来用）
+│   │   └── vault_secret/            # Vault シークレット管理モジュール
 │   └── envs/
 │       └── local/
 │           ├── terragrunt.hcl       # 環境固有設定
 │           ├── network/             # Docker ネットワーク
 │           ├── postgres/            # PostgreSQL
 │           ├── vault/               # Vault（開発モード）
+│           ├── vault-secrets/       # Vault シークレット管理
 │           ├── zabbix/              # Zabbix Server / Web
 │           ├── zabbix-agent/        # Zabbix Agent2
-│           ├── prometheus/          # Prometheus + Alert Rules
+│           ├── prometheus/          # Prometheus + Alert Rules + SLO Rules
+│           ├── alertmanager/        # Alertmanager
 │           ├── cadvisor/            # cAdvisor（コンテナメトリクス）
 │           ├── snmp-exporter/       # SNMP Exporter（物理機器監視）
 │           ├── grafana/             # Grafana
+│           ├── loki/                # Loki（ログ集約）
+│           ├── promtail/            # Promtail（ログ収集）
+│           ├── tempo/               # Tempo（分散トレーシング）
+│           ├── otel-collector/      # OpenTelemetry Collector
+│           ├── victoria-metrics/    # VictoriaMetrics（長期メトリクス保存）
+│           ├── github-runner/       # GitHub Actions Self-hosted Runner
 │           └── newrelic/            # New Relic Infrastructure
 ├── scripts/
 │   ├── setup-remote-config.sh      # リモートサーバー初期設定
-│   ├── container-setup.sh / .bat   # 開発コンテナセットアップ
-│   └── tg.sh / tg.bat              # Terragrunt ラッパー
+│   └── sync-config.sh              # 設定ファイル同期スクリプト
 ├── mcp/
-│   ├── prometheus-server/          # Prometheus MCP Server（メトリクス取得・提案生成）
-│   ├── docker-server/              # Docker MCP Server（コンテナ操作・ログ取得）
-│   └── terragrunt-server/          # Terragrunt MCP Server（承認フロー・apply実行）
-├── .specify/
-│   └── memory/                     # Speckit ADLC 成果物（仕様書、計画書、タスクリスト）
+│   ├── prometheus-server/          # Prometheus MCP Server
+│   ├── docker-server/              # Docker MCP Server
+│   ├── terragrunt-server/          # Terragrunt MCP Server
+│   └── alertmanager-server/        # Alertmanager MCP Server
+├── specs/                          # Speckit ADLC 仕様書・設計ドキュメント
+├── .github/
+│   └── workflows/                  # GitHub Actions CI/CD ワークフロー
 ├── .claude/
-│   ├── SESSION_STATE.md            # セッション状態管理
-│   └── commands/                   # Speckit スラッシュコマンド
+│   └── commands/                   # Claude Code スラッシュコマンド
+├── Taskfile.yml                     # タスクランナー（go-task）
 ├── docker-compose.yml               # 開発環境（Terragrunt / Vault）
 ├── .env.example                     # 環境変数テンプレート
-├── [CLAUDE.md](CLAUDE.md)               # Claude Code 用プロジェクト概要
 └── README.md                        # このファイル
 ```
 
@@ -171,7 +184,7 @@ cp .env.example .env
 # .env を編集して TF_TOKEN_app_terraform_io などを設定
 
 # 3. 開発コンテナを起動（WSL2 経由）
-wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose up -d"
+wsl -d Ubuntu-24.04 -e bash -c "cd /path/to/monitoring-lab-terraform && docker compose up -d"
 
 # 4. Terragrunt コンテナに接続
 wsl -d Ubuntu-24.04 -e bash -c "docker exec -it monitoring-lab-terragrunt sh"
@@ -343,13 +356,12 @@ wsl -d Ubuntu-24.04 -e bash -c "sudo service docker start"
 
 ```bash
 # Vault を先に起動してから Terragrunt を起動
-wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose up -d vault"
-wsl -d Ubuntu-24.04 -e bash -c "cd /mnt/e/work/labo && docker compose up -d terragrunt"
+wsl -d Ubuntu-24.04 -e bash -c "cd /path/to/monitoring-lab-terraform && docker compose up -d vault"
+wsl -d Ubuntu-24.04 -e bash -c "cd /path/to/monitoring-lab-terraform && docker compose up -d terragrunt"
 
 # または one-shot で実行（Vault 依存を回避）
 wsl -d Ubuntu-24.04 -e bash -c "docker compose run --rm terragrunt sh -c \
-  'cp /tmp/ssh-keys/id_rsa /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa && \
-   cd /workspace/terraform/envs/local/<service> && terragrunt apply -auto-approve'"
+  'cd /workspace/terraform/envs/local/<service> && terragrunt apply -auto-approve'"
 ```
 
 ### HCP Terraform の新規 Workspace が Remote モードになる
@@ -423,21 +435,28 @@ wsl -d Ubuntu-24.04 -e bash -c \
 
 ---
 
-## 💡 今後の拡張予定
+## 💡 実装済み機能一覧
 
 | ステータス | 項目 |
 |-----------|------|
 | ✅ 完了 | cAdvisor によるコンテナメトリクス収集 |
-| ✅ 完了 | Prometheus アラートルール（6ルール） |
+| ✅ 完了 | Prometheus アラートルール |
 | ✅ 完了 | SNMP Exporter による物理機器監視（RTX830 / Synology） |
-| ✅ 完了 | Grafana ダッシュボード（cAdvisor / Physical Devices / Integrated） |
-| ✅ 完了 | HCP Terraform による State 管理（10 Workspaces） |
+| ✅ 完了 | Grafana ダッシュボード（cAdvisor / Physical Devices / Integrated 他） |
+| ✅ 完了 | HCP Terraform による State 管理（Workspace 分離） |
+| ✅ 完了 | Alertmanager Slack 通知基盤 |
 | ✅ 完了 | Docker MCP Server（コンテナ操作・ログ・リソース監視） |
 | ✅ 完了 | Prometheus MCP Server（メトリクス取得・アラート確認・改善提案生成） |
 | ✅ 完了 | Terragrunt MCP Server（承認フロー・plan/apply・ロールバック） |
-| ✅ 完了 | Linux Node Exporter 設定（YOUR_LINUX_HOST_1 / YOUR_LINUX_HOST_2） |
+| ✅ 完了 | Alertmanager MCP Server（アラート確認・サイレンス管理） |
+| ✅ 完了 | Vault シークレット管理（開発モード） |
+| ✅ 完了 | Loki + Promtail によるログ収集・集約基盤 |
+| ✅ 完了 | Tempo + OpenTelemetry Collector による分散トレーシング基盤 |
+| ✅ 完了 | GitHub Actions + Self-hosted Runner による CI/CD |
+| ✅ 完了 | Sloth による SLO 定義・Error Budget 管理 |
+| ✅ 完了 | VictoriaMetrics による長期メトリクス保存 |
 | 📅 計画中 | Vault の完全活用（Dynamic Secrets） |
-| 📅 計画中 | CI/CD 統合（GitHub Actions + Terragrunt） |
+| 📅 計画中 | Pyroscope による継続的プロファイリング |
 
 ---
 
