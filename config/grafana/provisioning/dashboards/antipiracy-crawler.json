@@ -25,7 +25,7 @@
       "type": "stat",
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "targets": [
-        {"expr": "crawler_queue_length", "legendFormat": "queued", "refId": "A"}
+        {"expr": "crawler_queue_length or vector(0)", "legendFormat": "queued", "refId": "A"}
       ],
       "options": {
         "colorMode": "background",
@@ -52,7 +52,7 @@
       "type": "stat",
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "targets": [
-        {"expr": "increase(crawler_new_items_total[24h])", "legendFormat": "items", "refId": "A"}
+        {"expr": "sum(increase(crawler_new_items_total[24h])) or vector(0)", "legendFormat": "items", "refId": "A"}
       ],
       "options": {
         "colorMode": "background",
@@ -75,7 +75,7 @@
       "type": "stat",
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "targets": [
-        {"expr": "increase(crawler_phash_duplicates_total[24h])", "legendFormat": "duplicates", "refId": "A"}
+        {"expr": "sum(increase(crawler_phash_duplicates_total[24h])) or vector(0)", "legendFormat": "duplicates", "refId": "A"}
       ],
       "options": {
         "colorMode": "background",
@@ -101,7 +101,7 @@
       "type": "stat",
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "targets": [
-        {"expr": "increase(crawler_jobs_total{status=\"error\"}[24h])", "legendFormat": "errors", "refId": "A"}
+        {"expr": "sum(increase(crawler_jobs_total{status=\"error\"}[24h])) or vector(0)", "legendFormat": "errors", "refId": "A"}
       ],
       "options": {
         "colorMode": "background",
