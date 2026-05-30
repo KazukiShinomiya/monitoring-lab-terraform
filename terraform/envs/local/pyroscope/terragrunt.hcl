@@ -34,8 +34,9 @@ inputs = {
   services = {
     pyroscope = {
       # Grafana Pyroscope — シングルノードモード
-      # 注意: latest 回避のためバージョン固定を推奨。必要に応じて更新すること
-      image = "grafana/pyroscope:latest"
+      # バージョン固定: latest タグの破壊的変更回避（Tempo/OTel の教訓）。
+      # 稼働実績 v2.0.2（2026-05-07 build）でピン。更新時はこの値を明示的に上げること。
+      image = "grafana/pyroscope:2.0.2"
 
       # HTTP API / pprof 受信 / Prometheus 互換 /metrics (FR-001)
       internal_port = 4040
