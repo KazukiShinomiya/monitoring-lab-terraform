@@ -18,6 +18,8 @@ vars:
   REMOTE_HOST: YOUR_SERVER_IP
   REMOTE_USER: ubuntu
   SYNC_SCRIPT: ./scripts/sync-config.sh
+  # プロジェクトの WSL2 マウントパス。実環境に合わせて書き換えるか、環境変数 LABO_DIR で上書きする
+  LABO_DIR: /mnt/YOUR_DRIVE/path/to/labo
 
 # WSL2 経由でコマンドを実行するラッパー
 # Windows の task から WSL2 コマンドを実行するために使用
@@ -32,13 +34,13 @@ tasks:
     desc: "WSL2 Docker 起動 + 開発コンテナ起動"
     cmds:
       - wsl -d {{.WSL_DISTRO}} -e bash -c "sudo service docker start"
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && docker compose up -d"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && docker compose up -d"
     silent: false
 
   stop:
     desc: "開発コンテナ停止"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && docker compose stop"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && docker compose stop"
 
   status:
     desc: "リモートサーバーのコンテナ状態確認"
@@ -55,42 +57,42 @@ tasks:
   sync:prometheus:
     desc: "Prometheus 設定を同期・ホットリロード"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} prometheus"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} prometheus"
 
   sync:alertmanager:
     desc: "Alertmanager 設定を同期・ホットリロード（Webhook URL を .env から注入）"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} alertmanager"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} alertmanager"
 
   sync:grafana:
     desc: "Grafana ダッシュボード・データソースを同期・再起動"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} grafana"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} grafana"
 
   sync:snmp:
     desc: "SNMP Exporter 設定を同期・再起動"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} snmp"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} snmp"
 
   sync:tempo:
     desc: "Grafana Tempo 設定を同期・再起動"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} tempo"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} tempo"
 
   sync:otel-collector:
     desc: "OTel Collector 設定を同期・再起動"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} otel-collector"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} otel-collector"
 
   sync:all:
     desc: "全サービスの設定を同期"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} all"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} all"
 
   tekken:update:
     desc: "tekken_bot プロジェクトから tekken.json をコピー（その後 sync:grafana で反映）"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd /mnt/e/work/labo && {{.SYNC_SCRIPT}} tekken-update"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && {{.SYNC_SCRIPT}} tekken-update"
 
   # ========== Terragrunt ==========
 
@@ -119,19 +121,19 @@ tasks:
   vault:store:
     desc: "vault-secrets workspace で terragrunt apply（Slack Webhook URL を Vault に格納）"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "source /mnt/e/work/labo/.env 2>/dev/null; export VAULT_ADDR=http://{{.REMOTE_HOST}}:8200; docker compose -f /mnt/e/work/labo/docker-compose.yml exec -T -e VAULT_ADDR=$$VAULT_ADDR -e VAULT_TOKEN=$${VAULT_TOKEN:-root} -e SLACK_WEBHOOK_URL=$$SLACK_WEBHOOK_URL -e POSTGRES_PASSWORD=$${POSTGRES_PASSWORD:-zabbix_password} -e GRAFANA_ADMIN_PASSWORD=$${GRAFANA_ADMIN_PASSWORD:-admin} terragrunt sh -c 'cd /workspace/terraform/envs/local/vault-secrets && terragrunt apply -auto-approve'"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "source {{.LABO_DIR}}/.env 2>/dev/null; export VAULT_ADDR=http://{{.REMOTE_HOST}}:8200; docker compose -f {{.LABO_DIR}}/docker-compose.yml exec -T -e VAULT_ADDR=$$VAULT_ADDR -e VAULT_TOKEN=$${VAULT_TOKEN:-root} -e SLACK_WEBHOOK_URL=$$SLACK_WEBHOOK_URL -e POSTGRES_PASSWORD=$${POSTGRES_PASSWORD:-zabbix_password} -e GRAFANA_ADMIN_PASSWORD=$${GRAFANA_ADMIN_PASSWORD:-admin} terragrunt sh -c 'cd /workspace/terraform/envs/local/vault-secrets && terragrunt apply -auto-approve'"
 
   # ========== SLO 管理 (Sloth) ==========
 
   slo:generate:
     desc: "Sloth で SLO YAML から Prometheus ルールを生成 (config/prometheus/slo-rules.yml)"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker run --rm -v /mnt/e/work/labo/config/sloth:/input:ro -v /mnt/e/work/labo/config/prometheus:/output ghcr.io/slok/sloth:v0.11.0 generate -i /input/monitoring-lab.yml -o /output/slo-rules.yml && echo 'Generated: config/prometheus/slo-rules.yml'"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker run --rm -v {{.LABO_DIR}}/config/sloth:/input:ro -v {{.LABO_DIR}}/config/prometheus:/output ghcr.io/slok/sloth:v0.11.0 generate -i /input/monitoring-lab.yml -o /output/slo-rules.yml && echo 'Generated: config/prometheus/slo-rules.yml'"
 
   slo:validate:
     desc: "生成された slo-rules.yml を promtool で文法チェック"
     cmds:
-      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker run --rm --entrypoint promtool -v /mnt/e/work/labo/config/prometheus:/etc/prometheus:ro prom/prometheus:latest check rules /etc/prometheus/slo-rules.yml"
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "docker run --rm --entrypoint promtool -v {{.LABO_DIR}}/config/prometheus:/etc/prometheus:ro prom/prometheus:latest check rules /etc/prometheus/slo-rules.yml"
 
   # ========== 監視・確認 ==========
 

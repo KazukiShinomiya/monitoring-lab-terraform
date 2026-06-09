@@ -12,7 +12,7 @@ echo "開発環境のクリーンアップ開始"
 echo "================================================"
 echo ""
 
-# カレントディレクトリ確認（WSL2の場合は /mnt/e/work/labo、それ以外は現在地）
+# カレントディレクトリ確認（スクリプト位置から動的に導出するため環境非依存）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
