@@ -117,6 +117,8 @@ claude.md
 .specify/*.tmp
 
 # ----- MCP Server関連 -----
+# .mcp.json は個人環境の絶対パスを含むためローカル専用（.mcp.json.example をテンプレートとして公開）
+.mcp.json
 # MCPデータストア（個人の監視データ・承認ログ）
 .mcp-data/
 
@@ -139,4 +141,5 @@ ENV/
 # ----- 許可するファイル -----
 # テンプレートファイルは除外しない
 !.env.example
+!.mcp.json.example
 !*.tfvars.example

@@ -61,6 +61,9 @@ inputs = {
       env = [
         "GF_SECURITY_ADMIN_USER=admin",
         "GF_SECURITY_ADMIN_PASSWORD=${get_env("GRAFANA_ADMIN_PASSWORD", "")}",
+        # Zabbix データソース用パスワード（datasources.yml が ${ZABBIX_PASSWORD} で参照）
+        # 未設定時は dev 既定 "zabbix"。.env で ZABBIX_PASSWORD を設定すれば上書きされる
+        "ZABBIX_PASSWORD=${get_env("ZABBIX_PASSWORD", "zabbix")}",
         "GF_SECURITY_ALLOW_EMBEDDING=true",
         "GF_AUTH_ANONYMOUS_ENABLED=false",
         "GF_SERVER_ROOT_URL=http://localhost:3000",
@@ -120,7 +123,7 @@ inputs = {
 #       trends: true
 #       cacheTTL: 60
 #     secureJsonData:
-#       password: zabbix  # TODO: Vault連携後に変更
+#       password: ${ZABBIX_PASSWORD}  # コンテナ環境変数から注入
 #     editable: true
 #
 # ダッシュボード自動プロビジョニング設定例:
