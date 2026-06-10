@@ -10,9 +10,9 @@ const REMOTE_DISPLAY = REMOTE_HOST.replace('ssh://', '').split('@')[1] ?? REMOTE
 const ERR_SSH = `Error: リモートサーバー (${REMOTE_DISPLAY}) に接続できません。SSH鍵とネットワーク接続を確認してください。`;
 
 export class DockerClient {
-  private async execDocker(args: string[]): Promise<string> {
+  private async execDocker(args: string[], timeoutMs = 60000): Promise<string> {
     try {
-      const { stdout } = await execFileAsync('docker', ['-H', REMOTE_HOST, ...args]);
+      const { stdout } = await execFileAsync('docker', ['-H', REMOTE_HOST, ...args], { timeout: timeoutMs });
       return stdout.trim();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
