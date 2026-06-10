@@ -23,3 +23,11 @@ updates:
     labels:
       - dependencies
       - mcp
+
+  - package-ecosystem: npm
+    directory: /mcp/alertmanager-server
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - mcp

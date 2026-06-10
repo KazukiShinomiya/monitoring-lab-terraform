@@ -14,10 +14,12 @@ const server = new McpServer(
 process.on('SIGINT', () => process.exit(0));
 process.on('SIGTERM', () => process.exit(0));
 process.on('uncaughtException', (err) => {
-  process.stderr.write(`Uncaught exception: ${err.message}\n`);
+  process.stderr.write(`Uncaught exception: ${err.message}\n${err.stack}\n`);
+  process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
-  process.stderr.write(`Unhandled rejection: ${reason}\n`);
+  process.stderr.write(`Unhandled rejection: ${String(reason)}\n`);
+  process.exit(1);
 });
 
 // ツール登録
