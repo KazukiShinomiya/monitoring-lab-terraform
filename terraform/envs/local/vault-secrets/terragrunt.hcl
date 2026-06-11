@@ -16,7 +16,7 @@ generate "backend" {
   contents = <<EOF
 terraform {
   cloud {
-    organization = "YOUR_TF_ORG"
+    organization = "${get_env("TF_CLOUD_ORGANIZATION", "YOUR_TF_ORG")}"
 
     workspaces {
       name = "monitoring-lab-local-vault-secrets"
