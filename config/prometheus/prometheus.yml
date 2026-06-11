@@ -218,7 +218,7 @@ scrape_configs:
   # ==========================================
   # Job 14: Antipiracy Crawler（違法アップロード監視）
   # ==========================================
-  # imageserver (10.0.0.254) の crawler コンテナが :9091/metrics でメトリクスを公開
+  # imageserver (YOUR_CRAWLER_HOST) の crawler コンテナが :9091/metrics でメトリクスを公開
   # 収集メトリクス:
   #   crawler_jobs_total{site_name, status}          — ジョブ完了数（done/error）
   #   crawler_new_items_total{site_name}             — 新規検出件数
@@ -228,7 +228,7 @@ scrape_configs:
   - job_name: 'antipiracy_crawler'
     scrape_interval: 30s
     static_configs:
-      - targets: ['10.0.0.254:9091']
+      - targets: ['YOUR_CRAWLER_HOST:9091']
         labels:
           instance: 'imageserver-crawler'
           service: 'antipiracy-crawler'
