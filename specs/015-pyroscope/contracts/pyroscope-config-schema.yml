@@ -1,0 +1,79 @@
+# ==========================================
+# Contract: Pyroscope 設定インターフェース定義
+# ==========================================
+# Feature: 015-pyroscope
+# Date: 2026-05-07（バックフィル: 2026-06-08）
+#
+# このファイルは Pyroscope サービスの設定インターフェース（契約）を定義する。
+# 実装は config/pyroscope/config.yml および
+# terraform/envs/local/pyroscope/terragrunt.hcl がこの契約を満たす。
+
+# ------------------------------------------
+# 1. Pyroscope config.yml スキーマ
+# ------------------------------------------
+# 提供先: Pyroscope サーバープロセス（--config.file で読み込み）
+pyroscope_config:
+  pyroscopedb:
+    data_path:
+      type: string
+      required: true
+      description: プロファイルデータの永続化先パス
+      value: /data            # pyroscope_data ボリュームのマウント先
+
+  # --- 契約外（v2.x 制約により本ファイルでは扱わない）---
+  # scrape_configs:
+  #   pull-based pprof スクレイプは Pyroscope v2.x の config.yml では非対応。
+  #   Grafana Alloy（push）または Pyroscope SDK 経由で供給すること。
+
+# ------------------------------------------
+# 2. Terragrunt サービス入力契約
+# ------------------------------------------
+# 提供先: modules/docker_container
+terragrunt_inputs:
+  image:
+    type: string
+    required: true
+    constraint: "固定タグ必須（:latest 禁止）"
+    value: "grafana/pyroscope:2.0.2"
+  internal_port:
+    type: int
+    value: 4040
+  external_port:
+    type: int
+    value: 4040
+  command:
+    type: list(string)
+    value: ["--config.file=/etc/pyroscope/config.yml"]
+  volumes:
+    - source: pyroscope_data
+      target: /data
+  bind_mounts:
+    - source: /home/ubuntu/monitoring-lab/pyroscope
+      target: /etc/pyroscope
+      read_only: true
+
+# ------------------------------------------
+# 3. Prometheus スクレイプ契約
+# ------------------------------------------
+# 提供元: Pyroscope :4040/metrics
+# 提供先: Prometheus pyroscope ジョブ
+prometheus_scrape:
+  job_name: pyroscope
+  static_configs:
+    - targets: ["pyroscope:4040"]
+  expected_metrics:
+    - up                                          # = 1 で SC-002 達成
+    - pyroscope_distributor_received_profiles_total
+    - pyroscope_build_info
+
+# ------------------------------------------
+# 4. Grafana datasource 契約
+# ------------------------------------------
+# 提供元: Pyroscope HTTP API（:4040）
+# 提供先: Grafana（grafana-pyroscope-datasource）
+grafana_datasource:
+  name: Pyroscope
+  type: grafana-pyroscope-datasource
+  uid: pyroscope                # 固定（Exemplar→Profile 相関の参照先）
+  access: proxy
+  url: http://pyroscope:4040
