@@ -1,7 +1,7 @@
 # ==========================================
 # HashiCorp Vault Service Configuration
 # ==========================================
-# 機密情報管理用のVaultサーバー設定（開発モード）
+# 機密情報管理用の Vault サーバー設定（本番モード: 永続ストレージ + TLS）
 
 # ----- 親設定の継承 -----
 include "root" {
@@ -25,47 +25,69 @@ dependency "network" {
 inputs = {
   network_name = dependency.network.outputs.network_name
 
-  # 永続ボリュームの定義
-  # 注意: 開発モードではボリュームを使用しない（メモリ内で動作）
-  volumes = []
+  # 永続ボリュームの定義（本番モード: データを永続化する）
+  volumes = ["vault_data"]
 
   # Vaultサービスの定義
   services = {
     vault = {
       # Vault公式イメージ
+      # 注: :latest 固定化は別タスク（image pin）で対応予定
       image = "hashicorp/vault:latest"
 
       # VaultのデフォルトAPIポート
       internal_port = 8200
       external_port = 8200
 
-      # 環境変数設定
+      # 本番モードで起動。
+      # 公式イメージの entrypoint(docker-entrypoint.sh) は "server" を受けると
+      # 自動で -config=/vault/config を付与する。ここで重ねて -config を渡すと
+      # vault.hcl が二重ロードされ listener が重複し bind 衝突するため、command は
+      # "server" のみとし、設定は /vault/config ディレクトリ経由で読ませる。
+      command = ["server"]
+
+      # 環境変数設定（本番モード: VAULT_DEV_* を撤去）
       env = [
-        "VAULT_DEV_ROOT_TOKEN_ID=root",
-        "VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200",
+        "VAULT_ADDR=https://127.0.0.1:8200", # コンテナ内CLI用（self-signed のため verify skip）
+        # クラスタアドバタイズアドレス。実IPはコードに残さず TARGET_HOST から注入。
+        "VAULT_API_ADDR=https://${get_env("TARGET_HOST", "YOUR_SERVER_IP")}:8200",
+        "VAULT_SKIP_VERIFY=true",
         "VAULT_LOG_LEVEL=info"
       ]
 
-      # ボリュームマウント設定
-      # 開発モードではデータを永続化しないため空
-      volumes = []
+      # ボリュームマウント設定（永続ストレージ）
+      volumes = [
+        {
+          source = "vault_data"   # 上で定義した named volume
+          target = "/vault/file"  # storage "file" の path と一致させる
+        }
+      ]
 
-      # Bind マウント設定
-      bind_mounts = []
+      # Bind マウント設定（config + TLS証明書を注入、読み取り専用）
+      bind_mounts = [
+        {
+          source    = "/home/ubuntu/monitoring-lab/vault/config"
+          target    = "/vault/config"
+          read_only = true
+        },
+        {
+          source    = "/home/ubuntu/monitoring-lab/vault/tls"
+          target    = "/vault/tls"
+          read_only = true
+        }
+      ]
     }
   }
 }
 
 # ----- 注意事項 -----
-# 【開発モードの特徴】
-# ✓ 自動的にUnseal状態で起動
-# ✓ Root Token = "root" で固定
-# ✓ HTTPで通信（TLS無効）
-# ✓ データはメモリ内のみ（再起動で消失）
+# 【本番モードの運用】
+# ✓ データは named volume "vault_data" (/vault/file) に永続化される
+# ✓ TLS 有効（自己署名証明書）。クライアントは skip_tls_verify で接続
+# ✓ 起動直後は sealed 状態 → operator init / unseal が必要
+# ✓ unseal鍵・root token は .env に保管（Gitignore済み）。別途バックアップ推奨
 #
-# 【本番環境への移行時の変更点】
-# 1. VAULT_DEV_* 環境変数を削除
-# 2. 設定ファイルをボリュームマウント
-# 3. TLS証明書の設定
-# 4. Unseal Keyの安全な管理
-# 5. Auto-unseal機能の検討
+# 【次フェーズの課題】
+# 1. auto-unseal（Transit / KMS）の検討
+# 2. image の固定タグ化（:latest 撤廃）
+# 3. unseal鍵のより安全な管理（現状は学習用に .env 保管）
