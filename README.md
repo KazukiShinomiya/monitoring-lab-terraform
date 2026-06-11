@@ -15,15 +15,53 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 | `docs/monitoring-stack.drawio` | **監視スタック** — コンポーネント間のデータフロー・ポート番号 |
 | [`docs/mcp-servers.md`](docs/mcp-servers.md) | **MCP Servers** — Claude Code 連携の使い方・ツールリファレンス |
 
-**概要:**
+**概要（LGTM スタック + Zabbix + 長期保存 + プロファイリング）:**
 
-```
-[監視対象]                         [データ収集層]          [監視スタック: YOUR_SERVER_IP]
-  RTX830 (SNMP v1)   ──────────→  SNMP Exporter :9116 ─→ Prometheus :9090 ─→ Grafana :3000
-  Synology (SNMP v2c)─────────→                          ↑                    ↑
-  Docker Containers  ──────────→  cAdvisor :8081  ───────┘                    │
-  SwitchBot × 4      ──────────→  Zabbix Server :10051 ─→ Zabbix Web :8080 ──┘
-  Zabbix Agent       ──────────→  (Active check)
+```mermaid
+flowchart LR
+  subgraph T["監視対象"]
+    RTX["RTX830<br/>SNMP v1"]
+    SYN["Synology NAS<br/>SNMP v2c"]
+    SW["SwitchBot ×4"]
+    DC["Docker<br/>Containers"]
+    WOW["WOWHoneypot"]
+  end
+  subgraph C["収集層"]
+    SNMP["SNMP Exporter<br/>:9116"]
+    CAD["cAdvisor<br/>:8081"]
+    PT["Promtail"]
+    OTEL["OTel Collector"]
+    WEXP["wow-exporter"]
+  end
+  subgraph S["監視スタック (YOUR_SERVER_IP)"]
+    PROM["Prometheus :9090"]
+    VM["VictoriaMetrics<br/>長期保存"]
+    LOKI["Loki<br/>ログ"]
+    TEMPO["Tempo<br/>トレース"]
+    PYRO["Pyroscope :4040<br/>プロファイル"]
+    ZBX["Zabbix :10051"]
+    AM["Alertmanager :9093"]
+    GRAF["Grafana :3000"]
+  end
+  RTX --> SNMP
+  SYN --> SNMP
+  DC --> CAD
+  WOW --> WEXP
+  SNMP --> PROM
+  CAD --> PROM
+  WEXP --> PROM
+  SW --> ZBX
+  PT --> LOKI
+  OTEL --> TEMPO
+  PROM --> VM
+  PROM --> AM
+  AM -->|Slack| SLACK["Slack 通知"]
+  PROM --> GRAF
+  VM --> GRAF
+  LOKI --> GRAF
+  TEMPO --> GRAF
+  PYRO --> GRAF
+  ZBX --> GRAF
 ```
 
 ---
@@ -35,7 +73,7 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 | コンポーネント | イメージ | ポート | 用途 |
 |-------------|---------|------|------|
 | **PostgreSQL** | `postgres:15-alpine` | 5432 | Zabbix データ永続化 |
-| **Vault** | `hashicorp/vault:latest` | 8200 | 機密情報管理（開発モード） |
+| **Vault** | `hashicorp/vault:latest` | 8200 | 機密情報管理（**本番モード**: file storage + 自己署名TLS + 永続化） |
 | **Zabbix Server** | `zabbix/zabbix-server-pgsql` | 10051 | 監視サーバー |
 | **Zabbix Agent2** | `zabbix/zabbix-agent2` | 10050 | Zabbix Server 自己監視 |
 | **Zabbix Web** | `zabbix/zabbix-web-apache-pgsql` | 8080 | Web UI |
@@ -44,6 +82,17 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 | **SNMP Exporter** | `prom/snmp-exporter` | 9116 | 物理機器 SNMP → Prometheus 変換 |
 | **Grafana** | `grafana/grafana:latest` | 3000 | 可視化ダッシュボード |
 | **New Relic Infra** | `newrelic/infrastructure:latest` | - | 統合監視プラットフォーム連携 |
+| **Alertmanager** | `prom/alertmanager` | 9093 | アラート通知ルーティング（Slack） |
+| **Loki** | `grafana/loki` | 3100 | ログ集約 |
+| **Promtail** | `grafana/promtail` | - | ログ収集エージェント |
+| **Tempo** | `grafana/tempo:2.6.1` | - | 分散トレーシング |
+| **OTel Collector** | `otel/opentelemetry-collector:0.148.0` | - | テレメトリ収集パイプライン |
+| **VictoriaMetrics** | `victoriametrics/victoria-metrics` | 8428 | 長期メトリクス保存 |
+| **Pyroscope** | `grafana/pyroscope:2.0.2` | 4040 | 継続的プロファイリング（LGTM の "P"） |
+| **wow-exporter** | （カスタム Python） | - | WOWHoneypot ログ → Prometheus 変換 |
+| **GitHub Runner** | `myoung34/github-runner` | - | CI/CD セルフホストランナー |
+
+> **Workspace 数**: 20（HCP Terraform でサービスごとに分離管理）
 
 ### 監視対象
 
@@ -74,12 +123,23 @@ Terraform + Terragrunt + Vault を使用した、学習用の監視基盤IaC構�
 | `SynologyHighCPU` | NAS CPU > 80% (5分継続) |
 | `SynologyDiskHighUsage` | Volume 使用率 > 85% (10分継続) |
 
+### MCP Servers（Claude Code 連携）
+
+AI を活用した自律的インフラ運用基盤。詳細は [`docs/mcp-servers.md`](docs/mcp-servers.md) を参照。
+
+| MCP Server | ツール数 | 主な機能 |
+|-----------|---------|---------|
+| **docker-server** | 6 | コンテナ一覧・ログ・起動/停止/再起動・stats |
+| **prometheus-server** | 6 | PromQL クエリ・アラート確認・AI 改善提案生成 |
+| **terragrunt-server** | 6 | plan/apply・承認フロー・ロールバック |
+| **alertmanager-server** | 4 | アクティブアラート確認・サイレンス作成/一覧/削除 |
+
 ---
 
 ## 🎯 このプロジェクトの目的
 
 - **IaC の学習**: Terraform / Terragrunt の実践的な理解
-- **Vault 連携**: シークレット管理のベストプラクティス習得（将来の完全移行に向けて準備中）
+- **Vault 連携**: 本番モード（file storage + 自己署名TLS + 永続化）で稼働、シークレット管理を実践
 - **監視基盤の構築**: Zabbix + Prometheus + Grafana の統合環境構築
 - **MCP Server 開発**: AI を活用した自律的インフラ改善基盤（Docker / Prometheus / Terragrunt MCP 稼働中）
 
@@ -123,7 +183,7 @@ monitoring-lab-terraform/
 │           ├── terragrunt.hcl       # 環境固有設定
 │           ├── network/             # Docker ネットワーク
 │           ├── postgres/            # PostgreSQL
-│           ├── vault/               # Vault（開発モード）
+│           ├── vault/               # Vault（本番モード: file storage + TLS）
 │           ├── vault-secrets/       # Vault シークレット管理
 │           ├── zabbix/              # Zabbix Server / Web
 │           ├── zabbix-agent/        # Zabbix Agent2
@@ -205,7 +265,7 @@ terragrunt run --all apply
 | **Prometheus** | `http://YOUR_SERVER_IP:9090` | 認証なし |
 | **cAdvisor** | `http://YOUR_SERVER_IP:8081` | 認証なし |
 | **SNMP Exporter** | `http://YOUR_SERVER_IP:9116` | 認証なし |
-| **Vault** (開発用) | `http://localhost:8200` | Token: `root` |
+| **Vault** | `https://YOUR_SERVER_IP:8200` | Token: 本番 root（`.env`）／自己署名TLS（再起動後は unseal 必要） |
 | **New Relic** | `https://one.newrelic.com/` | ライセンスキーで認証 |
 | **HCP Terraform** | `https://app.terraform.io/app/YOUR_TF_ORG` | API Token |
 
@@ -283,7 +343,7 @@ terragrunt run --all destroy # 依存関係を考慮して削除
 ローカルの `terraform.tfstate` ではなく、[HCP Terraform](https://app.terraform.io) の Remote Backend を使用。
 
 - **Organization**: `YOUR_TF_ORG`
-- **Workspace 数**: 10（サービスごとに分離）
+- **Workspace 数**: 20（サービスごとに分離）
 - **Execution Mode**: Local（Terraform 実行はコンテナ内で行い、State のみ HCP 管理）
 
 ```hcl
@@ -299,9 +359,9 @@ remote_state {
 }
 ```
 
-### 3. Vault との連携（将来の完全移行に向けて準備中）
+### 3. Vault との連携（本番モード稼働中）
 
-現在は環境変数に直接パスワードを記述していますが、将来は以下のように実装予定:
+Vault は本番モード（file storage + 自己署名TLS + 永続化）で稼働し、3シークレット（postgres / grafana / alertmanager）を格納済み。再起動後は unseal 鍵による開封が必要。サービス側の動的取得は今後実装予定:
 
 ```hcl
 data "vault_kv_secret_v2" "postgres" {
@@ -418,16 +478,16 @@ wsl -d Ubuntu-24.04 -e bash -c \
 
 このプロジェクトは **学習目的** のため、以下の設定は本番環境では使用しないでください:
 
-- ❌ Vault の開発モード（Root Token 固定）
+- ⚠️ Vault は本番モード化済み（file storage + 自己署名TLS）だが、unseal鍵を `.env` に保管（学習用簡易管理。本番は KMS auto-unseal 推奨）
 - ❌ パスワードのハードコーディング（`.env` ファイル）
-- ❌ HTTP 通信（HTTPS 未設定）
+- ⚠️ 自己署名 TLS（正規 CA 証明書ではない）
 - ❌ デフォルト認証情報の使用
 
 ### 本番環境への移行チェックリスト
 
-- [ ] Vault の本番モード化（`config.hcl` 作成、Unseal 設定）
+- [x] Vault の本番モード化（`config.hcl` 作成、file storage + TLS + Unseal）✅ 2026-06
 - [ ] すべてのパスワードを Vault から動的取得
-- [ ] TLS / SSL 証明書の設定
+- [x] Vault の TLS 設定（自己署名）✅／[ ] 正規 CA 証明書化は今後
 - [ ] 強力なパスワードへの変更
 - [ ] HCP Terraform の Remote State（すでに設定済み ✅）
 - [ ] ネットワークファイアウォールルールの設定
@@ -449,14 +509,15 @@ wsl -d Ubuntu-24.04 -e bash -c \
 | ✅ 完了 | Prometheus MCP Server（メトリクス取得・アラート確認・改善提案生成） |
 | ✅ 完了 | Terragrunt MCP Server（承認フロー・plan/apply・ロールバック） |
 | ✅ 完了 | Alertmanager MCP Server（アラート確認・サイレンス管理） |
-| ✅ 完了 | Vault シークレット管理（開発モード） |
+| ✅ 完了 | Vault シークレット管理（**本番モード**: file storage + 自己署名TLS + 永続化、揮発性解消） |
 | ✅ 完了 | Loki + Promtail によるログ収集・集約基盤 |
 | ✅ 完了 | Tempo + OpenTelemetry Collector による分散トレーシング基盤 |
 | ✅ 完了 | GitHub Actions + Self-hosted Runner による CI/CD |
 | ✅ 完了 | Sloth による SLO 定義・Error Budget 管理 |
 | ✅ 完了 | VictoriaMetrics による長期メトリクス保存 |
-| 📅 計画中 | Vault の完全活用（Dynamic Secrets） |
-| 📅 計画中 | Pyroscope による継続的プロファイリング |
+| ✅ 完了 | Pyroscope による継続的プロファイリング（v2.0.2 本番稼働） |
+| ✅ 完了 | WOWHoneypot ハニーポット + wow-exporter メトリクス監視 |
+| 📅 計画中 | Vault の完全活用（Dynamic Secrets / Auto-unseal） |
 
 ---
 
