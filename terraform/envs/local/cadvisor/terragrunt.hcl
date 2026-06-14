@@ -32,8 +32,8 @@ inputs = {
   # cAdvisorサービスの定義
   services = {
     cadvisor = {
-      # cAdvisor公式イメージ（Google Container Registry）
-      image = "gcr.io/cadvisor/cadvisor:latest"
+      # cAdvisor公式イメージ（Google Container Registry / バージョン固定で再現性を確保）
+      image = "gcr.io/cadvisor/cadvisor:v0.55.1"
 
       # cAdvisorのデフォルトWebポート
       internal_port = 8080

@@ -46,8 +46,8 @@ inputs = {
     # ----- Zabbix Server -----
     # メトリクス収集・アラート処理を行うバックエンド
     zbx_server = {
-      # Zabbix Server公式イメージ（PostgreSQL対応版）
-      image = "zabbix/zabbix-server-pgsql:alpine-latest"
+      # Zabbix Server公式イメージ（PostgreSQL対応版 / バージョン固定で再現性を確保）
+      image = "zabbix/zabbix-server-pgsql:alpine-7.4.3"
 
       # Zabbix Serverのデフォルトポート
       internal_port = 10051
@@ -112,8 +112,8 @@ inputs = {
     # ----- Zabbix Web UI -----
     # ユーザーインターフェース
     zbx_web = {
-      # Zabbix Web公式イメージ（Apache + PostgreSQL対応版）
-      image = "zabbix/zabbix-web-apache-pgsql:alpine-latest"
+      # Zabbix Web公式イメージ（Apache + PostgreSQL対応版 / バージョン固定で再現性を確保）
+      image = "zabbix/zabbix-web-apache-pgsql:alpine-7.4.3"
 
       # WebサーバーのHTTPポート
       internal_port = 8080

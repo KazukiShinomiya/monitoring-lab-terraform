@@ -38,8 +38,8 @@ inputs = {
 
   services = {
     snmp-exporter = {
-      # SNMP Exporter 公式イメージ
-      image = "prom/snmp-exporter:latest"
+      # SNMP Exporter 公式イメージ（バージョン固定で再現性を確保）
+      image = "prom/snmp-exporter:v0.30.1"
 
       # SNMP Exporterのデフォルトポート
       internal_port = 9116

@@ -41,7 +41,8 @@ inputs = {
     otel-collector = {
       # OpenTelemetry Collector Contrib 公式イメージ
       # contrib: Prometheus receiver / exporter 等の拡張コンポーネントを含む
-      image = "otel/opentelemetry-collector-contrib:latest"
+      # バージョン固定で再現性を確保
+      image = "otel/opentelemetry-collector-contrib:0.148.0"
 
       # OTLP gRPC ポート (外部公開 — アプリ・telemetrygen からのトレース受信)
       # HTTP ポート (4318) は docker_container モジュールの単一ポート制約により内部のみ
