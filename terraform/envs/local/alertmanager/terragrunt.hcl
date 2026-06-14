@@ -31,8 +31,8 @@ inputs = {
   # Alertmanager サービスの定義
   services = {
     alertmanager = {
-      # Alertmanager 公式イメージ
-      image = "prom/alertmanager:latest"
+      # Alertmanager 公式イメージ（バージョン固定で再現性を確保）
+      image = "prom/alertmanager:v0.31.1"
 
       # Alertmanager のデフォルト WebUI / API ポート
       internal_port = 9093
@@ -42,7 +42,7 @@ inputs = {
       command = [
         "--config.file=/etc/alertmanager/alertmanager.yml",
         "--storage.path=/alertmanager",
-        "--web.external-url=http://YOUR_SERVER_IP:9093"
+        "--web.external-url=http://${get_env("TARGET_HOST", "YOUR_SERVER_IP")}:9093"
       ]
 
       # 環境変数設定

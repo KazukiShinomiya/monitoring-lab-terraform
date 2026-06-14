@@ -50,8 +50,8 @@ inputs = {
   # Grafanaサービスの定義
   services = {
     grafana = {
-      # Grafana公式イメージ（最新安定版）
-      image = "grafana/grafana:latest"
+      # Grafana公式イメージ（バージョン固定で再現性を確保）
+      image = "grafana/grafana:12.2.0"
 
       # GrafanaのデフォルトWebポート
       internal_port = 3000
