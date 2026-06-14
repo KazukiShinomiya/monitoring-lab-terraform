@@ -33,8 +33,8 @@ inputs = {
   # Prometheusサービスの定義
   services = {
     prometheus = {
-      # Prometheus公式イメージ
-      image = "prom/prometheus:latest"
+      # Prometheus公式イメージ（バージョン固定で再現性を確保）
+      image = "prom/prometheus:v3.7.1"
 
       # PrometheusのデフォルトWebポート
       internal_port = 9090

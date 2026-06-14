@@ -31,9 +31,8 @@ inputs = {
   # Vaultサービスの定義
   services = {
     vault = {
-      # Vault公式イメージ
-      # 注: :latest 固定化は別タスク（image pin）で対応予定
-      image = "hashicorp/vault:latest"
+      # Vault公式イメージ（バージョン固定で再現性を確保）
+      image = "hashicorp/vault:1.20.4"
 
       # VaultのデフォルトAPIポート
       internal_port = 8200
