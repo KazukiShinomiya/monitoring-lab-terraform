@@ -43,8 +43,8 @@ inputs = {
     # ----- Zabbix Agent2 -----
     # Zabbix Serverを監視するエージェント
     zbx_agent = {
-      # Zabbix Agent2公式イメージ
-      image = "zabbix/zabbix-agent2:alpine-latest"
+      # Zabbix Agent2公式イメージ（バージョン固定で再現性を確保）
+      image = "zabbix/zabbix-agent2:alpine-7.4.3"
 
       # Zabbix Agent2のデフォルトポート
       internal_port = 10050
