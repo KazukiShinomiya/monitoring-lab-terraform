@@ -34,7 +34,7 @@ inputs = {
   services = {
     loki = {
       # Loki 公式イメージ（バージョン固定で再現性を確保）
-      image = "grafana/loki:3.4.2"
+      image = "grafana/loki:3.7.1"
 
       # Loki デフォルト HTTP ポート
       internal_port = 3100
