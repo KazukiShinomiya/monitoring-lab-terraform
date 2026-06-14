@@ -10,6 +10,7 @@ auth_enabled: false
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
+  log_level: info
 
 common:
   instance_addr: 127.0.0.1
@@ -34,12 +35,22 @@ schema_config:
         prefix: index_
         period: 24h
 
-# ログ保持期間: 7日間（学習環境として十分な量を保持しつつストレージを節約）
+# ログ保持期間: 30日
+# allow_structured_metadata: false — Loki 3.x で schema v13 との互換性を確保するため明示無効化
 limits_config:
-  retention_period: 168h
+  retention_period: 30d
+  allow_structured_metadata: false
 
 # コンパクタ設定（保持期間の強制適用に必要）
 compactor:
   working_directory: /loki/compactor
   retention_enabled: true
   delete_request_store: filesystem
+
+# クエリ結果キャッシュ（埋め込みキャッシュ・最大 100MB）
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100

@@ -42,8 +42,10 @@ inputs = {
   # Promtail サービスの定義
   services = {
     promtail = {
-      # Promtail 公式イメージ（Loki と同一バージョンで互換性を確保）
-      image = "grafana/promtail:3.4.2"
+      # Promtail 公式イメージ（バージョン固定で再現性を確保）
+      # 注: Promtail は Loki の版番号に追従しない（メンテナンスモード／後継は Grafana Alloy）。
+      #     現行リモート実態の 3.6.8 を固定（Loki は 3.7.1）。
+      image = "grafana/promtail:3.6.8"
 
       # Promtail メトリクスポート（Prometheus スクレイプ用）
       internal_port = 9080
