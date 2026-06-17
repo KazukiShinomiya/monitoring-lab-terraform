@@ -29,9 +29,9 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **Purpose**: 共通計装の置き場と依存・ビルド方式を確定する
 
-- [ ] T001 `mcp/shared/` ディレクトリを新設し、`telemetry.ts` の空骨格（export 宣言のみ）を `mcp/shared/telemetry.ts` に作成する
-- [ ] T002 [P] `mcp/prometheus-server/package.json` に `@opentelemetry/api` / `@opentelemetry/sdk-metrics` / `@opentelemetry/exporter-metrics-otlp-grpc` / `@opentelemetry/resources` / `@opentelemetry/semantic-conventions` を追加し `npm install`
-- [ ] T003 既存 `mcp/prometheus-server/Dockerfile` のビルドコンテキスト・COPY 範囲を調査し（research.md D6）、`mcp/shared/` を同梱する最小改修方針（`docker build -f mcp/prometheus-server/Dockerfile ... mcp/` 等）と tsconfig の include/rootDir 整合を `mcp/prometheus-server/Dockerfile` と `mcp/prometheus-server/tsconfig.json` に反映する
+- [X] T001 `mcp/shared/` ディレクトリを新設（自己完結パッケージ: `package.json`/`tsconfig.json`/`telemetry.ts`/`__tests__/`）。`telemetry.ts` は T004-T006 で正本実装
+- [X] T002 [P] `mcp/prometheus-server/package.json` に `@opentelemetry/api` / `@opentelemetry/sdk-metrics` / `@opentelemetry/exporter-metrics-otlp-grpc` / `@opentelemetry/resources` / `@opentelemetry/semantic-conventions` を追加（T010 配線用の prep。`npm install` は T011 のイメージ再ビルド時）
+- [X] T003 ビルドコンテキスト方針を確定（research.md D6）: 各サーバーは context=`mcp/`、Dockerfile が `shared/telemetry.ts` を `./src/` へ COPY し `import './telemetry.js'`。**実際の Dockerfile/import 改変は T010/T011 の領分**（本Phaseでは方針確定のみ）
 
 ---
 
@@ -41,11 +41,11 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **⚠️ CRITICAL**: このフェーズ完了まで US 実装は開始不可
 
-- [ ] T004 `mcp/shared/telemetry.ts` に `initTelemetry(serviceName)` を実装（Resource `service.name`=`mcp-<name>`、OTLP/gRPC exporter、`PeriodicExportingMetricReader`、**cumulative temporality 明示**、`mcp_tool_duration_seconds` の**明示バケット境界を View（`ExplicitBucketHistogramAggregation`）で登録**[境界値は data-model.md]、既定エンドポイント `http://10.0.0.220:4317`／`OTEL_EXPORTER_OTLP_ENDPOINT` 上書き、`MCP_TELEMETRY_DISABLED=1` で no-op、冪等、接続失敗で例外を投げない）— contracts/instrumentation-helper.md 準拠
-- [ ] T005 `mcp/shared/telemetry.ts` に `instrumentTool(toolName, handler)` を実装（`mcp_tool_invocations_total{service,tool,status}` Counter +1、`mcp_tool_duration_seconds{service,tool}` Histogram 記録、**`service`(bare 名)・`tool`・`status` は Resource 任せにせずデータポイント属性として明示付与**[I1 回避・data-model.md 参照]、戻り値/例外を透過、計測例外は握る best-effort）
-- [ ] T006 `mcp/shared/telemetry.ts` に `shutdownTelemetry(timeoutMs=2000)` を実装（forceFlush + MeterProvider shutdown、timeout 超過で resolve、冪等）
-- [ ] T007 [P] 計装ヘルパーの vitest テストを `mcp/shared/__tests__/telemetry.test.ts` に作成（成功=success/throw=error かつ再throw、`MCP_TELEMETRY_DISABLED=1` で素通し、到達不能でも `shutdownTelemetry` が timeout 内に resolve、計測例外がツール結果/例外に波及しない）— contracts/instrumentation-helper.md テスト契約
-- [ ] T008 `config/otel-collector/otel-collector.yml` に `prometheusremotewrite` exporter（`http://victoriametrics:8428/api/v1/write`, `tls.insecure: true`, `resource_to_telemetry_conversion.enabled: true`）と `metrics` パイプライン（receivers:[otlp], processors:[batch], exporters:[prometheusremotewrite]）を増設（traces パイプラインと `:8888` テレメトリは不変）— contracts/otel-collector-pipeline.md
+- [X] T004 `mcp/shared/telemetry.ts` に `initTelemetry(serviceName)` を実装（Resource `service.name`=`mcp-<name>`、OTLP/gRPC exporter、`PeriodicExportingMetricReader`、**cumulative temporality 明示**、`mcp_tool_duration_seconds` の**明示バケット境界を View（`ExplicitBucketHistogramAggregation`）で登録**[境界値は data-model.md]、既定エンドポイント `http://10.0.0.220:4317`／`OTEL_EXPORTER_OTLP_ENDPOINT` 上書き、`MCP_TELEMETRY_DISABLED=1` で no-op、冪等、接続失敗で例外を投げない）— contracts/instrumentation-helper.md 準拠
+- [X] T005 `mcp/shared/telemetry.ts` に `instrumentTool(toolName, handler)` を実装（`mcp_tool_invocations_total{service,tool,status}` Counter +1、`mcp_tool_duration_seconds{service,tool}` Histogram 記録、**`service`(bare 名)・`tool`・`status` は Resource 任せにせずデータポイント属性として明示付与**[I1 回避・data-model.md 参照]、戻り値/例外を透過、計測例外は握る best-effort）
+- [X] T006 `mcp/shared/telemetry.ts` に `shutdownTelemetry(timeoutMs=2000)` を実装（forceFlush + MeterProvider shutdown、timeout 超過で resolve、冪等）
+- [X] T007 [P] 計装ヘルパーの vitest テストを `mcp/shared/__tests__/telemetry.test.ts` に作成（7件 green）（成功=success/throw=error かつ再throw、`MCP_TELEMETRY_DISABLED=1` で素通し、到達不能でも `shutdownTelemetry` が timeout 内に resolve、計測例外がツール結果/例外に波及しない）— contracts/instrumentation-helper.md テスト契約
+- [X] T008 `config/otel-collector/otel-collector.yml` に `prometheusremotewrite` exporter（`http://victoriametrics:8428/api/v1/write`, `tls.insecure: true`, `resource_to_telemetry_conversion.enabled: true`）と `metrics` パイプライン（receivers:[otlp], processors:[batch], exporters:[prometheusremotewrite]）を増設（traces パイプラインと `:8888` テレメトリは不変）— contracts/otel-collector-pipeline.md
 - [ ] T009 otel-collector 設定をリモートへ反映し検証（`scp` → `docker restart otel-collector` → ログにエラーなし → `otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite"}` 取得可、traces 継続）
 
 **Checkpoint**: 計装ヘルパー（テスト green）とメトリクス出口が準備完了
