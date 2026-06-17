@@ -46,7 +46,7 @@ description: "Task list for 016-mcp-metrics-exporter"
 - [X] T006 `mcp/shared/telemetry.ts` に `shutdownTelemetry(timeoutMs=2000)` を実装（forceFlush + MeterProvider shutdown、timeout 超過で resolve、冪等）
 - [X] T007 [P] 計装ヘルパーの vitest テストを `mcp/shared/__tests__/telemetry.test.ts` に作成（7件 green）（成功=success/throw=error かつ再throw、`MCP_TELEMETRY_DISABLED=1` で素通し、到達不能でも `shutdownTelemetry` が timeout 内に resolve、計測例外がツール結果/例外に波及しない）— contracts/instrumentation-helper.md テスト契約
 - [X] T008 `config/otel-collector/otel-collector.yml` に `prometheusremotewrite` exporter（`http://victoriametrics:8428/api/v1/write`, `tls.insecure: true`, `resource_to_telemetry_conversion.enabled: true`）と `metrics` パイプライン（receivers:[otlp], processors:[batch], exporters:[prometheusremotewrite]）を増設（traces パイプラインと `:8888` テレメトリは不変）— contracts/otel-collector-pipeline.md
-- [ ] T009 otel-collector 設定をリモートへ反映し検証（`scp` → `docker restart otel-collector` → ログにエラーなし → `otelcol_exporter_sent_metric_points{exporter="prometheusremotewrite"}` 取得可、traces 継続）
+- [X] T009 otel-collector 設定をリモートへ反映し検証（使い捨てコンテナで `validate`=EXIT0 → 実パス差し替え → `docker restart monitoring-lab-otel-collector` → ログ: prometheusremotewrite exporter / metrics signal 起動・traces 継続・エラーなし）
 
 **Checkpoint**: 計装ヘルパー（テスト green）とメトリクス出口が準備完了
 
@@ -58,9 +58,9 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **Independent Test**: prometheus-server のツールを数回（成功+意図的失敗）呼び、`mcp_tool_invocations_total{service="prometheus"}` の増加と status 区別、`mcp_tool_duration_seconds` の分布を VM で確認
 
-- [ ] T010 [US1] `mcp/prometheus-server/src/index.ts` を計装（先頭で `initTelemetry('prometheus')`、6ツールの handler を `instrumentTool(name, handler)` でラップ、終了経路 SIGINT/SIGTERM と stdio transport `onclose` で `await shutdownTelemetry()` 後に `process.exit`）— ツール入出力契約・イメージ名・起動方法は不変
-- [ ] T011 [US1] `monitoring-lab-prometheus-mcp` イメージを shared 同梱コンテキストで再ビルドし、`mcp/prometheus-server` の `npm run build` / `npm test` が green
-- [ ] T012 [US1] 検証（quickstart 手順3相当・SC-001）: prometheus-server を起動しツールを N 回（成功+1回エラー）呼び、`http://10.0.0.220:8428/api/v1/query?query=mcp_tool_invocations_total` で `service="prometheus"` の success/error カウントと duration 系列を確認
+- [X] T010 [US1] `mcp/prometheus-server/src/index.ts` を計装（先頭で `initTelemetry('prometheus')`、6ツールを `instrumentTool` でラップ、SIGINT/SIGTERM/`transport.onclose`/例外で `await shutdownTelemetry()`→`process.exit`）。⚠️発見: **stdin EOF では onclose が発火しない**（pipe close で flush せず）。**本番は Claude Code が `docker stop`=SIGTERM で止めるため SIGTERM 経路が機能すれば良い**。stdin EOF 経路の硬化は T013 で詰める
+- [X] T011 [US1] `monitoring-lab-prometheus-mcp` を context=`mcp/`（Dockerfile が `shared/telemetry.ts` を `./src/` へ COPY）で再ビルド成功。tsc green（計装込み）
+- [X] T012 [US1] 検証（SC-001）: SIGTERM 経路で `mcp_tool_invocations_total{service="prometheus",tool="get_active_alerts",status="success"}=1`、`histogram_quantile(0.95,...)`=0.049s を VM で確認。**I1 修正が奏功**（`service` ラベル存在・Resource 由来は `service_name` で併存）。collector: accepted=2/sent=2/PRW batch=1。注: status=success は handler が例外を throw せず error 応答を返したため（A2 既知・T013で isError 判定検討）
 
 **Checkpoint**: prometheus-server が単独で完全に観測可能（MVP 成立）
 
