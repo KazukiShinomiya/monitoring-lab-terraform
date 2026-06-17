@@ -25,6 +25,8 @@ flowchart LR
     SW["SwitchBot ×4"]
     DC["Docker<br/>Containers"]
     WOW["WOWHoneypot"]
+    HOST["Host OS<br/>node_exporter"]
+    APP["外部アプリ<br/>tekken-bot /<br/>antipiracy-crawler"]
   end
   subgraph C["収集層"]
     SNMP["SNMP Exporter<br/>:9116"]
@@ -50,6 +52,8 @@ flowchart LR
   SNMP --> PROM
   CAD --> PROM
   WEXP --> PROM
+  HOST --> PROM
+  APP --> PROM
   SW --> ZBX
   PT --> LOKI
   OTEL --> TEMPO
@@ -73,24 +77,24 @@ flowchart LR
 | コンポーネント | イメージ | ポート | 用途 |
 |-------------|---------|------|------|
 | **PostgreSQL** | `postgres:15-alpine` | 5432 | Zabbix データ永続化 |
-| **Vault** | `hashicorp/vault:latest` | 8200 | 機密情報管理（**本番モード**: file storage + 自己署名TLS + 永続化） |
-| **Zabbix Server** | `zabbix/zabbix-server-pgsql` | 10051 | 監視サーバー |
-| **Zabbix Agent2** | `zabbix/zabbix-agent2` | 10050 | Zabbix Server 自己監視 |
-| **Zabbix Web** | `zabbix/zabbix-web-apache-pgsql` | 8080 | Web UI |
-| **Prometheus** | `prom/prometheus:latest` | 9090 | 時系列メトリクス収集 + アラート |
-| **cAdvisor** | `gcr.io/cadvisor/cadvisor` | 8081 | Docker コンテナメトリクス収集 |
-| **SNMP Exporter** | `prom/snmp-exporter` | 9116 | 物理機器 SNMP → Prometheus 変換 |
-| **Grafana** | `grafana/grafana:latest` | 3000 | 可視化ダッシュボード |
-| **New Relic Infra** | `newrelic/infrastructure:latest` | - | 統合監視プラットフォーム連携 |
-| **Alertmanager** | `prom/alertmanager` | 9093 | アラート通知ルーティング（Slack） |
-| **Loki** | `grafana/loki` | 3100 | ログ集約 |
-| **Promtail** | `grafana/promtail` | - | ログ収集エージェント |
+| **Vault** | `hashicorp/vault:1.20.4` | 8200 | 機密情報管理（**本番モード**: file storage + 自己署名TLS + 永続化） |
+| **Zabbix Server** | `zabbix/zabbix-server-pgsql:alpine-7.4.3` | 10051 | 監視サーバー |
+| **Zabbix Agent2** | `zabbix/zabbix-agent2:alpine-7.4.3` | 10050 | Zabbix Server 自己監視 |
+| **Zabbix Web** | `zabbix/zabbix-web-apache-pgsql:alpine-7.4.3` | 8080 | Web UI |
+| **Prometheus** | `prom/prometheus:v3.7.1` | 9090 | 時系列メトリクス収集 + アラート |
+| **cAdvisor** | `gcr.io/cadvisor/cadvisor:v0.55.1` | 8081 | Docker コンテナメトリクス収集 |
+| **SNMP Exporter** | `prom/snmp-exporter:v0.30.1` | 9116 | 物理機器 SNMP → Prometheus 変換 |
+| **Grafana** | `grafana/grafana:12.2.0` | 3000 | 可視化ダッシュボード |
+| **New Relic Infra** | `newrelic/infrastructure:latest` | - | 統合監視プラットフォーム連携（再起動ループ既知のため :latest 維持） |
+| **Alertmanager** | `prom/alertmanager:v0.31.1` | 9093 | アラート通知ルーティング（Slack） |
+| **Loki** | `grafana/loki:3.7.1` | 3100 | ログ集約 |
+| **Promtail** | `grafana/promtail:3.6.8` | - | ログ収集エージェント |
 | **Tempo** | `grafana/tempo:2.6.1` | - | 分散トレーシング |
-| **OTel Collector** | `otel/opentelemetry-collector:0.148.0` | - | テレメトリ収集パイプライン |
-| **VictoriaMetrics** | `victoriametrics/victoria-metrics` | 8428 | 長期メトリクス保存 |
+| **OTel Collector** | `otel/opentelemetry-collector-contrib:0.148.0` | - | テレメトリ収集パイプライン（contrib 版） |
+| **VictoriaMetrics** | `victoriametrics/victoria-metrics:v1.140.0` | 8428 | 長期メトリクス保存 |
 | **Pyroscope** | `grafana/pyroscope:2.0.2` | 4040 | 継続的プロファイリング（LGTM の "P"） |
-| **wow-exporter** | （カスタム Python） | - | WOWHoneypot ログ → Prometheus 変換 |
-| **GitHub Runner** | `myoung34/github-runner` | - | CI/CD セルフホストランナー |
+| **wow-exporter** | `wow-exporter:latest`（カスタム Python） | - | WOWHoneypot ログ → Prometheus 変換（ローカルビルド） |
+| **GitHub Runner** | `myoung34/github-runner:2.332.0-ubuntu-jammy` | - | CI/CD セルフホストランナー |
 
 > **Workspace 数**: 20（HCP Terraform でサービスごとに分離管理）
 
@@ -171,12 +175,17 @@ monitoring-lab-terraform/
 │   ├── promtail/                   # Promtail ログ収集設定
 │   ├── tempo/                      # Tempo 分散トレーシング設定
 │   ├── otel-collector/             # OpenTelemetry Collector 設定
+│   ├── pyroscope/                  # Pyroscope プロファイリング設定
+│   ├── vault/                      # Vault 本番モード設定（vault.hcl + TLS）
+│   ├── wow-exporter/               # wow-exporter（WOWHoneypot メトリクス変換）
+│   ├── zabbix/                     # Zabbix 関連設定
 │   └── sloth/                      # Sloth SLO 定義
 ├── terraform/
 │   ├── root.hcl                     # ルート設定（HCP Terraform backend、Docker Provider）
 │   ├── modules/
 │   │   ├── docker_container/        # 共通 Docker コンテナモジュール
 │   │   ├── network/                 # Docker ネットワークモジュール
+│   │   ├── remote_docker_compose/   # リモート docker compose 実行モジュール
 │   │   └── vault_secret/            # Vault シークレット管理モジュール
 │   └── envs/
 │       └── local/
@@ -198,6 +207,8 @@ monitoring-lab-terraform/
 │           ├── otel-collector/      # OpenTelemetry Collector
 │           ├── victoria-metrics/    # VictoriaMetrics（長期メトリクス保存）
 │           ├── github-runner/       # GitHub Actions Self-hosted Runner
+│           ├── pyroscope/           # Pyroscope（継続的プロファイリング）
+│           ├── wow-exporter/        # wow-exporter（WOWHoneypot メトリクス）
 │           └── newrelic/            # New Relic Infrastructure
 ├── scripts/
 │   ├── setup-remote-config.sh      # リモートサーバー初期設定
@@ -260,7 +271,7 @@ terragrunt run --all apply
 
 | サービス | URL | 認証情報 |
 |---------|-----|---------|
-| **Grafana** | `http://YOUR_SERVER_IP:3000` | admin / admin |
+| **Grafana** | `http://YOUR_SERVER_IP:3000` | admin / `.env` の `GRAFANA_ADMIN_PASSWORD` |
 | **Zabbix Web** | `http://YOUR_SERVER_IP:8080` | Admin / zabbix |
 | **Prometheus** | `http://YOUR_SERVER_IP:9090` | 認証なし |
 | **cAdvisor** | `http://YOUR_SERVER_IP:8081` | 認証なし |

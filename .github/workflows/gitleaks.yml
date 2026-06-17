@@ -1,0 +1,31 @@
+name: gitleaks
+
+# 機密情報スキャンの自動化。これまで手動 ripgrep で行っていたシークレット掃討を CI 化する。
+# 参照: docs/token-rotation.md / MEMORY 既知の問題 #9（git grep 取りこぼし → ripgrep/gitleaks を正とする）
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  schedule:
+    # 毎週月曜 00:00 UTC（JST 09:00）に全履歴を定期スキャン
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan for secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
