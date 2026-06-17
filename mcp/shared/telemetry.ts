@@ -11,7 +11,15 @@
  *  - Histogram のバケット境界は MeterProvider の View で登録する（A1）。
  *  - temporality は cumulative（Prometheus カウンタ互換）。
  */
-import { metrics, type Counter, type Histogram, type Attributes } from '@opentelemetry/api';
+import {
+  metrics,
+  diag,
+  DiagConsoleLogger,
+  DiagLogLevel,
+  type Counter,
+  type Histogram,
+  type Attributes,
+} from '@opentelemetry/api';
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
@@ -60,6 +68,11 @@ export function initTelemetry(serviceName: string): void {
   if (telemetryDisabledByEnv()) {
     disabled = true;
     return;
+  }
+
+  // 診断ログ（OTLP エクスポートの成否を stderr へ）。トラブルシュート用。
+  if (process.env.MCP_TELEMETRY_DEBUG === '1') {
+    diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
   serviceLabel = serviceName;
