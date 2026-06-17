@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "labels": ["dependencies", "docker-image"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["before 9am on monday"],
+  "_comment": "npm（MCP 4サーバー）は dependabot.yml が担当。Renovate は terragrunt.hcl 内の Docker image タグ追従のみを担う（dependabot の docker ecosystem は HCL 文字列を拾えないため）。有効化には Mend Renovate App のインストールが必要。",
+  "enabledManagers": ["custom.regex"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "terraform/envs/local/*/terragrunt.hcl の image = \"repo:tag\" を追従",
+      "managerFilePatterns": [
+        "/^terraform/envs/local/.+/terragrunt\\.hcl$/"
+      ],
+      "matchStrings": [
+        "image\\s*=\\s*\"(?<depName>[^:\"]+):(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "newrelic は再起動ループ既知のため :latest 維持・追従しない",
+      "matchPackageNames": ["newrelic/infrastructure"],
+      "enabled": false
+    },
+    {
+      "description": "wow-exporter はローカルビルドのため追従対象外",
+      "matchPackageNames": ["wow-exporter"],
+      "enabled": false
+    },
+    {
+      "description": "メジャー更新は破壊的変更を伴いやすいので分離・要レビュー",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major-update"],
+      "minimumReleaseAge": "7 days"
+    }
+  ]
+}
