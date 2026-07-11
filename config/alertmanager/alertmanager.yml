@@ -32,6 +32,13 @@ route:
   repeat_interval: 4h
 
   routes:
+    # Watchdog（死活証明・常時発火）は通知しない。存在自体が正常の証。
+    # 確認は Alertmanager API / drift-check 層4 で行う。
+    - match:
+        alertname: Watchdog
+      receiver: 'null'
+      repeat_interval: 1h
+
     # SLO Page アラート: 即時対応が必要（Sloth Fast Burn）
     - match:
         severity: page
@@ -54,6 +61,9 @@ route:
 # レシーバー定義
 # ==========================================
 receivers:
+  # Watchdog 専用の空レシーバー（通知先なし）
+  - name: 'null'
+
   # Warning 通知（黄色）
   - name: 'slack-notifications'
     slack_configs:
