@@ -8,6 +8,10 @@ import { handleListWorkspaces } from './tools/list-workspaces.js';
 import { handleCreateApproval } from './tools/create-approval.js';
 import { handleApplyService } from './tools/apply-service.js';
 import { handleRollbackService } from './tools/rollback-service.js';
+import { initTelemetry, instrumentTool, shutdownTelemetry } from './telemetry.js';
+
+// 016: 計装を初期化（OTLP メトリクスを otel-collector へ push）。冪等・起動を妨げない。
+initTelemetry('terragrunt');
 
 const server = new McpServer(
   { name: 'monitoring-lab-terragrunt-mcp', version: '2.0.0' },
@@ -21,7 +25,7 @@ server.tool(
   {
     service: serviceEnum.describe('planを実行するサービス名'),
   },
-  ({ service }) => handlePlanService(service),
+  instrumentTool('plan_service', ({ service }) => handlePlanService(service)),
 );
 
 server.tool(
@@ -30,14 +34,14 @@ server.tool(
   {
     service: serviceEnum.describe('設定を読み取るサービス名'),
   },
-  ({ service }) => handleGetServiceConfig(service),
+  instrumentTool('get_service_config', ({ service }) => handleGetServiceConfig(service)),
 );
 
 server.tool(
   'list_workspaces',
   'HCP TerraformのWorkspace一覧と状態を取得する。インフラ全体の管理状況を確認する。',
   {},
-  () => handleListWorkspaces(),
+  instrumentTool('list_workspaces', () => handleListWorkspaces()),
 );
 
 server.tool(
@@ -48,7 +52,7 @@ server.tool(
     decision: z.enum(['approved', 'rejected']).describe('approved=承認して apply_service で実行可能にする / rejected=却下'),
     decided_by: z.string().optional().default('operator').describe('承認者名（例: "operator", "admin"）'),
   },
-  ({ proposal_id, decision, decided_by }) => handleCreateApproval(proposal_id, decision, decided_by),
+  instrumentTool('create_approval', ({ proposal_id, decision, decided_by }) => handleCreateApproval(proposal_id, decision, decided_by)),
 );
 
 server.tool(
@@ -58,7 +62,7 @@ server.tool(
     service: serviceEnum.describe('applyを実行するサービス名'),
     approval_id: z.string().describe('対応する承認ログのID（承認なしでは実行不可）'),
   },
-  ({ service, approval_id }) => handleApplyService(service, approval_id),
+  instrumentTool('apply_service', ({ service, approval_id }) => handleApplyService(service, approval_id)),
 );
 
 server.tool(
@@ -68,19 +72,35 @@ server.tool(
     approval_id: z.string().describe('ロールバック対象の承認ログID。このIDのsnapshot_beforeが復元される。'),
     confirmed: z.boolean().describe('ロールバックを実行することを明示的に確認するフラグ。true を指定しないと実行されない。'),
   },
-  ({ approval_id, confirmed }) => handleRollbackService(approval_id, confirmed),
+  instrumentTool('rollback_service', ({ approval_id, confirmed }) => handleRollbackService(approval_id, confirmed)),
 );
 
-process.on('SIGINT', () => process.exit(0));
-process.on('SIGTERM', () => process.exit(0));
+// 016: 終了時に未送出メトリクスを flush してから終了する。
+// 短命プロセスでは定期エクスポートが発火しないため、これが唯一の確実な送出経路。
+// 冪等ガード必須: stdin 'end'/'close'/transport.onclose は連続発火しうるため、
+// 2発目が process.exit を先に踏むと flush 中の送信が失われる（prometheus-server で実測）。
+let exiting = false;
+async function gracefulExit(code: number): Promise<void> {
+  if (exiting) return;
+  exiting = true;
+  await shutdownTelemetry(8000);
+  process.exit(code);
+}
+
+process.on('SIGINT', () => { void gracefulExit(0); });
+process.on('SIGTERM', () => { void gracefulExit(0); });
 process.on('uncaughtException', (error) => {
   process.stderr.write(`Uncaught exception: ${error.message}\n${error.stack}\n`);
-  process.exit(1);
+  void gracefulExit(1);
 });
 process.on('unhandledRejection', (reason) => {
   process.stderr.write(`Unhandled rejection: ${String(reason)}\n`);
-  process.exit(1);
+  void gracefulExit(1);
 });
 
 const transport = new StdioServerTransport();
+// stdio が閉じる（Claude が切断/EOF）時も flush してから終了
+transport.onclose = () => { void gracefulExit(0); };
+process.stdin.on('end', () => { void gracefulExit(0); });
+process.stdin.on('close', () => { void gracefulExit(0); });
 await server.connect(transport);

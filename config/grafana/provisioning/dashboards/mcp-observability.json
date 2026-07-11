@@ -1,0 +1,232 @@
+{
+  "annotations": { "list": [] },
+  "description": "016-mcp-metrics-exporter: MCP サーバー（docker/prometheus/terragrunt/alertmanager）のツール利用状況。集計は max_over_time 型（短命プロセス × service_instance_id 独立系列のため increase/rate は使用不可 — specs/016 contracts/metrics-contract.md 参照）",
+  "editable": true,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "観測できている MCP サーバー数（期待値 4: docker / prometheus / terragrunt / alertmanager）",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 4 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "count(count by (service) (max_over_time(mcp_tool_invocations_total[$__range])))",
+          "instant": true,
+          "legendFormat": "観測サーバー数",
+          "refId": "A"
+        }
+      ],
+      "title": "観測中の MCP サーバー数 (SC-003)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "選択期間内の総ツール呼び出し数",
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "sum(max_over_time(mcp_tool_invocations_total[$__range]))",
+          "instant": true,
+          "legendFormat": "総呼び出し数",
+          "refId": "A"
+        }
+      ],
+      "title": "総呼び出し数（期間内）",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "エラー率（status=\"error\" の比率、期間内）",
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.05 },
+              { "color": "red", "value": 0.2 }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "sum(max_over_time(mcp_tool_invocations_total{status=\"error\"}[$__range])) / sum(max_over_time(mcp_tool_invocations_total[$__range]))",
+          "instant": true,
+          "legendFormat": "エラー率",
+          "refId": "A"
+        }
+      ],
+      "title": "全体エラー率（期間内）",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "サーバー別の呼び出し数（直近1時間の窓をステップ毎に評価）",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "auto" },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "sum by (service) (max_over_time(mcp_tool_invocations_total[1h]))",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "サーバー別 呼び出し数（rolling 1h）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "ツール別の呼び出し数（選択期間内・status 別）",
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "id": 5,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "sum by (service, tool, status) (max_over_time(mcp_tool_invocations_total[$__range]))",
+          "instant": true,
+          "legendFormat": "{{service}} / {{tool}} ({{status}})",
+          "refId": "A"
+        }
+      ],
+      "title": "ツール別 呼び出し数（期間内・status別）",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "ツール別 p95 レイテンシ（直近1時間の窓をステップ毎に評価）",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "auto" },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 9 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (service, tool, le) (max_over_time(mcp_tool_duration_seconds_bucket[1h])))",
+          "legendFormat": "{{service}} / {{tool}}",
+          "refId": "A"
+        }
+      ],
+      "title": "ツール別 p95 レイテンシ（rolling 1h）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "description": "ツール別エラー率（選択期間内）。呼び出しが無いツールは表示されない",
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.05 },
+              { "color": "red", "value": 0.2 }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 14 },
+      "id": 7,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "expr": "sum by (service, tool) (max_over_time(mcp_tool_invocations_total{status=\"error\"}[$__range])) / sum by (service, tool) (max_over_time(mcp_tool_invocations_total[$__range]))",
+          "instant": true,
+          "legendFormat": "{{service}} / {{tool}}",
+          "refId": "A"
+        }
+      ],
+      "title": "ツール別 エラー率（期間内）",
+      "type": "bargauge"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["mcp", "observability", "016"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MCP Observability — monitoring-lab",
+  "uid": "mcp-observability",
+  "version": 1
+}
