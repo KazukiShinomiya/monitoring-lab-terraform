@@ -17,7 +17,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -33,7 +33,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "node_time_seconds{instance=\"YOUR_LINUX_HOST_1:9100\"} - node_boot_time_seconds{instance=\"YOUR_LINUX_HOST_1:9100\"}",
           "legendFormat": "nas-server",
           "refId": "A"
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -59,7 +59,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\", instance=\"YOUR_LINUX_HOST_1:9100\"}[5m])) * 100)",
           "legendFormat": "nas-server",
           "refId": "A"
@@ -67,7 +67,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -85,7 +85,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (node_memory_MemAvailable_bytes{instance=\"YOUR_LINUX_HOST_1:9100\"} / node_memory_MemTotal_bytes{instance=\"YOUR_LINUX_HOST_1:9100\"} * 100)",
           "legendFormat": "nas-server",
           "refId": "A"
@@ -93,7 +93,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -111,7 +111,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (node_filesystem_avail_bytes{instance=\"YOUR_LINUX_HOST_1:9100\", mountpoint=\"/\", fstype!=\"tmpfs\"} / node_filesystem_size_bytes{instance=\"YOUR_LINUX_HOST_1:9100\", mountpoint=\"/\", fstype!=\"tmpfs\"} * 100)",
           "legendFormat": "nas-server /",
           "refId": "A"
@@ -119,7 +119,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -135,13 +135,13 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(node_network_receive_bytes_total{instance=\"YOUR_LINUX_HOST_1:9100\", device!~\"lo|docker.*|veth.*\"}[5m])",
           "legendFormat": "RX {{device}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(node_network_transmit_bytes_total{instance=\"YOUR_LINUX_HOST_1:9100\", device!~\"lo|docker.*|veth.*\"}[5m])",
           "legendFormat": "TX {{device}}",
           "refId": "B"
@@ -149,7 +149,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -165,7 +165,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\", instance=\"YOUR_LINUX_HOST_1:9100\"}[5m])) * 100)",
           "legendFormat": "CPU使用率",
           "refId": "A"
@@ -180,7 +180,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -196,7 +196,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "node_time_seconds{instance=\"YOUR_LINUX_HOST_2:9100\"} - node_boot_time_seconds{instance=\"YOUR_LINUX_HOST_2:9100\"}",
           "legendFormat": "imageserver",
           "refId": "A"
@@ -204,7 +204,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -222,7 +222,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\", instance=\"YOUR_LINUX_HOST_2:9100\"}[5m])) * 100)",
           "legendFormat": "imageserver",
           "refId": "A"
@@ -230,7 +230,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -248,7 +248,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (node_memory_MemAvailable_bytes{instance=\"YOUR_LINUX_HOST_2:9100\"} / node_memory_MemTotal_bytes{instance=\"YOUR_LINUX_HOST_2:9100\"} * 100)",
           "legendFormat": "imageserver",
           "refId": "A"
@@ -256,7 +256,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -274,7 +274,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (node_filesystem_avail_bytes{instance=\"YOUR_LINUX_HOST_2:9100\", mountpoint=\"/\", fstype!=\"tmpfs\"} / node_filesystem_size_bytes{instance=\"YOUR_LINUX_HOST_2:9100\", mountpoint=\"/\", fstype!=\"tmpfs\"} * 100)",
           "legendFormat": "imageserver /",
           "refId": "A"
@@ -282,7 +282,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -298,13 +298,13 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(node_network_receive_bytes_total{instance=\"YOUR_LINUX_HOST_2:9100\", device!~\"lo|docker.*|veth.*\"}[5m])",
           "legendFormat": "RX {{device}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(node_network_transmit_bytes_total{instance=\"YOUR_LINUX_HOST_2:9100\", device!~\"lo|docker.*|veth.*\"}[5m])",
           "legendFormat": "TX {{device}}",
           "refId": "B"
@@ -312,7 +312,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -328,7 +328,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\", instance=\"YOUR_LINUX_HOST_2:9100\"}[5m])) * 100)",
           "legendFormat": "CPU使用率",
           "refId": "A"
