@@ -115,9 +115,9 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 - [X] T023 検証（SC-006）green: リモート常駐 19 コンテナ（増加なし・otel-collector は置換のみ）、mcp コンテナ 0（ローカル ephemeral）
 - [X] T024 憲法 原則I green: `run --all plan` 全20 workspace "No changes"（otel-collector の extra_ports=4318 は apply 済みでコード=State=実態一致。注: 当初計画から変更あり——D8 により terragrunt.hcl とモジュールに extra_ports を追加した）
-- [ ] T025 [P] `.claude/SESSION_STATE.md` と `MEMORY.md` を更新（016 完了・OTLP→VM 経路・ephemeral flush の知見を記録）
-- [ ] T026 [P] `specs/016-mcp-metrics-exporter/quickstart.md` の受け入れ検証表（SC-001〜006）を実走し結果を追記
-- [ ] T027 ブランチ `016-mcp-metrics-exporter` をフェーズ単位でコミットし、PR を作成（master へ）
+- [X] T025 [P] SESSION_STATE.md・永続メモリ（project_phase_status / env_wsl2_otel_pitfalls 新設）を更新
+- [X] T026 [P] quickstart.md に受け入れ検証結果表（SC-001〜006 全✅）を追記
+- [X] T027 4コミット（Phase4+D8 / Phase5-6 / alerting / claude harness）で push、**PR #135** 作成（master へ）
 
 ---
 
