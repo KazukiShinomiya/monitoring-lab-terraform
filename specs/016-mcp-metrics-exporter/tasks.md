@@ -72,9 +72,9 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **Independent Test**: 「1呼び出し→即終了」を繰り返し、合算カウントが回数と一致（SC-002）。otel-collector 停止下でツールが正常応答（SC-005）
 
-- [ ] T013 [US2] `mcp/prometheus-server/src/index.ts` の全終了経路を硬化（`uncaughtException`/`unhandledRejection` でも best-effort で `shutdownTelemetry()` 試行後 `process.exit(1)`、flush timeout でプロセス終了を阻害しないことを担保）— research.md D4
-- [ ] T014 [US2] 検証（SC-002）: 「prometheus-server 起動→ツール1回→即終了」を5回実施し、`sum(increase(mcp_tool_invocations_total{service="prometheus"}[...]))` 合算が 5 になる（取りこぼし 0）ことを VM で確認
-- [ ] T015 [US2] 検証（SC-005）: otel-collector を停止した状態で prometheus-server のツールを呼び、応答が正常（遅延・失敗なし）かつプロセスが timeout 内に終了することを確認 → collector 復旧
+- [X] T013 [US2] 全終了経路を硬化。**実装が大きく発展**（research.md D8）: stdin `end`/`close` 経路追加・**gracefulExit の冪等ガード**（連続発火で2発目が exit を先に踏む相討ちを実測→修正）・`isError:true` 応答の status=error 判定（A2）・flush は forceFlush→ref付きsettle(500ms)→shutdown の順・予算8s
+- [X] T014 [US2] 検証（SC-002）**green: 5回中5回・取りこぼし0**。ただし到達には D8 の転換一式が必要だった: OTLP/HTTP(4318)化・`service.instance.id` 独立系列化・集計は `sum(max_over_time(...))`（increase は同値書き込みでリセット検出不能）・バージョン完全固定（otel 5pkg + node:22.20.0-alpine）。VM の検索遅延（~30s）にも注意
+- [X] T015 [US2] 検証（SC-005）green: collector 停止下でツール正常応答・総所要 3.9s で自力終了・collector 復旧確認
 
 **Checkpoint**: ephemeral flush の信頼性が実証され、US1 の数値が信頼できる
 
@@ -86,11 +86,11 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **Independent Test**: `count(count by (service)(mcp_tool_invocations_total)) == 4`
 
-- [ ] T016 [P] [US1] `mcp/docker-server` に計装適用（package.json 依存追加 + `src/index.ts` で initTelemetry('docker')・全ツール instrumentTool・終了経路 shutdownTelemetry + Dockerfile/tsconfig の shared 同梱）
-- [ ] T017 [P] [US1] `mcp/terragrunt-server` に計装適用（同上・`initTelemetry('terragrunt')`）
-- [ ] T018 [P] [US1] `mcp/alertmanager-server` に計装適用（同上・`initTelemetry('alertmanager')`）
-- [ ] T019 [US1] 3イメージ（`monitoring-lab-docker-mcp` / `-terragrunt-mcp` / `-alertmanager-mcp`）を再ビルドし、各 `npm run build`/`npm test` が green
-- [ ] T020 [US2] 検証（SC-003）: 4サーバーすべてでツールを呼び、`count(count by (service)(mcp_tool_invocations_total))` が 4 になることを VM で確認
+- [X] T016 [P] [US1] `mcp/docker-server` に計装適用（6ツール instrumentTool・冪等 gracefulExit・Dockerfile context=mcp/ 化 + node 22.20.0 固定 + otel 5pkg exact pin。lock は Linux コンテナで再生成——Windows 生成 lock は @emnapi/* 欠落で npm ci が落ちる）
+- [X] T017 [P] [US1] `mcp/terragrunt-server` に計装適用（同上・6ツール・`initTelemetry('terragrunt')`）
+- [X] T018 [P] [US1] `mcp/alertmanager-server` に計装適用（同上・4ツール・`initTelemetry('alertmanager')`。build スクリプトに shared→src の条件付き同期を追加し、`mcp/*/src/telemetry.ts` は .gitignore（正本は shared）——全4サーバー共通）
+- [X] T019 [US1] 3イメージ再ビルド完了・ローカル tsc 4/4 green・shared vitest 8/8 green。`mcp/.dockerignore` 新設（node_modules 同梱で 9p 経由の context 転送が激遅になる罠を制圧）
+- [X] T020 [US2] 検証（SC-003）**green: count=4**（prometheus/docker/alertmanager=success、terragrunt=error——A2 の isError 判定が実弾で機能している証左）
 
 **Checkpoint**: 全 MCP サーバーが観測可能（監視盲点を完全に解消・憲法 原則V）
 
@@ -102,8 +102,8 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **Independent Test**: MCP Observability ダッシュボードを開き、各パネルが実データで描画される
 
-- [ ] T021 [US3] `config/grafana/provisioning/dashboards/mcp-observability.json` を作成（VictoriaMetrics データソース、パネル: サーバー別呼び出し数 / ツール別呼び出し数 / ツール別 p95 レイテンシ / ツール別エラー率 — contracts/metrics-contract.md の代表クエリ使用）
-- [ ] T022 [US3] ダッシュボードを同期し Grafana 再起動（`./scripts/sync-config.sh grafana` or `task sync:grafana`）、各パネルが実データで描画されることを確認（SC-004）
+- [X] T021 [US3] `mcp-observability.json` 作成（VM データソース uid=victoriametrics、7パネル: SC-003 stat / 総呼び出し / 全体エラー率 / サーバー別 rolling 1h / ツール別 status 別 / p95 / ツール別エラー率。**すべて max_over_time 型**——改訂済み contract 準拠）
+- [X] T022 [US3] 同期・Grafana 再起動・`/api/search` でロード確認（uid=mcp-observability）。パネルクエリは SC-003 検証で実データ返答を確認済み（SC-004）
 
 **Checkpoint**: 全ストーリー完了。日常的に MCP 利用を一望できる
 
@@ -113,8 +113,8 @@ description: "Task list for 016-mcp-metrics-exporter"
 
 **Purpose**: 仕上げと憲法準拠の最終確認
 
-- [ ] T023 検証（SC-006）: リモート `docker ps` で新規常駐コンテナが増えていないことを確認
-- [ ] T024 憲法 原則I: `terragrunt run --all plan` で全20 workspace "No changes" を確認（otel-collector の terragrunt.hcl が不変＝drift なし）
+- [X] T023 検証（SC-006）green: リモート常駐 19 コンテナ（増加なし・otel-collector は置換のみ）、mcp コンテナ 0（ローカル ephemeral）
+- [X] T024 憲法 原則I green: `run --all plan` 全20 workspace "No changes"（otel-collector の extra_ports=4318 は apply 済みでコード=State=実態一致。注: 当初計画から変更あり——D8 により terragrunt.hcl とモジュールに extra_ports を追加した）
 - [ ] T025 [P] `.claude/SESSION_STATE.md` と `MEMORY.md` を更新（016 完了・OTLP→VM 経路・ephemeral flush の知見を記録）
 - [ ] T026 [P] `specs/016-mcp-metrics-exporter/quickstart.md` の受け入れ検証表（SC-001〜006）を実走し結果を追記
 - [ ] T027 ブランチ `016-mcp-metrics-exporter` をフェーズ単位でコミットし、PR を作成（master へ）

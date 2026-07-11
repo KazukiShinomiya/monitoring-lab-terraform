@@ -28,6 +28,10 @@ variable "services" {
     image          = string           # Dockerイメージ名（例: "zabbix/zabbix-server-pgsql:alpine-latest"）
     internal_port  = number           # コンテナ内部ポート（例: 10051）
     external_port  = number           # ホスト側公開ポート（例: 10051）
+    extra_ports = optional(list(object({ # 追加のポート公開（オプション。例: otel-collector の 4318/OTLP-HTTP）
+      internal = number
+      external = number
+    })), [])
     env            = list(string)     # 環境変数リスト（"KEY=VALUE"形式）
     command        = optional(list(string), []) # コンテナ起動コマンド（オプション）
     entrypoint     = optional(list(string), []) # エントリーポイント上書き（オプション）

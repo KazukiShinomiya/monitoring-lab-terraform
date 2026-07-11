@@ -122,6 +122,27 @@ Phase 0 の設計判断を、根拠と却下した代替案とともに記録す
 
 ---
 
+## D8. 送出プロトコルの転換: OTLP/gRPC → OTLP/HTTP（2026-07-12 実装フェーズで確定）
+
+**Decision**: 計装ヘルパーの送出は **OTLP/HTTP(protobuf, 4318)** とする（当初の D1/D2 は OTLP/gRPC(4317) を想定していた）。otel-collector に 4318 を恒久公開（`docker_container` モジュールに `extra_ports` を追加）。
+
+**Rationale（すべて実測に基づく）**:
+- **WSL2 環境からの gRPC(h2c) はサイレント不達**: WSL コンテナ/ホストいずれからも TCP 接続は 3ms で成立するのに、gRPC 送信はエラーも成功も返さず 15 秒以上沈黙する（Windows ホストの node からは同一バージョンで到達可）。WSL2 NAT と HTTP/2(h2c) の相性問題と推定。原因深掘りは費用対効果が悪く、HTTP/1.1 転換で回避。
+- OTLP/HTTP(JSON) の手投げ・OTLP/HTTP(protobuf) exporter とも end-to-end 到達を実証済み。
+
+**Additional findings（同フェーズで確定した重要知見）**:
+1. **flush は「forceFlush → ref付き settle(500ms) → shutdown → exit」の順が必須**: forceFlush/shutdown は送信完了前に resolve するため、直後の `process.exit` が送信中のリクエストを殺す（SC-002 で 5回中4回喪失を実測）。
+2. **gracefulExit は冪等ガード必須**: stdin `end`/`close`/`transport.onclose` は連続発火し、2発目が `process.exit` を先に踏むと1発目の flush が失われる（shutdownTelemetry 自体の冪等性だけでは不十分）。
+3. **`service.instance.id`（プロセスごと UUID）が必須**: 短命プロセスが同一系列へ同値 cumulative を書くと `increase()` がリセットを検出できず合算が 0 に潰れる。独立系列化し、集計は `sum(max_over_time(...))` で行う（contracts/metrics-contract.md 改訂済み）。
+4. **バージョン完全固定**: `^` レンジで sdk-metrics 2.8.0→2.9.0 が混入し 0.207.0 系 exporter と噛み合わず調査が難航。@opentelemetry 5 パッケージと base image（node:22.20.0-alpine）を exact pin。
+5. **VictoriaMetrics の検索遅延（~30s）**: 書き込み直後の instant query は直近サンプルを返さず「不達」の幻を生む。検証は 60 秒以上待つか広い窓 + `max_over_time` で照会する。
+
+**Alternatives considered**:
+- *gRPC の原因深掘り（WSL2 NAT / grpc-js の HTTP/2 フレーム調査)*: 学習環境の費用対効果に見合わない。HTTP/1.1 で完全動作するため転換が合理的。
+- *collector を経ず VM の remote_write へ直接送出*: OTel 標準から外れ、リトライ/バッチの実装負担が増える。却下。
+
+---
+
 ## 未解決事項
 
 なし。spec に `[NEEDS CLARIFICATION]` は無く、送出方式・転送先・flush 要件・対象4サーバーは全て確定。Phase A 着手時に確認するのは「既存 Dockerfile のビルドコンテキスト構造」（D6）のみで、これは設計分岐ではなく実装詳細。

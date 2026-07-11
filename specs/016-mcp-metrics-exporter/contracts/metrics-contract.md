@@ -29,13 +29,20 @@ VictoriaMetrics 上では以下の系列に展開される:
 
 | 目的 | PromQL |
 |---|---|
-| サーバー別 総呼び出し数（5分） | `sum by (service) (increase(mcp_tool_invocations_total[5m]))` |
-| ツール別 呼び出し数 | `sum by (service, tool) (increase(mcp_tool_invocations_total[5m]))` |
-| ツール別 エラー率 | `sum by (service, tool) (increase(mcp_tool_invocations_total{status="error"}[5m])) / sum by (service, tool) (increase(mcp_tool_invocations_total[5m]))` |
-| ツール別 p95 レイテンシ | `histogram_quantile(0.95, sum by (service, tool, le) (increase(mcp_tool_duration_seconds_bucket[5m])))` |
-| ツール別 平均レイテンシ | `sum by (service, tool)(increase(mcp_tool_duration_seconds_sum[5m])) / sum by (service, tool)(increase(mcp_tool_duration_seconds_count[5m]))` |
+| サーバー別 総呼び出し数（1時間） | `sum by (service) (max_over_time(mcp_tool_invocations_total[1h]))` |
+| ツール別 呼び出し数 | `sum by (service, tool) (max_over_time(mcp_tool_invocations_total[1h]))` |
+| ツール別 エラー率 | `sum by (service, tool) (max_over_time(mcp_tool_invocations_total{status="error"}[1h])) / sum by (service, tool) (max_over_time(mcp_tool_invocations_total[1h]))` |
+| ツール別 p95 レイテンシ | `histogram_quantile(0.95, sum by (service, tool, le) (max_over_time(mcp_tool_duration_seconds_bucket[1h])))` |
+| ツール別 平均レイテンシ | `sum by (service, tool)(max_over_time(mcp_tool_duration_seconds_sum[1h])) / sum by (service, tool)(max_over_time(mcp_tool_duration_seconds_count[1h]))` |
 
-> 短命プロセスはカウンタが起動ごとにリセットされるため、`rate`/`increase` は VictoriaMetrics のカウンタリセット検出に依存する。`sum by` で複数プロセス起動分を合算し、利用者視点の連続性を成立させる（spec Edge Case）。
+> **⚠️ `increase()`/`rate()` はこのメトリクスに使えない（T014 実装時に確定した設計修正）**:
+> 短命プロセスは各起動でカウンタが 0 から始まる。当初案の「同一系列 + カウンタリセット検出」は、連続する
+> プロセスが**同値**（例: 各1回呼び出し → 1→1→1）を書くとリセットとして検出されず、合算が 0 に潰れる。
+> このため Resource に `service.instance.id`（プロセスごと UUID、`resource_to_telemetry_conversion` で
+> ラベル `service_instance_id` に展開）を付与して**プロセスごとに独立系列**とし、集計は
+> `sum(max_over_time(...[w]))`（各プロセスの最終累積値を合算）で行う。
+> 窓 `w` はダッシュボードの粒度（1h 推奨）。カーディナリティはプロセス起動数に比例するが、
+> 値は小さく VM の保持期間で自然に減衰するため学習環境では許容。
 
 ---
 
@@ -43,8 +50,8 @@ VictoriaMetrics 上では以下の系列に展開される:
 
 | SC | 検証クエリ/観点 |
 |---|---|
-| SC-001（取りこぼし0） | あるツールを N 回呼んだ後 `increase(mcp_tool_invocations_total{...}[t])` が N に一致 |
-| SC-002（ephemeral flush 100%） | ツール1回→即終了 を繰り返し、各回が VM に反映（カウント合算が回数と一致） |
+| SC-001（取りこぼし0） | あるツールを N 回呼んだ後 `sum(max_over_time(mcp_tool_invocations_total{...}[t]))` が N に一致 |
+| SC-002（ephemeral flush 100%） | ツール1回→即終了 を繰り返し、`sum(max_over_time(...))` の合算が回数と一致 |
 | SC-003（4/4 サーバー観測可能） | `count(count by (service)(mcp_tool_invocations_total)) == 4` |
 | SC-004（ダッシュボード） | 上記代表クエリがパネルとして描画される |
 

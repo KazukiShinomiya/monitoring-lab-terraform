@@ -79,8 +79,16 @@ server.tool(
 
 // 016: 終了時に未送出メトリクスを flush してから終了する。
 // 短命プロセスでは定期エクスポートが発火しないため、これが唯一の確実な送出経路。
+// 予算 8s: コールドスタートのコンテナでは gRPC チャネル確立に 2s を超えることが
+// あり（SC-002 検証で 5回中4回取りこぼしを実測）、docker stop の猶予(10s)内に収める。
+let exiting = false;
 async function gracefulExit(code: number): Promise<void> {
-  await shutdownTelemetry();
+  // 冪等ガード: stdin 'end'/'close'/transport.onclose は連続して発火しうる。
+  // 2発目が shutdownTelemetry（冪等・即 return）を素通りして process.exit を
+  // 先に踏むと、1発目の flush 中の送信が殺される（SC-002 で実測）。
+  if (exiting) return;
+  exiting = true;
+  await shutdownTelemetry(8000);
   process.exit(code);
 }
 
@@ -98,4 +106,8 @@ process.on('unhandledRejection', (reason) => {
 const transport = new StdioServerTransport();
 // stdio が閉じる（Claude が切断/EOF）時も flush してから終了
 transport.onclose = () => { void gracefulExit(0); };
+// T013: stdin EOF では transport.onclose が発火しないことを実機で確認済み。
+// pipe が閉じた時点で flush → 終了する経路を明示的に張る（US2 の生命線）。
+process.stdin.on('end', () => { void gracefulExit(0); });
+process.stdin.on('close', () => { void gracefulExit(0); });
 await server.connect(transport);

@@ -70,6 +70,15 @@ resource "docker_container" "service" {
     }
   }
 
+  # 追加ポートマッピング（extra_ports 指定時のみ。既存サービスは default [] で不変）
+  dynamic "ports" {
+    for_each = each.value.network_mode != "host" ? each.value.extra_ports : []
+    content {
+      internal = ports.value.internal
+      external = ports.value.external
+    }
+  }
+
   # 環境変数の注入（文字列リスト形式）
   env = each.value.env
 

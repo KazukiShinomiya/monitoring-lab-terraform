@@ -1,8 +1,8 @@
 /**
  * 共通計装ヘルパー（4 MCP サーバーで再利用）
  *
- * 役割: ツール呼び出しの回数・レイテンシ・成否を計測し、OTLP/gRPC で
- *       otel-collector へ push する。短命プロセスのため、終了時の flush が
+ * 役割: ツール呼び出しの回数・レイテンシ・成否を計測し、OTLP/HTTP(protobuf) で
+ *       otel-collector(4318) へ push する。短命プロセスのため、終了時の flush が
  *       唯一の確実な送出経路（research.md D4）。
  *
  * 設計上の確定事項（specs/016 analyze 反映）:
@@ -27,7 +27,11 @@ import {
   AggregationType,
   AggregationTemporality,
 } from '@opentelemetry/sdk-metrics';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
+import { randomUUID } from 'node:crypto';
+// OTLP/HTTP(protobuf) を使う。gRPC(h2c) は WSL2 環境の egress でサイレント不達に
+// なることを実測で確認済み（TCP 接続は成功・エラー無し・データ不達）。HTTP/1.1 は
+// end-to-end 到達を実証済み（specs/016 research.md / 2026-07 SC-002 検証）。
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import {
   ATTR_SERVICE_NAME,
@@ -42,7 +46,7 @@ const DURATION_BUCKETS_SECONDS = [
   0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30,
 ];
 
-const DEFAULT_ENDPOINT = 'http://10.0.0.220:4317';
+const DEFAULT_ENDPOINT = 'http://10.0.0.220:4318';
 
 let provider: MeterProvider | undefined;
 let invocationCounter: Counter | undefined;
@@ -78,8 +82,12 @@ export function initTelemetry(serviceName: string): void {
   serviceLabel = serviceName;
 
   try {
-    const endpoint =
+    const base =
       process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? DEFAULT_ENDPOINT;
+    // OTLP/HTTP はシグナル別パスが必要（base URL 指定でも動くように補完する）
+    const endpoint = base.endsWith('/v1/metrics')
+      ? base
+      : `${base.replace(/\/$/, '')}/v1/metrics`;
 
     const exporter = new OTLPMetricExporter({
       url: endpoint,
@@ -97,6 +105,11 @@ export function initTelemetry(serviceName: string): void {
       resource: resourceFromAttributes({
         [ATTR_SERVICE_NAME]: `mcp-${serviceName}`,
         [ATTR_SERVICE_VERSION]: process.env.npm_package_version ?? '0.0.0',
+        // プロセスごとに一意な系列を作る（cumulative counter の系列衝突回避）。
+        // 短命プロセスが同一ラベル系列へ各々 1 を書くと 1→1→1 と潰れ、
+        // increase() がリセットを検出できず合算が 0 になる。instance id で
+        // 系列を分離し、集計は sum(max_over_time(...)) で行う（metrics-contract.md）。
+        'service.instance.id': randomUUID(),
       }),
       readers: [reader],
       // A1: バケット境界は View で登録する（計装時ではなく初期化時）
@@ -149,13 +162,24 @@ export function instrumentTool<A extends unknown[], R>(
     const startNs = process.hrtime.bigint();
     try {
       const result = await handler(...args);
-      record('success', toolName, startNs);
+      // A2: MCP ハンドラは例外を投げず { isError: true } 応答でエラーを表現するため、
+      // 応答の形も見て status を判定する（戻り値自体は無加工で透過）。
+      record(isErrorResult(result) ? 'error' : 'success', toolName, startNs);
       return result;
     } catch (err) {
       record('error', toolName, startNs);
       throw err; // 例外は透過
     }
   };
+}
+
+/** MCP ツール応答の isError フラグ（CallToolResult）を検出する。 */
+function isErrorResult(result: unknown): boolean {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    (result as { isError?: unknown }).isError === true
+  );
 }
 
 function record(
@@ -184,9 +208,26 @@ export async function shutdownTelemetry(timeoutMs = 2000): Promise<void> {
   shutdownDone = true;
   const current = provider;
   await Promise.race([
-    current.shutdown().catch(() => {
-      /* best-effort */
-    }),
+    (async () => {
+      // 契約（T006）: forceFlush → settle → shutdown の順。
+      // forceFlush/shutdown は送信の完了前に resolve するため、直後に process.exit
+      // すると送信中のリクエストが失われる（2026-07 SC-002 検証で 5回中4回喪失を実測）。
+      // ref 付き settle（イベントループを保持する）で送信完了の猶予を与えてから
+      // shutdown → exit する。
+      try {
+        await current.forceFlush();
+      } catch {
+        /* best-effort */
+      }
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 500);
+      });
+      try {
+        await current.shutdown();
+      } catch {
+        /* best-effort */
+      }
+    })(),
     new Promise<void>((resolve) => {
       const t = setTimeout(resolve, timeoutMs);
       // タイマーがプロセス終了を引き止めないように
