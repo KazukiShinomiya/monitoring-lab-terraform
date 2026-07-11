@@ -45,9 +45,15 @@ inputs = {
       image = "otel/opentelemetry-collector-contrib:0.148.0"
 
       # OTLP gRPC ポート (外部公開 — アプリ・telemetrygen からのトレース受信)
-      # HTTP ポート (4318) は docker_container モジュールの単一ポート制約により内部のみ
       internal_port = 4317
       external_port = 4317
+
+      # OTLP HTTP ポート (016: MCP メトリクスの受信経路)
+      # WSL2 環境からの gRPC(h2c) はサイレント不達となることを実測で確認済みのため、
+      # MCP 計装は OTLP/HTTP(4318) で送出する（specs/016 research.md 参照）
+      extra_ports = [
+        { internal = 4318, external = 4318 }
+      ]
 
       # 起動コマンド: 設定ファイルを明示指定
       command = ["--config=/etc/otel-collector/otel-collector.yml"]

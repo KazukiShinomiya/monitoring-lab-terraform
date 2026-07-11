@@ -27,6 +27,17 @@ exporters:
     tls:
       insecure: true         # 学習環境: TLS なし (本番では証明書設定が必要)
 
+  # MCP メトリクス用 (016-mcp-metrics-exporter)
+  # OTLP で受けた MCP メトリクスを既存 VictoriaMetrics へ remote-write する。
+  # VM は Prometheus の remote_write 先として既に稼働中 → 新規受信機構は不要。
+  # collector からの outbound のため新規 publish ポートは増えない。
+  prometheusremotewrite:
+    endpoint: "http://victoriametrics:8428/api/v1/write"  # Docker ネットワーク内の VM
+    tls:
+      insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true   # service.name 等の Resource 属性をラベル/target_info へ展開
+
 # ----- サービス設定 -----
 service:
   # トレースパイプライン: 受信 → バッチ処理 → Tempo へ転送
@@ -35,6 +46,13 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [otlp/tempo]
+
+    # メトリクスパイプライン (016): OTLP 受信 → バッチ → VictoriaMetrics へ remote-write
+    # MCP サーバーが OTLP/gRPC(4317) で push したメトリクスをここで受ける。
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheusremotewrite]
 
   # Prometheus スクレイプ用テレメトリーエンドポイント (Constitution 原則 V)
   # Prometheus が otel-collector:8888 をスクレイプして自己監視する

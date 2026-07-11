@@ -1,5 +1,34 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__docker__docker_list_containers",
+      "mcp__docker__docker_get_logs",
+      "mcp__docker__docker_get_stats",
+      "mcp__prometheus__query_metrics",
+      "mcp__prometheus__query_range",
+      "mcp__prometheus__get_active_alerts",
+      "mcp__prometheus__compare_metrics",
+      "mcp__prometheus__list_proposals",
+      "mcp__alertmanager__alertmanager_get_alerts",
+      "mcp__alertmanager__alertmanager_list_silences",
+      "mcp__terragrunt__list_workspaces",
+      "mcp__terragrunt__get_service_config",
+      "Bash(task tg:plan)",
+      "Bash(task tg:plan:svc *)",
+      "Bash(task slo:validate)"
+    ]
+  },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "head -60 .claude/SESSION_STATE.md"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
