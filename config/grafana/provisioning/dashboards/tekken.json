@@ -204,12 +204,12 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "tekken_win_rate{period=\"today\", battle_type=\"ranked\"}",
+          "expr": "tekken_win_rate{period=\"all\", battle_type=\"all\"}",
           "instant": true,
           "legendFormat": ""
         }
       ],
-      "title": "勝率 今日 (ranked)",
+      "title": "勝率 全期間 (全対戦)",
       "type": "stat"
     },
     {
@@ -321,12 +321,12 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "tekken_win_rate{period=\"7d\", battle_type=\"ranked\"}",
+          "expr": "tekken_win_rate{period=\"7d\", battle_type=\"all\"}",
           "instant": true,
           "legendFormat": ""
         }
       ],
-      "title": "勝率 7日 (ranked)",
+      "title": "勝率 7日 (全対戦)",
       "type": "stat"
     },
     {
@@ -363,12 +363,12 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "tekken_win_rate{period=\"30d\", battle_type=\"ranked\"}",
+          "expr": "tekken_win_rate{period=\"30d\", battle_type=\"all\"}",
           "instant": true,
           "legendFormat": ""
         }
       ],
-      "title": "勝率 30日 (ranked)",
+      "title": "勝率 30日 (全対戦)",
       "type": "stat"
     },
     {
