@@ -159,10 +159,17 @@ sync_grafana() {
       "mkdir -p ${REMOTE_BASE}/grafana/provisioning/{dashboards,datasources}"
   deploy_file "${REPO_ROOT}/config/grafana/provisioning/dashboards/dashboards.yml" \
       "${REMOTE_BASE}/grafana/provisioning/dashboards/dashboards.yml"
-  step "grafana: ダッシュボード JSON を転送中..."
-  scp "${REPO_ROOT}/config/grafana/provisioning/dashboards/"*.json \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/grafana/provisioning/dashboards/" 2>/dev/null || \
-      warn "ダッシュボード JSON が見つかりません（スキップ）"
+  step "grafana: ダッシュボード JSON を転送中（プレースホルダ置換あり）..."
+  # 素の scp だと render/assert を通らず YOUR_* 入りのまま配備される
+  # （2026-07-12: linux-hosts.json が YOUR_LINUX_HOST_* のまま配備され12パネル死亡していた）
+  local json_found=0
+  for json in "${REPO_ROOT}/config/grafana/provisioning/dashboards/"*.json; do
+    [ -f "$json" ] || continue
+    json_found=1
+    deploy_file "$json" \
+        "${REMOTE_BASE}/grafana/provisioning/dashboards/$(basename "$json")"
+  done
+  [ "$json_found" -eq 1 ] || warn "ダッシュボード JSON が見つかりません（スキップ）"
   step "grafana: datasources.yml を転送中..."
   deploy_file "${REPO_ROOT}/config/grafana/provisioning/datasources/datasources.yml" \
       "${REMOTE_BASE}/grafana/provisioning/datasources/datasources.yml"
