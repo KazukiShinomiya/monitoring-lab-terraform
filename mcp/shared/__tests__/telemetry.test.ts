@@ -6,6 +6,16 @@ import {
   __resetForTest,
 } from '../telemetry.js';
 
+// テストから本番 collector(10.0.0.220:4317) へ実弾送出しないよう、
+// 既定エンドポイントを到達不能なローカルへ向ける（best-effort 送出は握られ、
+// テストは green のまま）。到達不能テストは自前で上書きする。
+beforeEach(() => {
+  process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'http://127.0.0.1:1';
+});
+afterEach(() => {
+  delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+});
+
 describe('instrumentTool', () => {
   beforeEach(() => {
     __resetForTest();
@@ -36,6 +46,13 @@ describe('instrumentTool', () => {
     initTelemetry('test');
     const wrapped = instrumentTool('sync', (a: number, b: number) => a + b);
     await expect(wrapped(2, 3)).resolves.toBe(5);
+  });
+
+  it('isError:true の MCP 応答も無加工で透過する（A2: status=error 計上対象）', async () => {
+    initTelemetry('test');
+    const errorResult = { isError: true, content: [{ type: 'text', text: 'fail' }] };
+    const wrapped = instrumentTool('mcp_err', async () => errorResult);
+    await expect(wrapped()).resolves.toBe(errorResult);
   });
 });
 

@@ -1,7 +1,9 @@
 # ビルドコンテキストは mcp/（親）を想定:
 #   docker build -f prometheus-server/Dockerfile -t monitoring-lab-prometheus-mcp .
 # 共通計装ヘルパー mcp/shared/telemetry.ts を src/ へ同梱する（016 / DRY）。
-FROM node:22-alpine
+# 22.20.0 固定: node 22.23.x では OTLP exporter (grpc/http とも) の送出が
+# サイレント不達となることを実測（2026-07 SC-002 検証）。詳細は specs/016 research.md
+FROM node:22.20.0-alpine
 
 WORKDIR /app
 COPY prometheus-server/package*.json ./

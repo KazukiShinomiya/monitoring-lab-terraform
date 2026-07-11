@@ -82,7 +82,7 @@ curl -s 'http://10.0.0.220:8428/api/v1/query?query=mcp_tool_invocations_total' |
 
 | SC | 検証 |
 |---|---|
-| SC-001 取りこぼし0 | ツールを N 回呼び `increase(mcp_tool_invocations_total{service="prometheus"}[10m])` が N に一致 |
+| SC-001 取りこぼし0 | ツールを N 回呼び `sum(max_over_time(mcp_tool_invocations_total{service="prometheus",tool="..."}[10m]))` が N に一致（**increase は使用不可** — contracts/metrics-contract.md 参照。VM の検索遅延 ~30s に注意し 60s 以上待って照会） |
 | SC-002 flush 100% | 「1回呼ぶ→即終了」を5回繰り返し、合算カウントが 5 |
 | SC-003 4/4 観測 | `count(count by (service)(mcp_tool_invocations_total))` == 4 |
 | SC-004 ダッシュボード | MCP Observability ダッシュボードで サーバー別/ツール別 回数・p95・エラー率が描画 |
@@ -106,3 +106,19 @@ curl -s 'http://10.0.0.220:8428/api/v1/query?query=mcp_tool_invocations_total' |
 | カウントが想定より少ない | 終了時 flush 未実装/未 await の疑い（D4）。shutdownTelemetry の呼び出し経路を確認 |
 | ツール応答が遅い/失敗 | best-effort 違反。instrumentTool が計測例外を握っているか、flush を同期 await していないか確認 |
 | collector 再起動後に traces が止まった | traces パイプラインを誤って変更した疑い。otel-collector.yml の traces セクション不変を確認 |
+
+---
+
+## 受け入れ検証結果（2026-07-12 実走）
+
+| SC | 結果 | 実測値・備考 |
+|---|---|---|
+| SC-001 取りこぼし0 | ✅ | SC-002 と同一検証系列で担保（5回=合算5） |
+| SC-002 flush 100% | ✅ | 「1回呼ぶ→stdin EOF 即終了」×5 → `sum(max_over_time(...[15m]))` = **5**（取りこぼし0）。到達には D8 の転換一式が必要だった |
+| SC-003 4/4 観測 | ✅ | `count(count by (service)(...))` = **4**（prometheus/docker/alertmanager=success, terragrunt=error——A2 isError 判定の実弾動作確認込み） |
+| SC-004 ダッシュボード | ✅ | `mcp-observability` ロード確認（/api/search）・全パネルの max_over_time クエリは実データ返答確認済み |
+| SC-005 無劣化 | ✅ | collector 停止下でツール正常応答、総所要 3.9s で自力終了、collector 復旧確認 |
+| SC-006 新規常駐なし | ✅ | リモート常駐 19 コンテナ（otel-collector は 4318 追加公開のため置換のみ・増加なし）、MCP コンテナはリモートに 0 |
+
+**注意（検証時の作法）**: VictoriaMetrics は直近 ~30s のサンプルを instant query に返さない（search.latencyOffset）。
+検証照会は送出から 60〜90 秒待つこと。research.md D8 参照。
