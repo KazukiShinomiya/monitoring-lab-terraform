@@ -48,17 +48,65 @@ TARGET_USER="${TARGET_USER:-ubuntu}"
 REMOTE_BASE="${REMOTE_BASE_DIR:-/home/ubuntu/monitoring-lab}"
 TEKKEN_SOURCE="${TEKKEN_SOURCE_DIR:-/mnt/e/work/tekken_bot}/grafana/tekken.json"
 
+# ========== プレースホルダ置換 ==========
+# リポジトリの config/ は公開用にホスト名をプレースホルダ化している。
+# デプロイ時に .env の実値へ置換し、置換しきれなかったファイルは配備を拒否する。
+# （2026-06: プレースホルダ入り prometheus.yml が配備され監視が1ヶ月停止した事故の再発防止）
+
+PLACEHOLDER_MAP=(
+  "YOUR_SERVER_IP=${TARGET_HOST}"
+  "YOUR_ROUTER_IP=${PROM_ROUTER_IP:-}"
+  "YOUR_NAS_IP=${PROM_NAS_IP:-}"
+  "YOUR_LINUX_HOST_1=${PROM_LINUX_HOST_1:-}"
+  "YOUR_LINUX_HOST_2=${PROM_LINUX_HOST_2:-}"
+  "YOUR_CRAWLER_HOST=${PROM_CRAWLER_HOST:-}"
+)
+
+# コメント行以外にプレースホルダが残っていたら中断する
+assert_no_placeholder() {
+  local f="$1" src="$2"
+  if grep -nE '^[^#]*\bYOUR_[A-Z0-9_]+' "$f" > /dev/null 2>&1; then
+    grep -nE '^[^#]*\bYOUR_[A-Z0-9_]+' "$f" | head -5 >&2
+    rm -f "$f"
+    error "${src}: 未置換のプレースホルダが残っています。.env の PROM_* / TARGET_HOST を設定してください（配備を中断）"
+  fi
+}
+
+# プレースホルダを実値に置換した一時ファイルのパスを標準出力に返す
+render_config() {
+  local src="$1" tmp pair name value
+  tmp=$(mktemp "/tmp/$(basename "$src").render.XXXXXX")
+  cp "$src" "$tmp"
+  for pair in "${PLACEHOLDER_MAP[@]}"; do
+    name="${pair%%=*}"
+    value="${pair#*=}"
+    if [ -n "$value" ]; then
+      sed -i "s|${name}|${value}|g" "$tmp"
+    fi
+  done
+  assert_no_placeholder "$tmp" "$src"
+  echo "$tmp"
+}
+
+# render_config → scp → 一時ファイル削除
+deploy_file() {
+  local src="$1" dest="$2" tmp
+  tmp=$(render_config "$src")
+  scp "$tmp" "${TARGET_USER}@${TARGET_HOST}:${dest}"
+  rm -f "$tmp"
+}
+
 # ========== サービス別同期関数 ==========
 
 sync_prometheus() {
-  step "prometheus: 設定ファイルを転送中..."
-  scp "${REPO_ROOT}/config/prometheus/prometheus.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/prometheus/prometheus.yml"
-  scp "${REPO_ROOT}/config/prometheus/alerts.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/prometheus/alerts.yml"
+  step "prometheus: 設定ファイルを転送中（プレースホルダ置換あり）..."
+  deploy_file "${REPO_ROOT}/config/prometheus/prometheus.yml" \
+      "${REMOTE_BASE}/prometheus/prometheus.yml"
+  deploy_file "${REPO_ROOT}/config/prometheus/alerts.yml" \
+      "${REMOTE_BASE}/prometheus/alerts.yml"
   if [ -f "${REPO_ROOT}/config/prometheus/slo-rules.yml" ]; then
-    scp "${REPO_ROOT}/config/prometheus/slo-rules.yml" \
-        "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/prometheus/slo-rules.yml"
+    deploy_file "${REPO_ROOT}/config/prometheus/slo-rules.yml" \
+        "${REMOTE_BASE}/prometheus/slo-rules.yml"
   fi
   step "prometheus: ホットリロード中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "curl -sf -X POST http://localhost:9090/-/reload"
@@ -97,6 +145,7 @@ sync_alertmanager() {
   TMPFILE=$(mktemp /tmp/alertmanager_deploy.XXXXXX.yml)
   sed "s|<YOUR_SLACK_WEBHOOK_URL>|${WEBHOOK_URL}|g" \
       "${REPO_ROOT}/config/alertmanager/alertmanager.yml" > "${TMPFILE}"
+  assert_no_placeholder "${TMPFILE}" "${REPO_ROOT}/config/alertmanager/alertmanager.yml"
   scp "${TMPFILE}" "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/alertmanager/alertmanager.yml"
   rm -f "${TMPFILE}"
   step "alertmanager: ホットリロード中..."
@@ -108,15 +157,15 @@ sync_grafana() {
   step "grafana: dashboards.yml を転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" \
       "mkdir -p ${REMOTE_BASE}/grafana/provisioning/{dashboards,datasources}"
-  scp "${REPO_ROOT}/config/grafana/provisioning/dashboards/dashboards.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/grafana/provisioning/dashboards/dashboards.yml"
+  deploy_file "${REPO_ROOT}/config/grafana/provisioning/dashboards/dashboards.yml" \
+      "${REMOTE_BASE}/grafana/provisioning/dashboards/dashboards.yml"
   step "grafana: ダッシュボード JSON を転送中..."
   scp "${REPO_ROOT}/config/grafana/provisioning/dashboards/"*.json \
       "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/grafana/provisioning/dashboards/" 2>/dev/null || \
       warn "ダッシュボード JSON が見つかりません（スキップ）"
   step "grafana: datasources.yml を転送中..."
-  scp "${REPO_ROOT}/config/grafana/provisioning/datasources/datasources.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/grafana/provisioning/datasources/datasources.yml"
+  deploy_file "${REPO_ROOT}/config/grafana/provisioning/datasources/datasources.yml" \
+      "${REMOTE_BASE}/grafana/provisioning/datasources/datasources.yml"
   step "grafana: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-grafana"
   info "grafana 同期完了"
@@ -125,8 +174,7 @@ sync_grafana() {
 sync_snmp() {
   step "snmp: snmp.yml を転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/snmp"
-  scp "${REPO_ROOT}/config/snmp/snmp.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/snmp/snmp.yml"
+  deploy_file "${REPO_ROOT}/config/snmp/snmp.yml" "${REMOTE_BASE}/snmp/snmp.yml"
   step "snmp-exporter: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-snmp-exporter"
   info "snmp 同期完了"
@@ -135,8 +183,7 @@ sync_snmp() {
 sync_loki() {
   step "loki: 設定ファイルを転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/loki"
-  scp "${REPO_ROOT}/config/loki/loki.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/loki/loki.yml"
+  deploy_file "${REPO_ROOT}/config/loki/loki.yml" "${REMOTE_BASE}/loki/loki.yml"
   step "loki: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-loki"
   info "loki 同期完了"
@@ -145,8 +192,7 @@ sync_loki() {
 sync_promtail() {
   step "promtail: 設定ファイルを転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/promtail"
-  scp "${REPO_ROOT}/config/promtail/promtail.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/promtail/promtail.yml"
+  deploy_file "${REPO_ROOT}/config/promtail/promtail.yml" "${REMOTE_BASE}/promtail/promtail.yml"
   step "promtail: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-promtail"
   info "promtail 同期完了"
@@ -155,8 +201,7 @@ sync_promtail() {
 sync_tempo() {
   step "tempo: 設定ファイルを転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/tempo"
-  scp "${REPO_ROOT}/config/tempo/tempo.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/tempo/tempo.yml"
+  deploy_file "${REPO_ROOT}/config/tempo/tempo.yml" "${REMOTE_BASE}/tempo/tempo.yml"
   step "tempo: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-tempo"
   info "tempo 同期完了"
@@ -165,8 +210,8 @@ sync_tempo() {
 sync_otel_collector() {
   step "otel-collector: 設定ファイルを転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/otel-collector"
-  scp "${REPO_ROOT}/config/otel-collector/otel-collector.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/otel-collector/otel-collector.yml"
+  deploy_file "${REPO_ROOT}/config/otel-collector/otel-collector.yml" \
+      "${REMOTE_BASE}/otel-collector/otel-collector.yml"
   step "otel-collector: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-otel-collector"
   info "otel-collector 同期完了"
@@ -175,8 +220,7 @@ sync_otel_collector() {
 sync_pyroscope() {
   step "pyroscope: 設定ファイルを転送中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/pyroscope"
-  scp "${REPO_ROOT}/config/pyroscope/config.yml" \
-      "${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE}/pyroscope/config.yml"
+  deploy_file "${REPO_ROOT}/config/pyroscope/config.yml" "${REMOTE_BASE}/pyroscope/config.yml"
   step "pyroscope: コンテナを再起動中..."
   ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-pyroscope"
   info "pyroscope 同期完了"
