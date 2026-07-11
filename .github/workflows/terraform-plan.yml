@@ -27,6 +27,18 @@ jobs:
     env:
       TF_TOKEN_app_terraform_io: "${{ secrets.TF_API_TOKEN }}"
       TF_IN_AUTOMATION: "true"
+      # HCP Terraform の organization（root.hcl の get_env）。未設定だと
+      # プレースホルダ YOUR_TF_ORG で backend init が unauthorized になる
+      TF_CLOUD_ORGANIZATION: "${{ secrets.TF_CLOUD_ORGANIZATION }}"
+      # vault-secrets の plan に必要（Vault 本番モード化 2026-06-11 以降）
+      VAULT_ADDR: "${{ secrets.VAULT_ADDR }}"
+      VAULT_TOKEN: "${{ secrets.VAULT_TOKEN }}"
+      # alertmanager --web.external-url 等の drift 防止
+      TARGET_HOST: "${{ secrets.TARGET_HOST }}"
+      # vault-secrets の alertmanager_slack シークレット drift 防止
+      SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL }}"
+      # github-runner コンテナ env の drift 防止
+      GH_RUNNER_PAT: "${{ secrets.GH_RUNNER_PAT }}"
       # self-hosted runner は YOUR_SERVER_IP 上で動作するため unix socket 経由で Docker に接続
       DOCKER_HOST: "unix:///var/run/docker.sock"
       # Terraform Docker プロバイダー専用の接続先（DOCKER_HOST は Docker CLI が使用するため分離）
