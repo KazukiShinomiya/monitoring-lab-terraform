@@ -7,6 +7,10 @@ import { handleGetActiveAlerts } from './tools/get-active-alerts.js';
 import { handleCompareMetrics } from './tools/compare-metrics.js';
 import { handleGenerateProposal } from './tools/generate-proposal.js';
 import { handleListProposals } from './tools/list-proposals.js';
+import { initTelemetry, instrumentTool, shutdownTelemetry } from './telemetry.js';
+
+// 016: 計装を初期化（OTLP メトリクスを otel-collector へ push）。冪等・起動を妨げない。
+initTelemetry('prometheus');
 
 const server = new McpServer(
   { name: 'monitoring-lab-prometheus-mcp', version: '2.0.0' },
@@ -19,7 +23,7 @@ server.tool(
     query: z.string().describe("PromQL式 (例: 'container_memory_usage_bytes{name=\"monitoring-lab-prometheus\"}')"),
     time: z.string().optional().describe('クエリ時刻 (ISO 8601 or Unix timestamp, 省略時=現在)'),
   },
-  ({ query, time }) => handleQueryMetrics(query, time),
+  instrumentTool('query_metrics', ({ query, time }) => handleQueryMetrics(query, time)),
 );
 
 server.tool(
@@ -31,7 +35,7 @@ server.tool(
     end: z.string().optional().default('now').describe('終了時刻 (省略時=現在)'),
     step: z.string().optional().default('60s').describe("ステップ間隔 (例: '30s', '5m')"),
   },
-  ({ query, start, end, step }) => handleQueryRange(query, start, end, step),
+  instrumentTool('query_range', ({ query, start, end, step }) => handleQueryRange(query, start, end, step)),
 );
 
 server.tool(
@@ -40,7 +44,7 @@ server.tool(
   {
     severity: z.enum(['all', 'critical', 'warning', 'info']).optional().default('all').describe('フィルター: allで全アラート取得'),
   },
-  ({ severity }) => handleGetActiveAlerts(severity),
+  instrumentTool('get_active_alerts', ({ severity }) => handleGetActiveAlerts(severity)),
 );
 
 server.tool(
@@ -51,7 +55,7 @@ server.tool(
     baseline_time: z.string().describe('比較基準時刻（変更前）ISO 8601 または Unix timestamp'),
     current_time: z.string().optional().describe('現在時刻（変更後）省略時=現在'),
   },
-  ({ query, baseline_time, current_time }) => handleCompareMetrics(query, baseline_time, current_time),
+  instrumentTool('compare_metrics', ({ query, baseline_time, current_time }) => handleCompareMetrics(query, baseline_time, current_time)),
 );
 
 server.tool(
@@ -61,7 +65,7 @@ server.tool(
     dry_run: z.boolean().optional().default(false).describe('true の場合、分析結果を返すが提案ファイルを保存しない（副作用なし）'),
     focus: z.enum(['alerts', 'memory', 'all']).optional().default('all').describe('分析対象: alerts=アラートのみ, memory=メモリのみ, all=全体'),
   },
-  ({ dry_run, focus }) => handleGenerateProposal(dry_run, focus),
+  instrumentTool('generate_proposal', ({ dry_run, focus }) => handleGenerateProposal(dry_run, focus)),
 );
 
 server.tool(
@@ -70,19 +74,40 @@ server.tool(
   {
     status: z.enum(['all', 'pending', 'approved', 'applied', 'rejected', 'rolled_back']).optional().default('all').describe('フィルター: pending=未処理, applied=解消済み, all=全件'),
   },
-  ({ status }) => handleListProposals({ status }),
+  instrumentTool('list_proposals', ({ status }) => handleListProposals({ status })),
 );
 
-process.on('SIGINT', () => process.exit(0));
-process.on('SIGTERM', () => process.exit(0));
+// 016: 終了時に未送出メトリクスを flush してから終了する。
+// 短命プロセスでは定期エクスポートが発火しないため、これが唯一の確実な送出経路。
+// 予算 8s: コールドスタートのコンテナでは gRPC チャネル確立に 2s を超えることが
+// あり（SC-002 検証で 5回中4回取りこぼしを実測）、docker stop の猶予(10s)内に収める。
+let exiting = false;
+async function gracefulExit(code: number): Promise<void> {
+  // 冪等ガード: stdin 'end'/'close'/transport.onclose は連続して発火しうる。
+  // 2発目が shutdownTelemetry（冪等・即 return）を素通りして process.exit を
+  // 先に踏むと、1発目の flush 中の送信が殺される（SC-002 で実測）。
+  if (exiting) return;
+  exiting = true;
+  await shutdownTelemetry(8000);
+  process.exit(code);
+}
+
+process.on('SIGINT', () => { void gracefulExit(0); });
+process.on('SIGTERM', () => { void gracefulExit(0); });
 process.on('uncaughtException', (error) => {
   process.stderr.write(`Uncaught exception: ${error.message}\n${error.stack}\n`);
-  process.exit(1);
+  void gracefulExit(1);
 });
 process.on('unhandledRejection', (reason) => {
   process.stderr.write(`Unhandled rejection: ${String(reason)}\n`);
-  process.exit(1);
+  void gracefulExit(1);
 });
 
 const transport = new StdioServerTransport();
+// stdio が閉じる（Claude が切断/EOF）時も flush してから終了
+transport.onclose = () => { void gracefulExit(0); };
+// T013: stdin EOF では transport.onclose が発火しないことを実機で確認済み。
+// pipe が閉じた時点で flush → 終了する経路を明示的に張る（US2 の生命線）。
+process.stdin.on('end', () => { void gracefulExit(0); });
+process.stdin.on('close', () => { void gracefulExit(0); });
 await server.connect(transport);

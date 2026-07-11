@@ -143,3 +143,6 @@ ENV/
 !.env.example
 !.mcp.json.example
 !*.tfvars.example
+
+# 016: mcp/*/src/telemetry.ts はビルド時に mcp/shared/telemetry.ts から同期される生成物（正本は shared）
+mcp/*/src/telemetry.ts

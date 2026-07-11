@@ -24,6 +24,46 @@ groups:
           description: "Prometheusがターゲット {{ $labels.instance }} (job: {{ $labels.job }}) からメトリクスを取得できません。"
 
   # ==========================================
+  # グループ1.5: 通知経路の自己監視（メタ監視）
+  # ==========================================
+  # 背景: 2026-07 監視盲目インシデント（TargetDown critical が約1ヶ月誰にも
+  # 気づかれず発火し続けた）の再発防止。「アラートが鳴っている」ことと
+  # 「人に届いている」ことは別物として監視する。
+  - name: alerting_pipeline_health
+    rules:
+      # 死活証明（dead man's switch）: 常時発火し続けることが正常。
+      # Alertmanager API にこのアラートが「居ない」= Prometheus のルール評価
+      # または AM への送出経路が死んでいる。/drift-check 層4 や外部から確認する。
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          summary: "Alerting pipeline 死活証明（常時発火が正常）"
+          description: "このアラートは常に発火します。Alertmanager にこれが存在しない場合、Prometheus→Alertmanager の経路が壊れています。"
+
+      # critical の長期放置を別名で再エスカレーション。
+      # 3日以上継続する critical は「対応漏れ」か「監視の綻び」——どちらも人の目が要る。
+      # 注: Prometheus が1時間以上停止すると for のカウントはリセットされる（許容）。
+      - alert: CriticalAlertUnattended
+        expr: ALERTS{alertstate="firing", severity="critical", alertname!="CriticalAlertUnattended"} == 1
+        for: 72h
+        labels:
+          severity: critical
+        annotations:
+          summary: "critical アラートが3日以上放置: {{ $labels.alertname }}"
+          description: "{{ $labels.alertname }} (instance: {{ $labels.instance }}) が72時間以上発火し続けています。対応するか、意図的な放置なら silence を設定してください。"
+
+      # Slack 通知の送信失敗（webhook 失効・ネットワーク断など）
+      - alert: AlertmanagerNotificationFailed
+        expr: increase(alertmanager_notifications_failed_total[15m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alertmanager 通知送信失敗 ({{ $labels.integration }})"
+          description: "直近15分で {{ $labels.integration }} への通知送信が {{ $value | printf \"%.0f\" }} 件失敗しています。webhook URL の失効や到達性を確認してください。"
+
+  # ==========================================
   # グループ2: コンテナリソース使用率
   # ==========================================
   - name: container_resources

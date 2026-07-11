@@ -1,0 +1,23 @@
+{
+  "name": "monitoring-lab-mcp-telemetry",
+  "version": "1.0.0",
+  "description": "共通計装ヘルパー（4 MCP サーバーで再利用）— OTLP メトリクス push + ephemeral flush",
+  "type": "module",
+  "main": "dist/telemetry.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/sdk-metrics": "2.8.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "0.207.0",
+    "@opentelemetry/resources": "2.8.0",
+    "@opentelemetry/semantic-conventions": "1.41.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  }
+}
