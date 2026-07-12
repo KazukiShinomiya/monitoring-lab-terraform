@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -18,8 +17,6 @@ GEOIP_ASN_DB = os.environ.get("GEOIP_ASN_DB", "/data/geoip/GeoLite2-ASN.mmdb")
 PORT = int(os.environ.get("EXPORTER_PORT", "9200"))
 SCRAPE_INTERVAL = int(os.environ.get("SCRAPE_INTERVAL", "300"))
 TOP_N = int(os.environ.get("TOP_N", "20"))
-# wow_logs volume (/data/wow-logs) に保存してコンテナ再起動を跨いで永続化する
-STATE_FILE = os.environ.get("STATE_FILE", "/data/wow-logs/wow-exporter.state.json")
 
 STATE = {
     "access_offset": 0,
@@ -35,67 +32,6 @@ STATE = {
     "ua_category_counts": Counter(),
     "blocklist_ip_counts": Counter(),
 }
-
-
-def _serialize_tuple_counter(counter: Counter) -> list:
-    return [[k, v, count] for (k, v), count in counter.items()]
-
-
-def _deserialize_tuple_counter(data: list) -> Counter:
-    result = Counter()
-    for item in data:
-        if len(item) == 3:
-            result[(item[0], item[1])] = item[2]
-    return result
-
-
-def load_state():
-    try:
-        with open(STATE_FILE) as f:
-            data = json.load(f)
-        STATE["access_offset"] = data.get("access_offset", 0)
-        STATE["access_https_offset"] = data.get("access_https_offset", 0)
-        STATE["wow_offset"] = data.get("wow_offset", 0)
-        STATE["wow_https_offset"] = data.get("wow_https_offset", 0)
-        STATE["unique_ips"] = set(data.get("unique_ips", []))
-        STATE["path_counts"] = Counter(data.get("path_counts", {}))
-        STATE["ip_counts"] = Counter(data.get("ip_counts", {}))
-        STATE["country_counts"] = _deserialize_tuple_counter(data.get("country_counts", []))
-        STATE["asn_counts"] = _deserialize_tuple_counter(data.get("asn_counts", []))
-        STATE["ua_counts"] = Counter(data.get("ua_counts", {}))
-        STATE["ua_category_counts"] = Counter(data.get("ua_category_counts", {}))
-        STATE["blocklist_ip_counts"] = Counter(data.get("blocklist_ip_counts", {}))
-        logger.info(
-            "State loaded: access_offset=%d, wow_offset=%d",
-            STATE["access_offset"],
-            STATE["wow_offset"],
-        )
-    except FileNotFoundError:
-        pass
-    except Exception:
-        logger.exception("Failed to load state, starting from 0")
-
-
-def save_state():
-    try:
-        data = {
-            "access_offset": STATE["access_offset"],
-            "access_https_offset": STATE["access_https_offset"],
-            "wow_offset": STATE["wow_offset"],
-            "wow_https_offset": STATE["wow_https_offset"],
-            "unique_ips": list(STATE["unique_ips"]),
-            "path_counts": dict(STATE["path_counts"]),
-            "ip_counts": dict(STATE["ip_counts"]),
-            "country_counts": _serialize_tuple_counter(STATE["country_counts"]),
-            "asn_counts": _serialize_tuple_counter(STATE["asn_counts"]),
-            "ua_counts": dict(STATE["ua_counts"]),
-            "ua_category_counts": dict(STATE["ua_category_counts"]),
-            "blocklist_ip_counts": dict(STATE["blocklist_ip_counts"]),
-        }
-        with open(STATE_FILE, "w") as f:
-            json.dump(data, f)
-    except Exception:
-        logger.exception("Failed to save state")
 
 
 def _process_access_entry(entry, protocol: str = "http") -> None:
@@ -221,18 +157,27 @@ def process_wow_log(log_file: str = "wowhoneypot.log", protocol: str = "http") -
 def main():
     geoip.init(GEOIP_DB)
     geoip.init_asn(GEOIP_ASN_DB)
-    load_state()
+    # 起動時は空の STATE から始め、ログ全体を読み直して全メトリクスを再構築する。
+    # 以前はオフセットと集計dictだけを永続化していたが、Prometheus Counter
+    # (http_requests_total 等) は非永続でプロセス起動時に0へ戻る。オフセットを
+    # 復元して既存行を飛ばすと、新規トラフィックが来ない protocol（例: https）の
+    # Counter 系列が二度と生成されず Grafana で No data になる（2026-07 の HTTPS
+    # 監視盲目の機序）。ログ全体を毎起動で再集計すれば Gauge も Counter も実ログ
+    # と常に一致する。プロセス内のオフセットは二重計上防止のため引き続き機能する。
+    # Prometheus 側のカウンタリセットは increase()/rate() が正しく処理する。
     start_http_server(PORT)
     logger.info("Exporter started on :%d", PORT)
 
     while True:
         try:
-            process_access_log("access_log", "http")
+            # 低ボリュームの https を先に処理する。起動時の全再読込では http ログが
+            # 巨大（数十万行）で数分かかるため、後回しにすると https 系列の復元が
+            # 遅れる。復旧対象を先に処理して速やかに可視化を回復させる。
             process_access_log("access_log_https", "https")
-            process_wow_log("wowhoneypot.log", "http")
             process_wow_log("wowhoneypot_https.log", "https")
+            process_access_log("access_log", "http")
+            process_wow_log("wowhoneypot.log", "http")
             metrics.last_sync_timestamp.set(time.time())
-            save_state()
         except Exception:
             logger.exception("Processing error")
         time.sleep(SCRAPE_INTERVAL)
