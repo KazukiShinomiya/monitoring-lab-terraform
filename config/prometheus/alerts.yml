@@ -117,6 +117,61 @@ groups:
           description: "PrometheusのTSDB圧縮が失敗しました。ディスク容量を確認してください。"
 
   # ==========================================
+  # グループ3.5: WOWHoneypot データ鮮度
+  # ==========================================
+  # 背景: 2026-07-07 に VPS 再起動でハニーポットが停止したが、exporter は
+  # 生存（up=1）・カウンタ累計も見えるため誰も気づかず5日間データが止まった。
+  # 「exporter が生きている」ことと「データが流れている」ことは別物として監視する。
+  # 経路: VPS honeypot → (cron rsync 10分毎) → wow-exporter → Prometheus
+  - name: wow_honeypot_freshness
+    rules:
+      # HTTP ハニーポットへのトラフィック途絶。インターネット背景ノイズにより
+      # 通常 数十req/h（実測 10〜45/h）が常時届くため、3時間ゼロは経路のどこか
+      # （honeypot 停止・rsync 断・exporter 停滞）が死んでいる。検知遅延は窓+for で約3.5時間。
+      # 注: exporter 再起動時はログ全再読込でカウンタが急伸するため誤発火しない。
+      - alert: WowHoneypotTrafficSilent
+        expr: sum(rate(wowhoneypot_http_requests_total{protocol="http"}[3h])) == 0
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WOWHoneypot トラフィック途絶（3時間以上ゼロ）"
+          description: "HTTP ハニーポットの新規リクエストが3時間以上観測されていません。VPS の honeypot サービス停止・rsync 断・exporter 停滞のいずれかを疑ってください（2026-07 の5日間盲目の再発防止）。"
+
+      # protocol 別の系列消失ガード。2026-07 の非対称永続化バグ（exporter 再起動で
+      # HTTPS 系列が消える）の回帰検知。http が消えると上の TrafficSilent は
+      # 空ベクトルとなり発火できないため、absent 監視で盲点を塞ぐ。
+      # for 30m は再起動時のログ全再読込（https 優先処理）の猶予。
+      - alert: WowHoneypotHttpSeriesAbsent
+        expr: absent(wowhoneypot_http_requests_total{protocol="http"})
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WOWHoneypot http 系列が消失"
+          description: "wowhoneypot_http_requests_total{protocol=\"http\"} が30分以上存在しません。exporter の再起動失敗またはログ再集計の異常を疑ってください。"
+
+      - alert: WowHoneypotHttpsSeriesAbsent
+        expr: absent(wowhoneypot_http_requests_total{protocol="https"})
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WOWHoneypot https 系列が消失"
+          description: "wowhoneypot_http_requests_total{protocol=\"https\"} が30分以上存在しません。非対称永続化バグ（2026-07 修正済み）の回帰の可能性があります。"
+
+      # exporter の処理ループ停滞。ループは300秒間隔で last_sync_timestamp を
+      # 更新するため、30分（6周期）更新が無ければ例外ループやハングを疑う。
+      # /metrics 応答自体は生きている（up=1）ケースを拾う。
+      - alert: WowExporterLoopStuck
+        expr: time() - wowhoneypot_last_sync_timestamp > 1800
+        labels:
+          severity: warning
+        annotations:
+          summary: "wow-exporter 処理ループ停滞"
+          description: "wow-exporter の集計ループが30分以上完走していません（正常は5分間隔）。コンテナログで例外を確認してください。"
+
+  # ==========================================
   # グループ4: 物理機器監視（RTX830 + Synology NAS）
   # ==========================================
   # 注意: デバイス到達不能は既存の TargetDown (グループ1) がカバー済み。
