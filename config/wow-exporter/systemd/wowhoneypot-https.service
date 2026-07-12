@@ -1,0 +1,17 @@
+# 配置先: さくらVPS /etc/systemd/system/wowhoneypot-https.service
+# 2026-07-12 配備（7/7 VPS再起動でハニーポット死亡した事件の再発防止）。
+# 変更時は VPS へ scp 後 systemctl daemon-reload && systemctl restart wowhoneypot-https
+[Unit]
+Description=WOWHoneypot HTTPS (port 443)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/WOWHoneypot-new
+ExecStart=/usr/bin/python3 wowhoneypot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
