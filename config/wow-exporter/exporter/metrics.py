@@ -1,10 +1,13 @@
 from prometheus_client import Counter, Gauge
 
 # access_log メトリクス
+# path は生値だと攻撃パスの多様性で系列が際限なく増える（実測~3万系列）ため、
+# categorize_path() による有限バケットのみをラベル化する。生パスの上位は
+# top_paths_gauge が担う。
 http_requests_total = Counter(
     "wowhoneypot_http_requests_total",
     "Total HTTP requests received by honeypot",
-    ["method", "path", "status", "matched", "protocol"],
+    ["method", "path_bucket", "status", "matched", "protocol"],
 )
 
 unique_ips_gauge = Gauge(

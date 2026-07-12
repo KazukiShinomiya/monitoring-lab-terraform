@@ -45,6 +45,60 @@ _UA_CATEGORIES = [
 ]
 
 
+# 攻撃パスのカテゴリ分類。生パスは高カーディナリティ（実測~3万系列）のため
+# Counter のラベルには使わず、有限個のバケットに落とす。生パスの詳細は
+# top_paths_gauge (TOP_N) が引き続き担う。先に書いたものが優先される。
+# 分類の根拠: 2026-07 時点の wowhoneypot_top_path_requests 実測 TOP40。
+_PATH_CATEGORIES = [
+    ("wp-", "wordpress"),          # /wp-login.php 等（.php より先に判定）
+    ("wordpress", "wordpress"),
+    ("xmlrpc", "wordpress"),
+    (".env", "secrets-probe"),
+    (".git", "secrets-probe"),
+    ("config/getuser", "secrets-probe"),
+    ("credential", "secrets-probe"),
+    ("/aws", "secrets-probe"),
+    ("cgi-bin", "cgi"),
+    (".cgi", "cgi"),
+    ("/luci", "cgi"),
+    ("boaform", "iot-device"),
+    ("gponform", "iot-device"),
+    ("hnap1", "iot-device"),
+    ("sdk/weblanguage", "iot-device"),
+    ("manager/html", "admin-panel"),  # Tomcat Manager
+    ("/admin", "admin-panel"),
+    ("/login", "admin-panel"),
+    ("/console", "admin-panel"),
+    ("jenkins", "admin-panel"),
+    ("autodiscover", "exchange"),
+    ("/owa", "exchange"),
+    ("/ews", "exchange"),
+    (".php", "php"),
+    ("xdebug", "php"),
+    ("_ignition", "php"),          # Laravel RCE probe
+    ("favicon.ico", "well-known"),
+    ("robots.txt", "well-known"),
+    (".well-known", "well-known"),
+    ("sitemap", "well-known"),
+    ("/api/", "api"),
+    ("graphql", "api"),
+    ("/v1/", "api"),
+    ("/v2/", "api"),
+]
+
+
+def categorize_path(path: str) -> str:
+    if path == "/" or path == "":
+        return "root"
+    path_lower = path.lower()
+    if "../" in path_lower or "%2e" in path_lower or "/etc/passwd" in path_lower:
+        return "traversal"
+    for keyword, category in _PATH_CATEGORIES:
+        if keyword in path_lower:
+            return category
+    return "other"
+
+
 def categorize_ua(ua: Optional[str]) -> str:
     if not ua:
         return "unknown"
@@ -81,6 +135,7 @@ class AccessEntry:
     matched: bool
     user_agent: Optional[str] = field(default=None)
     ua_category: str = field(default="unknown")
+    path_bucket: str = field(default="other")
 
 
 @dataclass
@@ -111,6 +166,7 @@ def parse_access_line(line: str) -> Optional[AccessEntry]:
             matched=m.group(8) != "False",
             user_agent=ua,
             ua_category=categorize_ua(ua),
+            path_bucket=categorize_path(m.group(5)),
         )
     except (ValueError, IndexError):
         return None
