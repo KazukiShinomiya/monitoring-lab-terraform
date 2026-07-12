@@ -28,6 +28,7 @@ inputs = {
       external_port = 9200
 
       env = [
+        "WOW_VPS_HOST=${get_env("WOW_VPS_HOST", "")}",
         "LOG_DIR=/data/wow-logs",
         "GEOIP_DB=/data/geoip/GeoLite2-Country.mmdb",
         "GEOIP_ASN_DB=/data/geoip/GeoLite2-ASN.mmdb",

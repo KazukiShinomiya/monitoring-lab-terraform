@@ -1,7 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-VPS_HOST="REDACTED_WOW_VPS_HOST"
+# 実接続先はコンテナ env WOW_VPS_HOST で注入する（terragrunt.hcl → .env 由来）。
+# 実FQDNのハードコード禁止（2026-06 監査 H-1: 機密露出）
+VPS_HOST="${WOW_VPS_HOST:?WOW_VPS_HOST is not set (env 注入漏れ。terragrunt.hcl と .env を確認)}"
 HTTP_LOG_DIR="/home/ubuntu/WOWHoneypot-master/log"
 HTTPS_LOG_DIR="/home/ubuntu/WOWHoneypot-new/log"
 LOCAL_LOG_DIR="/data/wow-logs"
