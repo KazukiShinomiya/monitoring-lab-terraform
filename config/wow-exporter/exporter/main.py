@@ -38,7 +38,7 @@ def _process_access_entry(entry, protocol: str = "http") -> None:
     label_path = entry.path[:64]
     metrics.http_requests_total.labels(
         method=entry.method,
-        path=label_path,
+        path_bucket=entry.path_bucket,
         status=str(entry.status),
         matched=str(entry.matched),
         protocol=protocol,

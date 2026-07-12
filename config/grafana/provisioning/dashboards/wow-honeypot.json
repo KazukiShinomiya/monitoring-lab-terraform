@@ -420,7 +420,7 @@
       "type": "bargauge",
       "gridPos": {
         "h": 10,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 28
       },
@@ -462,8 +462,8 @@
       "type": "bargauge",
       "gridPos": {
         "h": 10,
-        "w": 12,
-        "x": 12,
+        "w": 8,
+        "x": 8,
         "y": 28
       },
       "datasource": "Prometheus",
@@ -495,6 +495,41 @@
               }
             ]
           }
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Attack Category Distribution (path_bucket)",
+      "type": "piechart",
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 28
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sort_desc(sum by (path_bucket) (wowhoneypot_http_requests_total))",
+          "legendFormat": "{{path_bucket}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
         }
       }
     },
