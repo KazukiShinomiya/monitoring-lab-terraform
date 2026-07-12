@@ -50,6 +50,8 @@ jobs:
       NEW_RELIC_LICENSE_KEY: "${{ secrets.NEW_RELIC_LICENSE_KEY }}"
       # github-runner コンテナの ACCESS_TOKEN drift 防止（未設定だと空文字 → destroy/recreate）
       GH_RUNNER_PAT: "${{ secrets.GH_RUNNER_PAT }}"
+      # wow-exporter コンテナ env（ログ同期先 VPS）の drift 防止（2026-06 監査 H-1）
+      WOW_VPS_HOST: "${{ secrets.WOW_VPS_HOST }}"
 
     steps:
       - name: Checkout

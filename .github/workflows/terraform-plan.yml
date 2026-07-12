@@ -39,6 +39,8 @@ jobs:
       SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL }}"
       # github-runner コンテナ env の drift 防止
       GH_RUNNER_PAT: "${{ secrets.GH_RUNNER_PAT }}"
+      # wow-exporter コンテナ env（ログ同期先 VPS）の drift 防止（2026-06 監査 H-1）
+      WOW_VPS_HOST: "${{ secrets.WOW_VPS_HOST }}"
       # self-hosted runner は YOUR_SERVER_IP 上で動作するため unix socket 経由で Docker に接続
       DOCKER_HOST: "unix:///var/run/docker.sock"
       # Terraform Docker プロバイダー専用の接続先（DOCKER_HOST は Docker CLI が使用するため分離）
