@@ -41,7 +41,8 @@ export class AlertmanagerClient {
   }
 
   async getSilence(silenceId: string): Promise<Silence> {
-    const res = await fetch(`${this.baseUrl}/api/v2/silence/${silenceId}`);
+    // silenceId を URL エンコードし、../ 等での別エンドポイント操作を防ぐ（2026-06 監査 M-3）
+    const res = await fetch(`${this.baseUrl}/api/v2/silence/${encodeURIComponent(silenceId)}`);
     if (res.status === 404) {
       throw new Error(`SILENCE_NOT_FOUND:${silenceId}`);
     }
@@ -52,7 +53,8 @@ export class AlertmanagerClient {
   }
 
   async deleteSilence(silenceId: string): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/api/v2/silence/${silenceId}`, {
+    // silenceId を URL エンコードし、../ 等での別エンドポイント操作を防ぐ（2026-06 監査 M-3）
+    const res = await fetch(`${this.baseUrl}/api/v2/silence/${encodeURIComponent(silenceId)}`, {
       method: 'DELETE',
     });
     if (res.status === 404) {

@@ -7,6 +7,16 @@ const DATA_DIR = process.env.MCP_DATA_DIR ?? join(process.cwd(), '.mcp-data');
 const PROPOSALS_DIR = join(DATA_DIR, 'proposals');
 const INDEX_FILE = join(PROPOSALS_DIR, 'index.json');
 
+// ID は generate_proposal が randomUUID() で発行する。外部入力の ID をファイルパスへ
+// 直結するため、UUID 形式以外は拒否する（2026-06 監査 M-1: パストラバーサル防止）
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function assertValidId(id: string): void {
+  if (!UUID_PATTERN.test(id)) {
+    throw new Error(`INVALID_ID: ID は UUID 形式である必要があります: ${id.slice(0, 64)}`);
+  }
+}
+
 async function ensureDir(): Promise<void> {
   await mkdir(PROPOSALS_DIR, { recursive: true });
 }
@@ -44,6 +54,7 @@ export async function saveProposal(proposal: Proposal): Promise<void> {
 }
 
 export async function getProposal(id: string): Promise<Proposal | null> {
+  assertValidId(id);
   const file = join(PROPOSALS_DIR, `${id}.json`);
   if (!existsSync(file)) return null;
   const raw = await readFile(file, 'utf-8');
