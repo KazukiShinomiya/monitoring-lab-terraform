@@ -16,6 +16,9 @@ export interface ConfigSnapshot {
 export interface ApprovalLog {
   id: string;
   proposal_id: string;
+  // 2026-06 監査 H-2: 承認は特定サービスに紐づく。apply 時に一致を検証する。
+  // 旧フォーマットのログには存在しないため optional（apply 側で欠落を拒否）
+  service?: string;
   decision: 'approved' | 'rejected';
   decided_at: string;
   decided_by: string;

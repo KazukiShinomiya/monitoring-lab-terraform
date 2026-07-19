@@ -27,8 +27,9 @@ export function validateServiceName(service: string): ServiceName {
 export async function execSsh(command: string, timeoutMs = 60000): Promise<string> {
   const { stdout } = await execFileAsync(
     'ssh',
-    // StrictHostKeyChecking=no: 学習環境のため known_hosts 管理を省略。本番では accept-new 以上を使うこと
-    ['-o', 'StrictHostKeyChecking=no', '-o', `ConnectTimeout=10`, '-i', SSH_KEY_PATH, SSH_HOST, command],
+    // 2026-06 監査 M-4: accept-new + known_hosts(readonly マウント) でホスト鍵の変化を検出する。
+    // コンテナは --rm で毎回新規のため、検証の実効性はホスト側 known_hosts のマウントが担う
+    ['-o', 'StrictHostKeyChecking=accept-new', '-o', `ConnectTimeout=10`, '-i', SSH_KEY_PATH, SSH_HOST, command],
     { encoding: 'utf-8', timeout: timeoutMs }
   );
   return stdout;

@@ -20,6 +20,31 @@ export async function handleApplyService(service: string, approvalId: string) {
       };
     }
 
+    // 2026-06 監査 H-2: 承認ゲートの強化 3点
+    // (1) サービス一致 — 別サービスの承認を流用させない
+    if (approvalLog.service !== validService) {
+      return {
+        content: [{ type: 'text' as const, text: `エラー: この承認ログは service="${approvalLog.service ?? '(未記録・旧形式)'}" 向けです。"${validService}" への apply には使えません。create_approval で対象サービスを指定して承認を取り直してください。` }],
+        isError: true,
+      };
+    }
+    // (2) 単回使用 — 適用済みの承認は再利用不可
+    if (approvalLog.applied_at) {
+      return {
+        content: [{ type: 'text' as const, text: `エラー: この承認ログは既に ${approvalLog.applied_at} に適用済みです。承認は1回限りです。再適用には新しい承認を作成してください。` }],
+        isError: true,
+      };
+    }
+    // (3) 有効期限 — 古い承認の実行を拒否（既定60分、APPROVAL_TTL_MINUTES で変更可）
+    const ttlMinutes = Number(process.env.APPROVAL_TTL_MINUTES ?? 60);
+    const ageMs = Date.now() - new Date(approvalLog.decided_at).getTime();
+    if (!Number.isFinite(ageMs) || ageMs > ttlMinutes * 60 * 1000) {
+      return {
+        content: [{ type: 'text' as const, text: `エラー: この承認ログは期限切れです（decided_at: ${approvalLog.decided_at}、TTL: ${ttlMinutes}分）。承認を取り直してください。` }],
+        isError: true,
+      };
+    }
+
     const filePath = `/workspace/terraform/envs/local/${validService}/terragrunt.hcl`;
     const contentBefore = await execSsh(`cat ${filePath}`);
     const snapshot: ConfigSnapshot = {

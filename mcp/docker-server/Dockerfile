@@ -16,6 +16,7 @@ COPY shared/telemetry.ts ./src/telemetry.ts
 COPY docker-server/tsconfig.json ./
 RUN npm run build
 
-RUN mkdir -p /root/.ssh && echo "StrictHostKeyChecking no" > /root/.ssh/config
+# M-4: no → accept-new。known_hosts は実行時に readonly マウントされ、ホスト鍵の変化で接続が拒否される
+RUN mkdir -p /root/.ssh && echo "StrictHostKeyChecking accept-new" > /root/.ssh/config
 
 CMD ["node", "dist/index.js"]

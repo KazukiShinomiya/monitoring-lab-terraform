@@ -46,13 +46,14 @@ server.tool(
 
 server.tool(
   'create_approval',
-  '改善提案に対する承認ログを作成する。apply_service / rollback_service を実行するために必要。decision="approved" で承認、"rejected" で却下。',
+  '改善提案に対する承認ログを作成する。apply_service / rollback_service を実行するために必要。decision="approved" で承認、"rejected" で却下。承認は指定サービス専用・1回限り・期限付き（既定60分）。',
   {
     proposal_id: z.string().describe('対象の提案ID（Prometheus MCP の generate_proposal で生成されたID）'),
+    service: serviceEnum.describe('承認対象のサービス名。apply_service はこの一致を検証する'),
     decision: z.enum(['approved', 'rejected']).describe('approved=承認して apply_service で実行可能にする / rejected=却下'),
     decided_by: z.string().optional().default('operator').describe('承認者名（例: "operator", "admin"）'),
   },
-  instrumentTool('create_approval', ({ proposal_id, decision, decided_by }) => handleCreateApproval(proposal_id, decision, decided_by)),
+  instrumentTool('create_approval', ({ proposal_id, service, decision, decided_by }) => handleCreateApproval(proposal_id, service, decision, decided_by)),
 );
 
 server.tool(
