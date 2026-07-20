@@ -1,0 +1,125 @@
+name: "Queue Watchdog"
+
+# ==========================================================
+# 「ランナーは健全なのにジョブが queued で宙吊り」を検知する
+# ==========================================================
+# 2026-07-20 のインシデント対策。self-hosted ランナーの再作成と
+# ジョブ発火が近接すると、ランナーが GitHub と再接続する窓
+# (`A session for this runner already exists` / `Runner connect error: Conflict`)
+# にジョブが落ち、ランナーが復帰して `Listening for Jobs` になった後も
+# 割り当てが宙に浮いたまま動かないことがある。実測 57 分放置。
+#
+# この状態は Prometheus 側の GitHubRunnerAbsent / GitHubRunnerRestartLoop では
+# 検知できない——ランナーのコンテナは running・RestartCount=0・GitHub 上も
+# online で、壊れているのは GitHub 側のジョブ割り当てだけだからだ。
+#
+# さらに terraform-apply は concurrency: terraform-apply を張っているため、
+# 宙吊りの run 1 本が後続の apply を全て pending で塞き止める。CI が
+# 静かに死ぬ経路であり、検知が要る。
+#
+# 【重要】このワークフローは GitHub ホストランナー (ubuntu-latest) で動かす。
+# 監視対象である self-hosted ランナーに載せてはならない——詰まっている最中に
+# 自分も詰まって沈黙する（番犬を監視対象と同じ籠に入れるな）。
+
+on:
+  schedule:
+    # 15 分間隔。GitHub の cron は数分遅延することがあるが、
+    # 閾値 20 分に対して十分な粒度
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  # この分数を超えて queued/pending のままの run を異常とみなす。
+  # 正常時の apply は実測 1 分台、待ち時間はほぼ 0。
+  # 20 分は「先行 apply が長引いている」程度では鳴らない水準
+  STUCK_THRESHOLD_MINUTES: "20"
+
+jobs:
+  check:
+    name: "Stuck Queue Check"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Detect stuck runs
+        id: detect
+        env:
+          GH_TOKEN: "${{ github.token }}"
+        run: |
+          set -euo pipefail
+
+          # status=waiting は environment 承認待ち（人間が意図的に止めている）ため除外。
+          # queued = ランナー待ち、pending = concurrency 待ち。今回の事象は queued
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=100" \
+            --jq '[.workflow_runs[]
+                   | select(.status == "queued" or .status == "pending")
+                   | {id, name, status, created_at, url: .html_url}]')"
+
+          threshold="${STUCK_THRESHOLD_MINUTES}"
+          stuck="$(jq -c --argjson th "$threshold" '
+            (now) as $now
+            | map(. + {age_min: (($now - (.created_at | fromdateiso8601)) / 60 | floor)})
+            | map(select(.age_min >= $th))
+          ' <<<"$runs")"
+
+          count="$(jq 'length' <<<"$stuck")"
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+          {
+            echo "stuck<<STUCK_EOF"
+            echo "$stuck"
+            echo "STUCK_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "queued/pending: $(jq 'length' <<<"$runs") / stuck(>=${threshold}min): ${count}"
+          jq -r '.[] | "  STUCK: \(.name) id=\(.id) status=\(.status) age=\(.age_min)min \(.url)"' <<<"$stuck"
+
+      # ランナーの生死を併記する。これが無いと通知を見た側が
+      # 「詰まり」と「ランナー死亡」を区別できず、初動を誤る
+      - name: Collect runner status
+        id: runner
+        if: steps.detect.outputs.count != '0'
+        env:
+          # runners API は repo admin 権限を要するため GITHUB_TOKEN では届かない
+          GH_TOKEN: "${{ secrets.GH_RUNNER_PAT }}"
+        run: |
+          set -uo pipefail
+          summary="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runners" \
+            --jq '[.runners[] | "\(.name): \(.status) busy=\(.busy)"] | join(" / ")' 2>/dev/null)" || summary=""
+          [ -z "$summary" ] && summary="(取得失敗 — PAT の権限または API 応答を確認)"
+          echo "summary=${summary}" >> "$GITHUB_OUTPUT"
+          echo "runners: ${summary}"
+
+      - name: Notify Slack
+        if: steps.detect.outputs.count != '0'
+        env:
+          SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL }}"
+          STUCK_JSON: "${{ steps.detect.outputs.stuck }}"
+          RUNNER_SUMMARY: "${{ steps.runner.outputs.summary }}"
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "::error::SLACK_WEBHOOK_URL が未設定のため通知できない（検知自体は成功している）"
+            exit 1
+          fi
+
+          details="$(jq -r '.[]
+            | "• *\(.name)* — \(.status) \(.age_min)分 停滞\n  \(.url)"' <<<"$STUCK_JSON")"
+
+          text="$(printf ':rotating_light: *GitHub Actions のジョブが停滞している*\n\n%s\n\n*ランナー状態*: %s\n\nランナーが online かつ busy=false なら割り当ての宙吊り。該当 run をキャンセルすれば concurrency の塞き止めも解ける。' \
+            "$details" "$RUNNER_SUMMARY")"
+
+          jq -n --arg t "$text" '{text: $t}' \
+            | curl -sS -X POST -H 'Content-type: application/json' \
+                --data @- "$SLACK_WEBHOOK_URL" \
+                --fail-with-body
+
+      # 検知したら赤くする。Slack を見落としても Actions 一覧で気づけるように
+      - name: Fail if stuck
+        if: steps.detect.outputs.count != '0'
+        run: |
+          echo "::error::${{ steps.detect.outputs.count }} 件の run が ${STUCK_THRESHOLD_MINUTES} 分以上 queued/pending のまま停滞している"
+          exit 1
