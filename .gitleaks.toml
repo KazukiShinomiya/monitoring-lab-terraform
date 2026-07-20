@@ -22,6 +22,10 @@ paths = [
   '''config/wow-exporter/mrrules_local\.xml''',
 ]
 
+# 既定では regexes は「抽出された秘密文字列」だけを見る (admin:admin / YOUR_TOKEN)。
+# それだと文脈を欠いて危険なほど広くマッチするため、行全体に対して照合する。
+regexTarget = "line"
+
 regexes = [
   # Slack Incoming Webhook のドキュメント上のプレースホルダ (T00000000/B00000000/X...)
   '''hooks\.slack\.com/services/T0{8}/B0{8}/X+''',
