@@ -119,3 +119,70 @@ tests:
             exp_annotations:
               summary: "コンテナが再起動ループしている: monitoring-lab-grafana"
               description: "monitoring-lab-grafana が15分間に 14 回再起動しています。"
+
+  # ------------------------------------------------------------
+  # マウントポイントが消えたら critical で鳴ること
+  # ------------------------------------------------------------
+  # 2026-06-24 の実故障の再現: 90分間マウントされていた /mnt/ssd_2 が消える。
+  # node_exporter 自体は生きている（ホストは動いていた）。
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_size_bytes{instance="10.0.0.254:9100", device="/dev/sdd1", mountpoint="/mnt/ssd_2"}'
+        values: "128000000000x90 _x30"
+      - series: 'up{instance="10.0.0.254:9100", job="node_exporter"}'
+        values: "1x120"
+
+    alert_rule_test:
+      # 消えた直後はまだ鳴らない（for: 10m の猶予）
+      - eval_time: 95m
+        alertname: FilesystemMountDisappeared
+        exp_alerts: []
+      # 10分を超えたら鳴る
+      - eval_time: 105m
+        alertname: FilesystemMountDisappeared
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: 10.0.0.254:9100
+              mountpoint: /mnt/ssd_2
+            exp_annotations:
+              summary: "マウントポイントが消失: /mnt/ssd_2"
+              description: >-
+                10.0.0.254:9100 の /mnt/ssd_2 が1時間前は存在したのに消えています。USB
+                リンク崩壊・ディスク脱落・意図しないアンマウントの可能性があります。dmesg
+                で 'USB disconnect' / 'Device offlined' を確認してください。
+
+  # ------------------------------------------------------------
+  # デバイスノードが入れ替わっただけでは鳴らないこと
+  # ------------------------------------------------------------
+  # 2026-07-12 の復旧で実際に sdc1 と sdd1 が入れ替わった。device ラベルを
+  # 含めて突合する実装だと、マウントは健全なのに誤発火する。この回帰を防ぐ。
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_size_bytes{instance="10.0.0.254:9100", device="/dev/sdd1", mountpoint="/mnt/ssd_2"}'
+        values: "128000000000x90 _x30"
+      - series: 'node_filesystem_size_bytes{instance="10.0.0.254:9100", device="/dev/sdc1", mountpoint="/mnt/ssd_2"}'
+        values: "_x90 128000000000x30"
+      - series: 'up{instance="10.0.0.254:9100", job="node_exporter"}'
+        values: "1x120"
+
+    alert_rule_test:
+      - eval_time: 105m
+        alertname: FilesystemMountDisappeared
+        exp_alerts: []
+
+  # ------------------------------------------------------------
+  # exporter 自体が落ちている場合は鳴らないこと（TargetDown の担当）
+  # ------------------------------------------------------------
+  # 番犬が二重に鳴くと、どちらの信号も信用されなくなる。
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_size_bytes{instance="10.0.0.254:9100", device="/dev/sdd1", mountpoint="/mnt/ssd_2"}'
+        values: "128000000000x90 _x30"
+      - series: 'up{instance="10.0.0.254:9100", job="node_exporter"}'
+        values: "1x90 0x30"
+
+    alert_rule_test:
+      - eval_time: 105m
+        alertname: FilesystemMountDisappeared
+        exp_alerts: []

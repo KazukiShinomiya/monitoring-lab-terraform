@@ -298,6 +298,43 @@ groups:
           summary: "NAS 外付けドライブ残量不足: {{ $labels.mountpoint }}"
           description: "{{ $labels.mountpoint }} の使用率が {{ $value | printf \"%.1f\" }}% です。"
 
+      # マウントポイントの消失（USB リンク崩壊・ディスク脱落）
+      #
+      # 2026-06-24 のインシデント対策。imageserver(RasPi4) で USB ハブごとリンクが
+      # 崩壊し、/mnt/ssd_1 と /mnt/ssd_2 が systemd にアンマウントされた
+      # （Device offlined - not ready after error recovery → 再起動まで復帰不能）。
+      # 結果 antipiracy-crawler が停止したが、**約3週間誰も気づかなかった**。
+      # 既存の NASFilesystemReadOnly は read-only 化しか見ておらず、
+      # マウントポイントが「消える」ケースは素通りする。
+      #
+      # 設計:
+      # - 「1時間前に在ったマウントポイントが今は無い」で判定する。監視対象を
+      #   ハードコードしないため、新しいディスクを足しても追従不要
+      # - **by (instance, mountpoint) で device ラベルを落とすのが肝**。今回の復旧で
+      #   実際に sdc1 と sdd1 が入れ替わっており、device を含めて突合すると
+      #   ノードの入れ替わりだけで誤発火する
+      # - `up == 1` を条件に加え、exporter 自体が落ちている場合は鳴らさない
+      #   （それは TargetDown の担当。二重に鳴らせば両方の信頼が落ちる）
+      # - 意図的なアンマウント後は1時間で自然に収まる
+      - alert: FilesystemMountDisappeared
+        expr: |
+          (
+            max by (instance, mountpoint) (
+              node_filesystem_size_bytes{mountpoint=~"/mnt/.+"} offset 1h
+            )
+            unless on (instance, mountpoint)
+            max by (instance, mountpoint) (
+              node_filesystem_size_bytes{mountpoint=~"/mnt/.+"}
+            )
+          )
+          and on (instance) (up{job="node_exporter"} == 1)
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "マウントポイントが消失: {{ $labels.mountpoint }}"
+          description: "{{ $labels.instance }} の {{ $labels.mountpoint }} が1時間前は存在したのに消えています。USB リンク崩壊・ディスク脱落・意図しないアンマウントの可能性があります。dmesg で 'USB disconnect' / 'Device offlined' を確認してください。"
+
       # NAS 高 I/O ウェイト（ディスク障害の前兆）
       - alert: NASHighIOWait
         expr: rate(node_cpu_seconds_total{instance="YOUR_LINUX_HOST_2:9100", mode="iowait"}[5m]) * 100 > 30
