@@ -38,6 +38,7 @@ variable "services" {
     user           = optional(string, "")       # 実行ユーザー（オプション）
     privileged     = optional(bool, false)      # 特権モード（ホストアクセスが必要な場合、デフォルト: false）
     network_mode   = optional(string, "")       # ネットワークモード（host/bridge/none、デフォルト: bridge）
+    stop_timeout   = optional(number, 0)        # 停止時に SIGKILL するまでの猶予秒数（0 = 未指定＝Docker既定の10秒）
     cgroupns_mode  = optional(string, "")       # Cgroup Namespaceモード（host/private、デフォルト: private）
     volumes = list(object({
       source = string                 # ボリューム名（var.volumesで定義したもの）

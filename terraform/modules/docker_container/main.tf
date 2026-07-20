@@ -48,6 +48,11 @@ resource "docker_container" "service" {
   # Cgroup Namespaceモード（オプション）
   cgroupns_mode = each.value.cgroupns_mode != "" ? each.value.cgroupns_mode : null
 
+  # 停止猶予（オプション）
+  # Docker 既定の 10 秒では終了処理が完走しないコンテナ向け。
+  # 0 のときは属性自体を送らず、既存サービスの挙動を変えない
+  stop_timeout = each.value.stop_timeout > 0 ? each.value.stop_timeout : null
+
   # コンテナを常時稼働させる設定
   restart = "unless-stopped"
 

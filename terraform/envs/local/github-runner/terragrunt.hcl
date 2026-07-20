@@ -47,6 +47,16 @@ inputs = {
       internal_port = 0
       external_port = 0
 
+      # ==========================================================
+      # 停止猶予を 60 秒へ延長（Docker 既定は 10 秒）
+      # ==========================================================
+      # 停止時の自動 deregister は GitHub API を 2 回叩く。10 秒を超えると
+      # SIGKILL され、`.credentials` を残したまま死ぬ——これが下記 entrypoint の
+      # コメントにある「.credentials は在るが .runner が無い」不整合の発生源だった。
+      # entrypoint 側で状態ファイルを全消去する対策が既に入っているため、これは
+      # 二重の防壁（不整合を「起こしても直る」に加えて「そもそも起こしにくく」する）。
+      stop_timeout = 60
+
       env = [
         # GitHub PAT — runner 自動登録・解除に使用（repo scope 必須）
         "ACCESS_TOKEN=${get_env("GH_RUNNER_PAT", "")}",
