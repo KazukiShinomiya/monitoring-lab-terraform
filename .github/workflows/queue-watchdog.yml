@@ -27,6 +27,11 @@ on:
     # 閾値 20 分に対して十分な粒度
     - cron: "*/15 * * * *"
   workflow_dispatch:
+    inputs:
+      test_fire:
+        description: "合成データで通知経路を強制発火させる（実際の停滞とは無関係のテスト）"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,6 +53,7 @@ jobs:
         id: detect
         env:
           GH_TOKEN: "${{ github.token }}"
+          TEST_FIRE: "${{ inputs.test_fire }}"
         run: |
           set -euo pipefail
 
@@ -64,6 +70,13 @@ jobs:
             | map(. + {age_min: (($now - (.created_at | fromdateiso8601)) / 60 | floor)})
             | map(select(.age_min >= $th))
           ' <<<"$runs")"
+
+          # 通知経路の疎通確認用。停滞ゼロの平時に発火側（Slack 通知・ランナー状態取得・
+          # fail）を一度も通さないままでは、番犬が鳴けることの証明にならない
+          if [ "${TEST_FIRE:-false}" = "true" ]; then
+            echo "::warning::test_fire 指定のため合成データで発火する（実際の停滞ではない）"
+            stuck="$(jq -n '[{id: 0, name: "[TEST] 合成データ — 実際の停滞ではない", status: "queued", age_min: 99, url: "https://github.com/'"${GITHUB_REPOSITORY}"'/actions"}]')"
+          fi
 
           count="$(jq 'length' <<<"$stuck")"
           echo "count=${count}" >> "$GITHUB_OUTPUT"
