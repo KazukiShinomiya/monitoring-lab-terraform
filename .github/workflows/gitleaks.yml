@@ -29,3 +29,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ルート直下の .gitleaks.toml は自動検出されるが、読まれなかった場合に
+          # 「偽陽性が消えない」という紛らわしい失敗をするため明示する。
+          GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
