@@ -69,27 +69,89 @@ groups:
   - name: container_resources
     rules:
       # コンテナCPU高負荷（5分間平均）
+      #
+      # 2026-07-20: id=~"/system.slice/docker-.+" から name ベースへ変更。
+      # cAdvisor が containerd ソケット未マウントで docker factory 登録に失敗しており、
+      # name ラベルが一切付かなかったため id で代用していた（通知にハッシュしか出ず読めない）。
+      # マウント追加で name が復活したので、人間が読めるラベルへ戻す。
       - alert: ContainerHighCPU
-        expr: rate(container_cpu_usage_seconds_total{id=~"/system.slice/docker-.+"}[5m]) * 100 > 80
+        expr: rate(container_cpu_usage_seconds_total{name=~"monitoring-lab-.+"}[5m]) * 100 > 80
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "CPU高負荷: {{ $labels.id }}"
-          description: "コンテナ {{ $labels.id }} のCPU使用率が5分間 {{ $value | printf \"%.1f\" }}% を超えています。"
+          summary: "CPU高負荷: {{ $labels.name }}"
+          description: "コンテナ {{ $labels.name }} のCPU使用率が5分間 {{ $value | printf \"%.1f\" }}% を超えています。"
 
       # コンテナメモリ高使用率
       - alert: ContainerHighMemory
         expr: |
-          (container_memory_usage_bytes{id=~"/system.slice/docker-.+"} /
-           container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+"}) * 100 > 80
-            and container_spec_memory_limit_bytes{id=~"/system.slice/docker-.+"} > 0
+          (container_memory_usage_bytes{name=~"monitoring-lab-.+"} /
+           container_spec_memory_limit_bytes{name=~"monitoring-lab-.+"}) * 100 > 80
+            and container_spec_memory_limit_bytes{name=~"monitoring-lab-.+"} > 0
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "メモリ高使用: {{ $labels.id }}"
-          description: "コンテナのメモリ使用率が {{ $value | printf \"%.1f\" }}% です。"
+          summary: "メモリ高使用: {{ $labels.name }}"
+          description: "コンテナ {{ $labels.name }} のメモリ使用率が {{ $value | printf \"%.1f\" }}% です。"
+
+  # ==========================================
+  # グループ2-B: CI ランナー健全性
+  # ==========================================
+  # 2026-07-20 追加。self-hosted ランナーが "already configured" 起動ループで 8 日間死に、
+  # その間 CI の Terraform Apply が queued のまま溜まっていたのに誰も気づかなかった。
+  # 故障そのものは entrypoint 修正（9d190c3）で根絶したが、別の理由で落ちたときに
+  # 気づけない穴は塞げていなかったため、検知をここで用意する。
+  - name: ci_runner_health
+    rules:
+      # ランナーの再起動ループ
+      #
+      # 実故障は約62秒周期＝15分で約14回。閾値4回は十分な余裕を持って捕まえつつ、
+      # apply によるコンテナ再作成（数分内に1〜2回）では鳴らない水準。
+      - alert: GitHubRunnerRestartLoop
+        expr: changes(container_start_time_seconds{name="monitoring-lab-github-runner"}[15m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CI ランナーが再起動ループしている"
+          description: >-
+            monitoring-lab-github-runner が15分間に {{ $value }} 回再起動しています。
+            self-hosted ラベル待ちの CI ジョブが queued のまま消化されなくなります。
+            docker logs monitoring-lab-github-runner で登録エラーを確認してください。
+
+      # ランナーコンテナの消失
+      #
+      # for: 10m は apply による再作成（実測1〜2秒）を確実に見逃すための猶予。
+      - alert: GitHubRunnerAbsent
+        expr: absent(container_start_time_seconds{name="monitoring-lab-github-runner"})
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CI ランナーのコンテナが存在しない"
+          description: >-
+            monitoring-lab-github-runner のメトリクスが10分以上取得できません。
+            コンテナ停止・削除、または cAdvisor 側の異常が疑われます。
+            ランナーが不在だと CI の Terraform Apply は無期限に queued のまま滞留します。
+
+      # 汎用: コンテナ全般の再起動ループ
+      #
+      # ランナー以外の同種の故障も拾う。newrelic は再起動ループが既知の問題として
+      # ドキュメントされているが、2026-07-20 時点では実際にはループしていないため
+      # 除外していない。恒常的にノイズを出すようなら除外を検討する
+      # （鳴りっぱなしのアラートは gitleaks と同じく番犬として機能しなくなる）。
+      - alert: ContainerRestartLoop
+        expr: |
+          changes(container_start_time_seconds{name=~"monitoring-lab-.+",
+                                               name!="monitoring-lab-github-runner"}[15m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "コンテナが再起動ループしている: {{ $labels.name }}"
+          description: "{{ $labels.name }} が15分間に {{ $value }} 回再起動しています。"
 
   # ==========================================
   # グループ3: Prometheus自己監視

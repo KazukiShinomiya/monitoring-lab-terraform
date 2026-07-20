@@ -1,0 +1,121 @@
+# ==========================================
+# アラートルールのユニットテスト（promtool test rules）
+# ==========================================
+# 実行:
+#   docker exec -i monitoring-lab-prometheus promtool test rules <このファイル>
+#   （scripts/test-alert-rules.sh がリモートの prometheus コンテナへ流し込む）
+#
+# 目的: 「state=inactive で health=ok」はルールが正しいことを意味しない。
+# 式が常に空を返していても inactive になるため、合成データを与えて
+# 「鳴るべきときに鳴り、鳴るべきでないときに鳴らない」ことを確かめる。
+#
+# 2026-07-20 のインシデント（CI ランナーが8日間死んでいたのに誰も気づかなかった）を
+# 受けて追加したルール群を対象にしている。
+
+rule_files:
+  - ../alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # ------------------------------------------------------------
+  # ランナーが再起動ループしたら critical で鳴ること
+  # ------------------------------------------------------------
+  # container_start_time_seconds は「コンテナの起動時刻」。再起動のたびに値が変わるので
+  # changes() で回数を数えられる。実故障は約62秒周期だったため、毎分値が変わる系列で再現する。
+  - interval: 1m
+    input_series:
+      - series: 'container_start_time_seconds{name="monitoring-lab-github-runner"}'
+        values: "1+1x25"
+
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: GitHubRunnerRestartLoop
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              name: monitoring-lab-github-runner
+            exp_annotations:
+              summary: "CI ランナーが再起動ループしている"
+              description: >-
+                monitoring-lab-github-runner が15分間に 14 回再起動しています。
+                self-hosted ラベル待ちの CI ジョブが queued のまま消化されなくなります。
+                docker logs monitoring-lab-github-runner で登録エラーを確認してください。
+
+      # 汎用ルールは github-runner を除外しているので、同じ入力でも鳴ってはならない。
+      # 除外ラベルの書き損じは静かに二重通知を生むため明示的に検証する。
+      - eval_time: 25m
+        alertname: ContainerRestartLoop
+        exp_alerts: []
+
+  # ------------------------------------------------------------
+  # 安定稼働中は鳴らないこと（誤検知の防止）
+  # ------------------------------------------------------------
+  # 起動時刻が一定＝再起動していない状態。ここで鳴るようなら閾値設計が誤っている。
+  - interval: 1m
+    input_series:
+      - series: 'container_start_time_seconds{name="monitoring-lab-github-runner"}'
+        values: "1000x25"
+
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: GitHubRunnerRestartLoop
+        exp_alerts: []
+      - eval_time: 25m
+        alertname: GitHubRunnerAbsent
+        exp_alerts: []
+
+  # ------------------------------------------------------------
+  # apply によるコンテナ再作成では鳴らないこと
+  # ------------------------------------------------------------
+  # 実測で再作成は1〜2秒、15分窓での変化は1回程度。閾値4回はこれを跨がない水準に置いた。
+  # ここが鳴ると apply のたびに誤報が出て、アラートが信用されなくなる。
+  - interval: 1m
+    input_series:
+      - series: 'container_start_time_seconds{name="monitoring-lab-github-runner"}'
+        values: "1000x10 2000x15"
+
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: GitHubRunnerRestartLoop
+        exp_alerts: []
+
+  # ------------------------------------------------------------
+  # コンテナが消えたら critical で鳴ること
+  # ------------------------------------------------------------
+  # 入力系列を一切与えない＝メトリクスが存在しない状態を absent() が捉える。
+  - interval: 1m
+    input_series: []
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: GitHubRunnerAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              name: monitoring-lab-github-runner
+            exp_annotations:
+              summary: "CI ランナーのコンテナが存在しない"
+              description: >-
+                monitoring-lab-github-runner のメトリクスが10分以上取得できません。
+                コンテナ停止・削除、または cAdvisor 側の異常が疑われます。
+                ランナーが不在だと CI の Terraform Apply は無期限に queued のまま滞留します。
+
+  # ------------------------------------------------------------
+  # ランナー以外のコンテナも汎用ルールで拾えること
+  # ------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'container_start_time_seconds{name="monitoring-lab-grafana"}'
+        values: "1+1x25"
+
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: ContainerRestartLoop
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: monitoring-lab-grafana
+            exp_annotations:
+              summary: "コンテナが再起動ループしている: monitoring-lab-grafana"
+              description: "monitoring-lab-grafana が15分間に 14 回再起動しています。"

@@ -135,6 +135,11 @@ tasks:
     cmds:
       - wsl -d {{.WSL_DISTRO}} -e bash -c "docker run --rm --entrypoint promtool -v {{.LABO_DIR}}/config/prometheus:/etc/prometheus:ro prom/prometheus:latest check rules /etc/prometheus/slo-rules.yml"
 
+  alerts:test:
+    desc: "アラートルールのユニットテスト（promtool test rules・合成データで発火を検証）"
+    cmds:
+      - wsl -d {{.WSL_DISTRO}} -e bash -c "cd {{.LABO_DIR}} && ./scripts/test-alert-rules.sh"
+
   # ========== 監視・確認 ==========
 
   health:

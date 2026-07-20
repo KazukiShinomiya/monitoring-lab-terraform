@@ -73,6 +73,20 @@ inputs = {
           source    = "/dev/disk"
           target    = "/dev/disk"
           read_only = true
+        },
+        {
+          # containerd ソケット（コンテナ名・イメージ名の解決に必須）
+          #
+          # 2026-07-20 追加。これが無いと cAdvisor は起動時に
+          #   Registration of the docker container factory failed:
+          #   unable to create containerd client: dial unix /run/containerd/containerd.sock
+          # で docker factory の登録に失敗する（DockerVersion / DockerAPIVersion も空になる）。
+          # 全コンテナが素の cgroup として扱われ、id="/system.slice/docker-<hash>.scope" だけが
+          # 付いて name / image ラベルが欠落するため、コンテナ名でメトリクスを引けなくなる。
+          # docker.sock だけでは不足で、v0.49 以降は containerd 側の情報を要する。
+          source    = "/run/containerd/containerd.sock"
+          target    = "/run/containerd/containerd.sock"
+          read_only = true
         }
       ]
     }
