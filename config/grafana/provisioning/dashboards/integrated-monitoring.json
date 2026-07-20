@@ -81,8 +81,8 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "rate(container_cpu_usage_seconds_total{id=~\"/system.slice/docker-.+\"}[5m]) * 100",
-          "legendFormat": "{{id}}",
+          "expr": "rate(container_cpu_usage_seconds_total{name=~\"monitoring-lab-.+\"}[5m]) * 100",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ]
@@ -113,8 +113,8 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{id=~\"/system.slice/docker-.+\"}",
-          "legendFormat": "{{id}}",
+          "expr": "container_memory_usage_bytes{name=~\"monitoring-lab-.+\"}",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ]

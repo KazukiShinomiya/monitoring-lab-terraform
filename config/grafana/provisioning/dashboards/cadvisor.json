@@ -19,8 +19,8 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{id=~\"/system.slice/docker-.+\"}[5m])) by (id)",
-          "legendFormat": "{{id}}"
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"monitoring-lab-.+\"}[5m])) by (name)",
+          "legendFormat": "{{name}}"
         }
       ],
       "fieldConfig": {
@@ -38,8 +38,8 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{id=~\"/system.slice/docker-.+\"}",
-          "legendFormat": "{{id}}"
+          "expr": "container_memory_usage_bytes{name=~\"monitoring-lab-.+\"}",
+          "legendFormat": "{{name}}"
         }
       ],
       "fieldConfig": {
