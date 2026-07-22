@@ -166,20 +166,39 @@ groups:
 
       # 汎用: コンテナ全般の再起動ループ
       #
-      # ランナー以外の同種の故障も拾う。newrelic は再起動ループが既知の問題として
-      # ドキュメントされているが、2026-07-20 時点では実際にはループしていないため
-      # 除外していない。恒常的にノイズを出すようなら除外を検討する
+      # ランナー以外の同種の故障も拾う。恒常的にノイズを出すようなら除外を検討する
       # （鳴りっぱなしのアラートは gitleaks と同じく番犬として機能しなくなる）。
+      #
+      # 【2026-07-22 に式を差し替えた】旧式 changes(...[15m]) > 3 は**原理的に発火し得なかった**。
+      # github-runner 版と同じ調査で、両方の経路が塞がっていることを実データで確認した:
+      #
+      #   - restart 経路: 同一コンテナの再起動では start_time が動かない。実測では
+      #     docker restart と自動アップデート由来の再起動を挟んでも値は 12:22:55 のまま不変
+      #   - 再作成経路: コンテナを作り直すと id ラベルが変わって**別系列になる**ため、
+      #     系列内の変化は 1 回しか数えられない。12:22 と 12:41 の 2 回再作成を経ても
+      #     changes() は 1.0 で頭打ちだった
+      #
+      # どちらからも > 3 に到達しないため、この番犬は導入以来一度も吠えられなかった。
+      # 代わりに GitHubRunnerRestartLoop と同じ「サンプル密度」方式を使う。ループ中の
+      # コンテナは大半の時間死んでおり cAdvisor がメトリクスを出さないので、15 分窓の
+      # サンプル数が正常 60 に対して 1 桁まで落ちる。閾値と for の根拠は同ルールを参照。
+      #
+      # 停止中・削除済みのコンテナは系列自体が消えて空ベクトルになり発火しない
+      # （その領域は TargetDown が持つ）。よってこれは純粋にループ専用の検知になる。
       - alert: ContainerRestartLoop
         expr: |
-          changes(container_start_time_seconds{name=~"monitoring-lab-.+",
-                                               name!="monitoring-lab-github-runner"}[15m]) > 3
-        for: 5m
+          sum by (name) (count_over_time(container_start_time_seconds{name=~"monitoring-lab-.+",
+                                                                      name!="monitoring-lab-github-runner"}[15m])) < 20
+        for: 10m
         labels:
           severity: warning
         annotations:
           summary: "コンテナが再起動ループしている: {{ $labels.name }}"
-          description: "{{ $labels.name }} が15分間に {{ $value }} 回再起動しています。"
+          description: >-
+            {{ $labels.name }} のメトリクスが15分間に {{ $value }} 件しか取得できていません
+            （正常時は60件）。コンテナが起動直後に落ちる動作を繰り返しています。
+            docker inspect --format '{{`{{.RestartCount}}`}}' {{ $labels.name }} で再起動回数を、
+            docker logs {{ $labels.name }} で終了理由を確認してください。
 
   # ==========================================
   # グループ3: Prometheus自己監視
