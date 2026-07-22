@@ -107,33 +107,61 @@ groups:
     rules:
       # ランナーの再起動ループ
       #
-      # 実故障は約62秒周期＝15分で約14回。閾値4回は十分な余裕を持って捕まえつつ、
-      # apply によるコンテナ再作成（数分内に1〜2回）では鳴らない水準。
+      # 【2026-07-22 に式を全面的に書き換えた】旧式は
+      #   changes(container_start_time_seconds{...}[15m]) > 3
+      # だったが、23 時間・RestartCount 1370 の実故障を通じて**一度も鳴らなかった**。
+      # 理由は 2 つあり、どちらも実データで確認した:
+      #
+      #   1. container_start_time_seconds は再起動しても変化しない。同一コンテナの
+      #      restart では cgroup の作成時刻が据え置かれるため、1370 回再起動しても
+      #      値は 07-20 07:12:58 のまま。changes() は常に 1 を返していた
+      #   2. ループ中のコンテナは 1 秒生きて約 60 秒死んでいる。cAdvisor は死んでいる
+      #      間メトリクスを出さないので、15 秒間隔のスクレイプはほぼ空振りする
+      #
+      # そこで 2 の性質そのものを検知に使う。15 分窓のサンプル数を数えると、
+      # 正常時は 60（15分 ÷ 15秒）、ループ中は 1 と桁違いに分離する（実測値）。
+      # 閾値 20 は両者の中間。コンテナ再作成直後は窓が埋まるまで 20 を下回るが、
+      # 15 秒間隔なら約 5 分で超えるので for: 10m が誤発火を吸収する。
+      #
+      # 注: 完全不在では空ベクトルになり発火しない。その領域は GitHubRunnerAbsent が持つ。
       - alert: GitHubRunnerRestartLoop
-        expr: changes(container_start_time_seconds{name="monitoring-lab-github-runner"}[15m]) > 3
-        for: 5m
+        expr: sum(count_over_time(container_start_time_seconds{name="monitoring-lab-github-runner"}[15m])) < 20
+        for: 10m
         labels:
           severity: critical
         annotations:
           summary: "CI ランナーが再起動ループしている"
           description: >-
-            monitoring-lab-github-runner が15分間に {{ $value }} 回再起動しています。
-            self-hosted ラベル待ちの CI ジョブが queued のまま消化されなくなります。
-            docker logs monitoring-lab-github-runner で登録エラーを確認してください。
+            monitoring-lab-github-runner のメトリクスが15分間に {{ $value }} 件しか
+            取得できていません（正常時は60件）。コンテナが起動直後に落ちる動作を
+            繰り返しています。self-hosted ラベル待ちの CI ジョブは queued のまま
+            消化されません。docker logs monitoring-lab-github-runner で登録エラーを、
+            docker inspect --format '{{`{{.RestartCount}}`}}' で再起動回数を確認してください。
 
       # ランナーコンテナの消失
       #
-      # for: 10m は apply による再作成（実測1〜2秒）を確実に見逃すための猶予。
+      # 【2026-07-22 に窓 [2h] を導入】旧式は素の absent() だったため、上記の
+      # スパース化に反応して FIRING と RESOLVED を約 15 分周期で 24 時間往復し、
+      # Slack を埋め尽くした。実害は通知過多そのものより、critical が狼少年化して
+      # 本物の不在を見逃す状態を作ることにある。
+      #
+      # 窓幅はループ期間 23 時間の実データで選定した。absent が真になった step 数は
+      # 窓なし 270 / 5m 203 / 15m 55 / 30m 19 / 1h 10 / 2h 0（全 279 step、5m 刻み）。
+      # 2h でループ中の誤発火が消える。代償として真の不在の検知は最大 2h10m 遅れるが、
+      # ループという頻度の高い故障は上の RestartLoop が即座に捕まえるため、
+      # ここが担うのは「コンテナごと消えた」まれな事象だけでよい。
       - alert: GitHubRunnerAbsent
-        expr: absent(container_start_time_seconds{name="monitoring-lab-github-runner"})
+        expr: absent(count_over_time(container_start_time_seconds{name="monitoring-lab-github-runner"}[2h]))
         for: 10m
         labels:
           severity: critical
         annotations:
           summary: "CI ランナーのコンテナが存在しない"
           description: >-
-            monitoring-lab-github-runner のメトリクスが10分以上取得できません。
-            コンテナ停止・削除、または cAdvisor 側の異常が疑われます。
+            monitoring-lab-github-runner のメトリクスが2時間以上まったく取得できません。
+            コンテナ削除、または cAdvisor 側の異常が疑われます。再起動ループの場合は
+            GitHubRunnerRestartLoop が先に鳴るため、こちらが単独で鳴っているときは
+            コンテナそのものの消失を疑ってください。
             ランナーが不在だと CI の Terraform Apply は無期限に queued のまま滞留します。
 
       # 汎用: コンテナ全般の再起動ループ
