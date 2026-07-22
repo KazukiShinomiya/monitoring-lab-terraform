@@ -37,8 +37,13 @@ inputs = {
       # バージョン固定（latest タグ使用禁止）
       # アップデート時は PR を通じて変更 → plan で差分確認 → apply
       # 次回アップデート候補: https://hub.docker.com/r/myoung34/github-runner/tags
+      #
+      # イメージのタグを古いまま放置すると Runner 自身が毎日 13:07 頃に自動アップデートを
+      # 試み、そのたびにプロセスが終了してコンテナが再起動する。この再起動が
+      # 2026-07-22 のループ（`.runner_migrated` 残留）の引き金になった。下の entrypoint で
+      # 状態ファイルは消えるようになったが、無用な再起動自体を減らすためタグは追従させる。
       # ========================================
-      image = "myoung34/github-runner:2.332.0-ubuntu-jammy"
+      image = "myoung34/github-runner:2.336.0-ubuntu-jammy"
 
       # ホストネットワークを使用（GitHub への接続 + ポートマッピング不要）
       network_mode = "host"
@@ -93,6 +98,17 @@ inputs = {
       # 引き金に発症し、RestartCount 10782（約 62 秒周期）で 8 日間ループした。
       # その間 self-hosted ラベル待ちの CI apply は queued のまま消化されない。
       #
+      # 2026-07-22 に同じ故障が別ファイルで再来した。Runner の自動アップデート
+      # （2.332.0 → 2.335.1、7/20 13:07）が `.runner_migrated` を生成し、これが
+      # 個別列挙していた削除対象から漏れたためだ。Runner の IsConfigured() は
+      # `.runner_migrated` だけでも True を返すので、`.runner` 不在と組み合わさって
+      # 上と全く同じ ArgumentNullException に落ちる（RestartCount 1370 でループ）。
+      # よって削除対象はグロブで面として押さえる。`.runner*` は `.runner` /
+      # `.runner_migrated`、`.credentials*` は `.credentials` /
+      # `.credentials_rsaparams` / `.credentials_migrated` を含む。
+      # 状態ファイルは将来また増え得るため、個別列挙には戻さないこと。
+      # （`.env` と `.path` はイメージ側の資産だがグロブに掛からない）
+      #
       # config.sh には既に --replace が付いており、同名ランナーの再登録は正規の動作。
       # よって毎回まっさらから登録させるのが最も確実で、コンテナの寿命に状態を持たせない
       # （terragrunt.hcl 冒頭「Runner はステートレス」という当初の設計意図とも一致する）。
@@ -102,7 +118,7 @@ inputs = {
       # CMD（./bin/Runner.Listener run ...）はイメージ既定のまま "$@" で引き渡す。
       entrypoint = [
         "/bin/bash", "-c",
-        "rm -f /actions-runner/.runner /actions-runner/.credentials /actions-runner/.credentials_rsaparams; exec /entrypoint.sh \"$@\"",
+        "rm -f /actions-runner/.runner* /actions-runner/.credentials*; exec /entrypoint.sh \"$@\"",
         "--",
       ]
 
