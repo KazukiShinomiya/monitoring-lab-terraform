@@ -1,36 +1,31 @@
 {
   "mcpServers": {
     "docker": {
-      "command": "wsl",
+      "command": "bash",
       "args": [
-        "-d", "Ubuntu-24.04", "--",
-        "docker", "run", "--rm", "-i",
-        "--mount", "type=bind,src=/home/YOUR_WSL_USER/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly",
-        "monitoring-lab-docker-mcp"
+        "-c",
+        "docker run --rm -i --mount type=bind,src=/home/YOUR_WSL_USER/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly monitoring-lab-docker-mcp"
       ]
     },
     "prometheus": {
-      "command": "wsl",
+      "command": "bash",
       "args": [
-        "-d", "Ubuntu-24.04", "--",
-        "docker", "run", "--rm", "-i",
-        "monitoring-lab-prometheus-mcp"
+        "-c",
+        "docker run --rm -i monitoring-lab-prometheus-mcp"
       ]
     },
     "terragrunt": {
-      "command": "wsl",
+      "command": "bash",
       "args": [
-        "-d", "Ubuntu-24.04", "--",
-        "bash", "-c",
+        "-c",
         "TF_TOKEN=$(grep -m1 '^TF_TOKEN_app_terraform_io=' /PATH/TO/labo/.env | cut -d= -f2-) && docker run --rm -i --mount type=bind,src=/home/YOUR_WSL_USER/.ssh/id_rsa,dst=/root/.ssh/id_rsa,readonly --mount type=bind,src=/PATH/TO/labo/.mcp-data,dst=/app/.mcp-data --env TF_TOKEN_app_terraform_io=$TF_TOKEN monitoring-lab-terragrunt-mcp"
       ]
     },
     "alertmanager": {
-      "command": "wsl",
+      "command": "bash",
       "args": [
-        "-d", "Ubuntu-24.04", "--",
-        "docker", "run", "--rm", "-i",
-        "monitoring-lab-alertmanager-mcp"
+        "-c",
+        "docker run --rm -i monitoring-lab-alertmanager-mcp"
       ]
     }
   }
