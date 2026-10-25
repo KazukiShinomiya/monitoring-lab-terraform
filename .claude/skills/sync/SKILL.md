@@ -17,7 +17,7 @@ task sync:<service>   # prometheus / alertmanager / grafana / snmp / tempo / ote
 
 ## 配備後検証（サービス別）
 
-- **prometheus**: `curl -s http://$TARGET_HOST:9090/api/v1/targets` で全ターゲット health=up を確認（基準: 15ターゲット）。
+- **prometheus**: `curl -s http://$TARGET_HOST:9090/api/v1/targets` で全ターゲット health=up を確認（基準: 16ターゲット。2026-10-25 に vault_health を追加）。
   ルール変更時は `/api/v1/rules` にも反映されているか見る
 - **alertmanager**: `amtool check-config` はコンテナ内で。`curl -s http://$TARGET_HOST:9093/api/v2/status` で config 反映確認
 - **grafana**: 再起動後 `/api/health` が ok、対象ダッシュボードが `/api/search` に出ること

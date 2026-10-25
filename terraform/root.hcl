@@ -51,7 +51,9 @@ terraform {
   }
 }
 
-# ローカル実行を強制
+# 注: この locals は実行モードに効かない（ただの変数）。実行モードは HCP Terraform 側の
+# workspace 設定で決まる。新しい workspace は organization の Default Execution Mode に従うため、
+# そちらを Local にしてある（2026-10-25。Remote のままだと Docker に届かず apply が失敗した）
 locals {
   execution_mode = "local"
 }

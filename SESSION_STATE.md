@@ -21,10 +21,15 @@ honeypot-vps 側も片付いた（root 鍵 2 本の撤去・`PermitRootLogin no`
 - 手動ローテーション（06:00Z）への追従を実機で確認: `/var/log/wow-sync.log` に 06:10Z、4 本とも `rotation detected`（WARN・ERROR なし）、手元の `.1` 4 本の大きさは VPS 側の `.1` と一致。exporter は 06:14:59Z に 4 本とも `has shrunk` でオフセットを戻し、09:00Z 時点のオフセットは 4 本とも新ファイルの大きさと一致
   - ただしこの回は手元 = VPS の `.1` で、`.1` からの継ぎ足しは 0 バイトだった。末尾がある場合の継ぎ足しは手元の試験でしか確かめていない（本番では未検証）
 
+- Vault の sealed 検知を入れた（3acc4a4）: blackbox-exporter v0.28.0 が `/v1/sys/health` を 200 のみ成功として叩き、`VaultSealedOrDown`（`probe_success == 0` が 5 分で critical）。本番で targets 16 本すべて up、規則 ok/inactive、`probe_success` 1 を確認。503/501/名前解決失敗で 0 になることは一時コンテナで確認（Vault を実際に閉じての発火→Slack 到達は未検証）
+- 新モジュールの workspace が HCP の既定でリモート実行になり apply が Docker に届かず失敗した。workspace と organization の Default Execution Mode を Local に変更（ユーザーが画面で実施）
+
 ## 次の行動
 
 1. 自然なローテーション（2026-11-02 0:00 JST 頃）の後に、`docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と exporter のログの `has shrunk` を見る。この回で初めて `.1` からの継ぎ足しが 0 バイトでなくなるはず。VPS 側では `.1` → `.2.gz` の圧縮も初めて起きる
 2. `sync-logs.sh` の `StrictHostKeyChecking=no` をやめ、VPS のホスト鍵を固定する（honeypot-vps 側から挙がった宿題。未着手）
+3. HCP トークンの期限を週 1 で見るワークフロー（未着手。GitHub 側ランナーか自宅ランナーかが未決）
+4. ハニポの外形監視（VPS の 80/443）を blackbox に足す（honeypot-vps の次の行動 4。未着手）
 
 ## 決定事項・メモ
 
