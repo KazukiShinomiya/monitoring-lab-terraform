@@ -35,6 +35,8 @@ inputs = {
         "EXPORTER_PORT=9200",
         "SCRAPE_INTERVAL=300",
         "TOP_N=20",
+        # blackbox-exporter の honeypot_http モジュールと揃える（config/blackbox/blackbox.yml）
+        "PROBE_USER_AGENT=monitoring-lab-blackbox/1.0",
       ]
 
       volumes = [

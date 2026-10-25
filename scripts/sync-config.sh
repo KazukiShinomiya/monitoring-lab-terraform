@@ -61,6 +61,8 @@ PLACEHOLDER_MAP=(
   "YOUR_LINUX_HOST_1=${PROM_LINUX_HOST_1:-}"
   "YOUR_LINUX_HOST_2=${PROM_LINUX_HOST_2:-}"
   "YOUR_CRAWLER_HOST=${PROM_CRAWLER_HOST:-}"
+  # ハニポ VPS の FQDN。wow-exporter の同期先（user@host）の host 部を流用する
+  "YOUR_VPS_HOST=${WOW_VPS_HOST#*@}"
 )
 
 # コメント行以外にプレースホルダが残っていたら中断する

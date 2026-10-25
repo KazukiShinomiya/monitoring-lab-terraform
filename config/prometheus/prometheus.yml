@@ -254,3 +254,27 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115
+
+  # ==========================================
+  # Job 16: VPS ハニポ外形監視（Blackbox Exporter 経由）
+  # ==========================================
+  # 80/443 へ GET し 200 が返るかを見る。固まり（TCP は受けるが応答なし）は timeout で失敗。
+  # プローブの User-Agent は wow-exporter が集計から除外する（PROBE_USER_AGENT）。
+  # 5 分間隔 = 1 日 288 件/ポート。ハニポの通常量（10〜45 件/時）を汚さない頻度に抑える
+  - job_name: 'honeypot_probe'
+    scrape_interval: 5m
+    scrape_timeout: 15s
+    metrics_path: /probe
+    params:
+      module: [honeypot_http]
+    static_configs:
+      - targets: ['http://YOUR_VPS_HOST/', 'https://YOUR_VPS_HOST/']
+        labels:
+          service: 'wow-honeypot'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

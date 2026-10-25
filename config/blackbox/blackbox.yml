@@ -17,3 +17,19 @@ modules:
       # Vault は自己署名 TLS
       tls_config:
         insecure_skip_verify: true
+
+  # VPS ハニポ（WOWHoneypot）の外形監視。ルールに当たらないリクエストには 200 を返す。
+  # TCP は受けるが HTTP が返らない固まり（2026-10 に HTTPS で発生）も timeout で失敗になる。
+  # User-Agent は wow-exporter の PROBE_USER_AGENT と揃え、攻撃集計から除外させる
+  honeypot_http:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      no_follow_redirects: true
+      headers:
+        User-Agent: monitoring-lab-blackbox/1.0
+      # ハニポの証明書は公的 CA のものとは限らないため検証しない（生存確認が目的）
+      tls_config:
+        insecure_skip_verify: true

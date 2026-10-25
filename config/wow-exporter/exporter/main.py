@@ -17,6 +17,8 @@ GEOIP_ASN_DB = os.environ.get("GEOIP_ASN_DB", "/data/geoip/GeoLite2-ASN.mmdb")
 PORT = int(os.environ.get("EXPORTER_PORT", "9200"))
 SCRAPE_INTERVAL = int(os.environ.get("SCRAPE_INTERVAL", "300"))
 TOP_N = int(os.environ.get("TOP_N", "20"))
+# 自前の外形監視（blackbox-exporter）のリクエストは攻撃ではないので集計から除く。空なら除外しない
+PROBE_USER_AGENT = os.environ.get("PROBE_USER_AGENT", "")
 
 STATE = {
     "access_offset": 0,
@@ -99,11 +101,15 @@ def process_access_log(log_file: str = "access_log", protocol: str = "http") -> 
         STATE[offset_key] = 0
 
     new_lines = 0
+    probe_lines = 0
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         f.seek(STATE[offset_key])
         for line in f:
             entry = parse_access_line(line)
             if entry:
+                if PROBE_USER_AGENT and entry.user_agent == PROBE_USER_AGENT:
+                    probe_lines += 1
+                    continue
                 _process_access_entry(entry, protocol=protocol)
                 new_lines += 1
         STATE[offset_key] = f.tell()
@@ -111,8 +117,8 @@ def process_access_log(log_file: str = "access_log", protocol: str = "http") -> 
     metrics.processed_lines_gauge.labels(log_file=log_file).set(STATE[offset_key])
     _flush_access_gauges()
 
-    if new_lines:
-        logger.info("%s: processed %d new lines", log_file, new_lines)
+    if new_lines or probe_lines:
+        logger.info("%s: processed %d new lines (skipped %d probe lines)", log_file, new_lines, probe_lines)
 
 
 def _flush_wow_gauges() -> None:

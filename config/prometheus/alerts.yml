@@ -272,6 +272,17 @@ groups:
       # exporter の処理ループ停滞。ループは300秒間隔で last_sync_timestamp を
       # 更新するため、30分（6周期）更新が無ければ例外ループやハングを疑う。
       # /metrics 応答自体は生きている（up=1）ケースを拾う。
+      # 外形監視。TrafficSilent（約3.5時間遅れ）より早く、ポート単位で止まり・固まりを拾う。
+      # 5 分間隔のプローブ 2 回連続失敗で発火
+      - alert: WowHoneypotProbeFailed
+        expr: probe_success{job="honeypot_probe"} == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WOWHoneypot 外形監視失敗: {{ $labels.instance }}"
+          description: "VPS ハニポが 10 分以上 200 を返していません（停止・固まり・ネットワーク断）。honeypot-vps の audit で wowhoneypot@ ユニットの状態を確認してください。"
+
       - alert: WowExporterLoopStuck
         expr: time() - wowhoneypot_last_sync_timestamp > 1800
         labels:
