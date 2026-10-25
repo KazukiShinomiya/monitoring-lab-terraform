@@ -281,6 +281,24 @@ groups:
           description: "wow-exporter の集計ループが30分以上完走していません（正常は5分間隔）。コンテナログで例外を確認してください。"
 
   # ==========================================
+  # グループ3.6: シークレット基盤
+  # ==========================================
+  # Vault はホスト再起動で sealed に戻るが、コンテナは Up のままなので
+  # TargetDown やコンテナ監視では見えない（2026-07〜10 に 3 か月気づかなかった）。
+  # blackbox-exporter が落ちた場合は probe_success が消えて本規則は鳴らないが、
+  # vault_health ジョブの up=0 として TargetDown が拾う。
+  - name: secret_store_health
+    rules:
+      - alert: VaultSealedOrDown
+        expr: probe_success{job="vault_health"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vault が sealed または応答なし"
+          description: "Vault の /v1/sys/health が200を返していません（sealed=503 / 未初期化=501 / 停止）。ホスト再起動後なら unseal が必要です（手順は SESSION_STATE.md の決定事項・メモ）。"
+
+  # ==========================================
   # グループ4: 物理機器監視（RTX830 + Synology NAS）
   # ==========================================
   # 注意: デバイス到達不能は既存の TargetDown (グループ1) がカバー済み。

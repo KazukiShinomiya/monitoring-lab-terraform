@@ -13,6 +13,7 @@
 #   ./scripts/sync-config.sh promtail       # promtail.yml → Promtail 再起動
 #   ./scripts/sync-config.sh tempo          # tempo.yml → Tempo 再起動
 #   ./scripts/sync-config.sh otel-collector # otel-collector.yml → OTel Collector 再起動
+#   ./scripts/sync-config.sh blackbox       # blackbox.yml → Blackbox Exporter 再起動（コンテナ未作成なら配置のみ）
 #   ./scripts/sync-config.sh tekken-update  # tekken_bot プロジェクトから tekken.json をコピー
 #   ./scripts/sync-config.sh all            # 全サービス（tekken-update は含まない）
 #
@@ -233,6 +234,21 @@ sync_pyroscope() {
   info "pyroscope 同期完了"
 }
 
+sync_blackbox() {
+  step "blackbox: blackbox.yml を転送中..."
+  ssh "${TARGET_USER}@${TARGET_HOST}" "mkdir -p ${REMOTE_BASE}/blackbox"
+  deploy_file "${REPO_ROOT}/config/blackbox/blackbox.yml" "${REMOTE_BASE}/blackbox/blackbox.yml"
+  # 初回は apply より先に配置する（bind mount 元が無いと Docker がディレクトリを作る）ため、
+  # コンテナがまだ無ければ再起動を飛ばす
+  if ssh "${TARGET_USER}@${TARGET_HOST}" "docker inspect monitoring-lab-blackbox-exporter >/dev/null 2>&1"; then
+    step "blackbox-exporter: コンテナを再起動中..."
+    ssh "${TARGET_USER}@${TARGET_HOST}" "docker restart monitoring-lab-blackbox-exporter"
+  else
+    warn "blackbox-exporter コンテナが未作成のため再起動を省略（apply で作成される）"
+  fi
+  info "blackbox 同期完了"
+}
+
 sync_tekken_update() {
   step "tekken: ソースプロジェクトから tekken.json をコピー中..."
   if [ ! -f "${TEKKEN_SOURCE}" ]; then
@@ -257,6 +273,7 @@ case "${SERVICE}" in
   tempo)           sync_tempo ;;
   otel-collector)  sync_otel_collector ;;
   pyroscope)       sync_pyroscope ;;
+  blackbox)        sync_blackbox ;;
   tekken-update)   sync_tekken_update ;;
   all)
     sync_prometheus
@@ -268,10 +285,11 @@ case "${SERVICE}" in
     sync_tempo
     sync_otel_collector
     sync_pyroscope
+    sync_blackbox
     info "全サービス同期完了"
     ;;
   *)
-    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tempo|otel-collector|pyroscope|tekken-update|all}"
+    echo "使い方: $0 {prometheus|alertmanager|grafana|snmp|loki|promtail|tempo|otel-collector|pyroscope|blackbox|tekken-update|all}"
     echo ""
     echo "  prometheus      prometheus.yml + alerts.yml → ホットリロード"
     echo "  alertmanager    alertmanager.yml (URL置換) → ホットリロード"

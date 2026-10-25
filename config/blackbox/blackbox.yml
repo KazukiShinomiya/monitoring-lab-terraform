@@ -1,0 +1,19 @@
+# ==========================================
+# Blackbox Exporter 設定
+# ==========================================
+# リモートサーバー側のパス: /home/ubuntu/monitoring-lab/blackbox/blackbox.yml
+# 配備: ./scripts/sync-config.sh blackbox
+
+modules:
+  # Vault の開封状態。/v1/sys/health は unseal 済み active で 200、sealed で 503、
+  # 未初期化で 501、standby で 429 を返す。200 以外はすべて失敗として扱う。
+  # 2026-07〜10 に sealed のまま 3 か月気づかなかった再発防止
+  vault_health:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      # Vault は自己署名 TLS
+      tls_config:
+        insecure_skip_verify: true

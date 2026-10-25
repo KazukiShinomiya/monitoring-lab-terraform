@@ -232,3 +232,25 @@ scrape_configs:
         labels:
           instance: 'imageserver-crawler'
           service: 'antipiracy-crawler'
+
+  # ==========================================
+  # Job 15: Vault 開封状態（Blackbox Exporter 経由）
+  # ==========================================
+  # blackbox-exporter が Vault の /v1/sys/health を叩き、unseal 済みなら probe_success=1。
+  # sealed（503）・未初期化（501）・停止はすべて 0 になる → VaultSealedOrDown
+  - job_name: 'vault_health'
+    scrape_interval: 60s
+    metrics_path: /probe
+    params:
+      module: [vault_health]
+    static_configs:
+      - targets: ['https://vault:8200/v1/sys/health']
+        labels:
+          service: 'vault'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

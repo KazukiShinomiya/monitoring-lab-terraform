@@ -1,6 +1,6 @@
 ---
 name: sync
-description: 設定ファイルをリモートへ同期する定型（引数: prometheus / alertmanager / grafana / snmp / tempo / otel-collector / all）。配備後の検証まで一気通貫
+description: 設定ファイルをリモートへ同期する定型（引数: prometheus / alertmanager / grafana / snmp / tempo / otel-collector / blackbox / all）。配備後の検証まで一気通貫
 ---
 
 `$ARGUMENTS` で指定されたサービスの設定をリモートへ同期し、**配備後の検証まで**行う。同期だけして検証を省くのは禁止
@@ -23,9 +23,12 @@ task sync:<service>   # prometheus / alertmanager / grafana / snmp / tempo / ote
 - **grafana**: 再起動後 `/api/health` が ok、対象ダッシュボードが `/api/search` に出ること
 - **snmp**: snmp-exporter 再起動後、Prometheus の SNMP ターゲット（RTX830・Synology）が up に戻ること
 - **tempo / otel-collector**: コンテナが Restarts 増加なしで up、（otel-collector は）パイプライン起動ログにエラーなし
+- **blackbox**: Prometheus の `vault_health` ターゲットが up、`probe_success{job="vault_health"}` が 1。
+  初回はコンテナ未作成なので、apply より**先に**同期してファイルを置く（無いと Docker がディレクトリを作り起動に失敗する）
 
 ## 注意
 
 - `.env` を source したら `unset DOCKER_HOST`（npipe 汚染で WSL docker が壊れる）
-- `sync-config.sh` は CRLF のため WSL2 直実行不可 → 必ず Windows 側から `task sync:*` で
+- WSL の clone（`~/repos/labo`）では `sync-config.sh` は LF なので `bash scripts/sync-config.sh <service>` で直接動く（2026-10-25 確認）。
+  CRLF で WSL2 直実行不可だったのは Windows 側の作業ツリー。`.env` を読むため Claude からは打たず、ユーザーが `!` で打つ
 - 同期対象にない設定（loki.yml / promtail.yml 等）は scp + apply の手動経路。その場合も配備後検証は同基準で行う
