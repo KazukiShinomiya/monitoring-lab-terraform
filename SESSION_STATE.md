@@ -8,6 +8,8 @@
 
 wow-exporter はローテーション対応の `sync-logs.sh` を積み、`wowsync@` で VPS から同期している。Vault を unseal し、apply（run 40159712685 attempt 4）は全モジュール差分なしで緑。
 
+honeypot-vps 側も片付いた（root 鍵 2 本の撤去・`PermitRootLogin no`・logrotate 有効化。詳細は honeypot-vps の SESSION_STATE）。VPS の logrotate を 2026-10-25 06:00Z に手で 1 回回し、labo 側が追従することを確かめた。
+
 ## 前回の戦果（2026-10-25）
 
 - `sync-logs.sh` のローテーション対応（c25a623）。`--list-only` で VPS 側の大きさを読み、手元より小さければ `<名前>.1` を `--append` で引き切ってから手元を `<名前>.1` へ退避し、新ファイルを引く
@@ -16,10 +18,13 @@ wow-exporter はローテーション対応の `sync-logs.sh` を積み、`wowsy
 - `WOW_VPS_HOST` を `wowsync@` に切り替えた（GitHub secret と `.env`）。コンテナの env が `wowsync@` で始まること、初回同期の成功、exporter の 4 本のオフセットがファイルの大きさと一致することを、2026-10-25 04:30Z に実機で確認した
 - HCP Terraform のユーザートークン（`monitoring-lab-cli`）が 2026-09-05 に期限切れになっていた。新しく発行し、`TF_API_TOKEN` と `.env` の両方を差し替えた（`account/details` が 200 を返すことを確認）
 
+- 手動ローテーション（06:00Z）への追従を実機で確認: `/var/log/wow-sync.log` に 06:10Z、4 本とも `rotation detected`（WARN・ERROR なし）、手元の `.1` 4 本の大きさは VPS 側の `.1` と一致。exporter は 06:14:59Z に 4 本とも `has shrunk` でオフセットを戻し、09:00Z 時点のオフセットは 4 本とも新ファイルの大きさと一致
+  - ただしこの回は手元 = VPS の `.1` で、`.1` からの継ぎ足しは 0 バイトだった。末尾がある場合の継ぎ足しは手元の試験でしか確かめていない（本番では未検証）
+
 ## 次の行動
 
-1. honeypot-vps 側（あちらのセッションで行う）: auth.log で wowsync のログインを確認 → root の鍵 2 本を撤去 → `honeypot_logrotate_enabled: true` で `--check --diff` → 適用
-2. 最初のローテーションの後、`/var/log/wow-sync.log` に `rotation detected` が出ること、exporter のログに `has shrunk` が出てオフセットが追いつくことを見る（未検証。本番でのローテーションはまだ起きていない）
+1. 自然なローテーション（2026-11-02 0:00 JST 頃）の後に、`docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と exporter のログの `has shrunk` を見る。この回で初めて `.1` からの継ぎ足しが 0 バイトでなくなるはず。VPS 側では `.1` → `.2.gz` の圧縮も初めて起きる
+2. `sync-logs.sh` の `StrictHostKeyChecking=no` をやめ、VPS のホスト鍵を固定する（honeypot-vps 側から挙がった宿題。未着手）
 
 ## 決定事項・メモ
 
