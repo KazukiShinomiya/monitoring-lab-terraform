@@ -18,9 +18,8 @@ wow-exporter はローテーション対応の `sync-logs.sh` を積み、`wowsy
 
 ## 次の行動
 
-1. HCP Terraform で期限切れの古いトークンを削除する。新しいトークンの期限日を記録する（未記録）
-2. honeypot-vps 側（あちらのセッションで行う）: auth.log で wowsync のログインを確認 → root の鍵 2 本を撤去 → `honeypot_logrotate_enabled: true` で `--check --diff` → 適用
-3. 最初のローテーションの後、`/var/log/wow-sync.log` に `rotation detected` が出ること、exporter のログに `has shrunk` が出てオフセットが追いつくことを見る（未検証。本番でのローテーションはまだ起きていない）
+1. honeypot-vps 側（あちらのセッションで行う）: auth.log で wowsync のログインを確認 → root の鍵 2 本を撤去 → `honeypot_logrotate_enabled: true` で `--check --diff` → 適用
+2. 最初のローテーションの後、`/var/log/wow-sync.log` に `rotation detected` が出ること、exporter のログに `has shrunk` が出てオフセットが追いつくことを見る（未検証。本番でのローテーションはまだ起きていない）
 
 ## 決定事項・メモ
 
@@ -30,5 +29,6 @@ wow-exporter はローテーション対応の `sync-logs.sh` を積み、`wowsy
 - WOW_VPS_HOST の注入経路: GitHub secret → apply workflow の env → `terragrunt.hcl` の `get_env` → コンテナの env。`.env` が効くのは手元で terragrunt を回すときだけ
 - イメージは `wow-exporter:latest` 固定なので、イメージを作り直しただけでは再作成されない。env の変更で再作成させる。ビルドは push の前に行う
 - exporter は起動のたびにログ全体を集計し直す（HTTP 側は約 1 分）
+- HCP Terraform のユーザートークン `monitoring-lab-cli` は 2027-10-25 に期限切れ（1 年）。古い期限切れのトークンは 2026-10-25 に削除済み（ユーザー申告）。差し替えは GitHub secret `TF_API_TOKEN` と `.env` の `TF_TOKEN_app_terraform_io` の 2 か所
 - Vault はサーバー再起動で sealed に戻る（5 本中 3 本で開く。鍵は `.env` の `VAULT_UNSEAL_KEY_1`〜`5`）。2026-07-24 頃の再起動以来 sealed だった（推測）。開け方: `.env` を読み込み、鍵を `{"key":"…"}` にしてサーバー上の `curl -sk -X PUT --data @- https://127.0.0.1:8200/v1/sys/unseal` へ ssh の標準入力で 3 回送る（鍵が画面とプロセス一覧に出ない）
 - infra-guard フックは `.env` や `.ssh` を含むコマンドを止める。これらはユーザーが `!` で打つ。値を表示しない確かめ方（長さ・一致判定）を使うこと
