@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'mcp/**'
+      - '.github/workflows/mcp-ci.yml'
   pull_request:
     paths:
       - 'mcp/**'
+      - '.github/workflows/mcp-ci.yml'
 
 jobs:
   build-and-test:
@@ -20,6 +22,7 @@ jobs:
           - prometheus-server
           - terragrunt-server
           - alertmanager-server
+          - shared
 
     steps:
       - uses: actions/checkout@v4
