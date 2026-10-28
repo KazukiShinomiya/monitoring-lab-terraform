@@ -7,6 +7,11 @@ updates:
     labels:
       - dependencies
       - mcp
+    groups:
+      # api / sdk-metrics / resources / exporter は互いの版を縛るので、1 本の PR で上げる
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
 
   - package-ecosystem: npm
     directory: /mcp/prometheus-server
@@ -15,6 +20,11 @@ updates:
     labels:
       - dependencies
       - mcp
+    groups:
+      # api / sdk-metrics / resources / exporter は互いの版を縛るので、1 本の PR で上げる
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
 
   - package-ecosystem: npm
     directory: /mcp/terragrunt-server
@@ -23,6 +33,11 @@ updates:
     labels:
       - dependencies
       - mcp
+    groups:
+      # api / sdk-metrics / resources / exporter は互いの版を縛るので、1 本の PR で上げる
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
 
   - package-ecosystem: npm
     directory: /mcp/alertmanager-server
@@ -31,3 +46,21 @@ updates:
     labels:
       - dependencies
       - mcp
+    groups:
+      # api / sdk-metrics / resources / exporter は互いの版を縛るので、1 本の PR で上げる
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
+
+  - package-ecosystem: npm
+    directory: /mcp/shared
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - mcp
+    groups:
+      # api / sdk-metrics / resources / exporter は互いの版を縛るので、1 本の PR で上げる
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
