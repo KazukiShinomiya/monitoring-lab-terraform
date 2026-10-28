@@ -1,6 +1,6 @@
 # SESSION_STATE
 
-最終更新: 2026-10-28
+最終更新: 2026-10-29
 
 ## 現在の状況
 
@@ -10,7 +10,22 @@
 
 wow-exporter は VPS のホスト鍵を固定して同期している（`StrictHostKeyChecking=yes`）。
 
-## 前回の戦果（2026-10-28）
+## 前回の戦果（2026-10-29: Dependabot の残りを片付けた）
+
+- open の PR は 0 件。#164（uuid）、vitest 5（#165・#166・#168・#169・#170）、typescript 7（#167）をマージした
+- CI のマトリクスに `mcp/shared` が無く、shared 自身の依存更新は CI で一度も検証されていなかった。#171 で `shared` と、ワークフロー自身を `paths` に加えた。#167・#170 は rebase 後に `Build & Test (shared)` が pass してからマージした
+- #167 と #170 は同じ shared の lock を触るので、片方をマージするともう片方が CONFLICTING になる。`@dependabot rebase` で解消した（数分で応じた）
+- #145 は取り込み済みなのに、Dependabot が rebase（2 回）にも close にも応じなかったので、手で閉じた
+
+## 前々回の戦果（2026-10-28 夜: MCP の依存更新）
+
+- Dependabot の PR が 7 月から 20 件（既定の上限 5 件 × 4 ディレクトリ）溜まって止まっていた。`npm audit` は各サーバーで critical 1・high 11〜12
+- #162: PR と同じ更新と `npm audit fix` をまとめて当てた。#163: OpenTelemetry を 3.0 系へ（`api` 1.10.0 / `sdk-metrics`・`resources` 3.0.0 / `exporter` 0.300.0）。両方マージ済みで、`npm audit` は全ディレクトリ 0 件
+  - OTel 3.0 は `api` を `>=1.10.0 <1.11.0` に縛るので、パッケージ単位の PR は `ERESOLVE` で落ちる。`dependabot.yml` に `@opentelemetry/*` のグループを足し、漏れていた `mcp/shared` も加えた
+  - 手元の OTLP 受け口で、exporter 0.300.0 からメトリクスが届くことを確認（chunked 送信なので受け口は `Content-Length` だけで読まないこと）
+- 取り込み済みの PR は手で閉じず、`@dependabot rebase` とコメントして Dependabot 自身に閉じさせた（「up-to-date now」と書いて閉じる）。ただし、さらに新しい版があると閉じずにその版へ差し替わる
+
+## それ以前の戦果（2026-10-28 昼: 停電の後始末）
 
 - VPS のホスト鍵を固定した（41ad40c）。鍵 1 行をサーバーの `/home/ubuntu/.ssh/wow-exporter-known_hosts`（644・ubuntu・111 バイト）に置き、`/root/.ssh/known_hosts_wow` へ read-only でマウント。ホスト名を含むのでリポジトリには置かない
   - 41ad40c の commit メッセージに指紋を書いてしまい（公開リポジトリ）、VPS とこのリポジトリを結ぶ手がかりになったため、同日 VPS の ed25519 ホスト鍵を作り直し、known_hosts を差し替えた（13:39Z の同期で成功を確認）。**指紋やホスト名は、このリポジトリのファイルにも commit メッセージにも書かない**。値と経緯は honeypot-vps の SESSION_STATE にある
@@ -22,6 +37,7 @@ wow-exporter は VPS のホスト鍵を固定して同期している（`StrictH
 
 ## 次の行動
 
+0. （軽い）Dependabot が付けるラベル `dependencies`・`mcp` がリポジトリに無い。害はないが、作るか `dependabot.yml` から消すと PR の警告コメントが止まる
 1. 自然なローテーション（2026-11-02 0:00 JST 頃）の後に、`docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と exporter のログの `has shrunk` を見る。この回で初めて `.1` からの継ぎ足しが 0 バイトでなくなるはず（本番では未検証）。VPS 側では `.1` → `.2.gz` の圧縮も初めて起きる。ホスト鍵固定後の初のローテーションでもある
 2. NAS の容量: `/volume1` が 99.5%、`/volumeUSB1/usbshare` が 100%（`SynologyDiskHighUsage`、2026-10-21 以前から firing）。何を消すか移すかはユーザーの判断
 3. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討（未着手）
