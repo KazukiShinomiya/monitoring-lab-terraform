@@ -42,8 +42,15 @@ inputs = {
       # 試み、そのたびにプロセスが終了してコンテナが再起動する。この再起動が
       # 2026-07-22 のループ（`.runner_migrated` 残留）の引き金になった。下の entrypoint で
       # 状態ファイルは消えるようになったが、無用な再起動自体を減らすためタグは追従させる。
+      #
+      # 2026-10-28 に自動アップデート（2.336.0 → 2.338.0）の最中にブレーカーが落ち、
+      # `bin` を消して `bin.2.338.0` へ付け替える前で止まった。書き込み層に `bin` が無いまま
+      # `./bin/Runner.Listener: No such file or directory`（終了コード 127）で再起動ループした。
+      # 自動アップデートはこれで 3 度目の故障源なので、下の env の DISABLE_AUTO_UPDATE で止める。
+      # 代わりにタグの追従は義務になる: 新しい版の公開から 30 日以内に上げないと
+      # GitHub はジョブを回さなくなり、重大なセキュリティ更新ならその場で止まる（GitHub の文書）。
       # ========================================
-      image = "myoung34/github-runner:2.336.0-ubuntu-jammy"
+      image = "myoung34/github-runner:2.338.2-ubuntu-jammy"
 
       # ホストネットワークを使用（GitHub への接続 + ポートマッピング不要）
       network_mode = "host"
@@ -80,6 +87,10 @@ inputs = {
 
         # コンテナ内 root ユーザーでの実行を許可
         "RUNNER_ALLOW_RUNASROOT=true",
+
+        # 自動アップデートを止める（/entrypoint.sh が config.sh に --disableupdate を渡す）。
+        # 更新は上の image タグで行う
+        "DISABLE_AUTO_UPDATE=true",
       ]
 
       # ==========================================================
