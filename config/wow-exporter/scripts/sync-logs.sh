@@ -8,11 +8,15 @@ HTTP_LOG_DIR="/home/ubuntu/WOWHoneypot-master/log"
 HTTPS_LOG_DIR="/home/ubuntu/WOWHoneypot-new/log"
 LOCAL_LOG_DIR="/data/wow-logs"
 SSH_KEY="/root/.ssh/id_ed25519"
+# VPS のホスト鍵（ed25519 の 1 行）。ホスト名を含むのでリポジトリには置かず、
+# サーバーの /home/ubuntu/.ssh/wow-exporter-known_hosts を read-only でマウントする。
+# 指紋は 2026-10-28 に自宅サーバーと WSL の 2 経路で照合した
+KNOWN_HOSTS="/root/.ssh/known_hosts_wow"
 STATE_FILE="/data/wow-logs/.sync_state"
 
 mkdir -p "$LOCAL_LOG_DIR"
 
-RSYNC_SSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=no -o ConnectTimeout=10"
+RSYNC_SSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$KNOWN_HOSTS -o ConnectTimeout=10"
 
 # VPS 側のファイルの大きさを返す（無ければ空）。
 # VPS 側は rrsync -ro なので ssh でコマンドは打てないが、--list-only の一覧は取れる

@@ -56,6 +56,13 @@ inputs = {
           target    = "/root/.ssh/id_ed25519"
           read_only = true
         },
+        {
+          # VPS のホスト鍵（sync-logs.sh が StrictHostKeyChecking=yes で使う）。
+          # 先にサーバー上に置くこと。無いまま作ると Docker が同名の空ディレクトリを作る
+          source    = "/home/ubuntu/.ssh/wow-exporter-known_hosts"
+          target    = "/root/.ssh/known_hosts_wow"
+          read_only = true
+        },
       ]
     }
   }
