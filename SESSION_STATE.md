@@ -18,6 +18,8 @@ wow-exporter は VPS のホスト鍵を固定して同期している（`StrictH
   - カーネルは `6.8.0-147-generic`。Ubuntu 24.04 の修正版は 10/30 時点で未提供
 - home_env の正本で、このサーバーのカーネルを 6.8.0-147 に直した（home_env e9a578d）
 - 未適用の更新が 78 件ある（10/31 時点）
+- ワークフロー `gitleaks` と `Queue Watchdog` が GitHub に止められていた（`disabled_inactivity`。gitleaks の最後の実行は 9/28）。`gh workflow enable` で再開し、手動で 1 回ずつ流して両方 success（gitleaks は 191 commit を検査して漏れなし）。止まっていた間の commit は、再開前に手元の gitleaks 8.28.0（mise）でも検査して漏れなし
+- 同日の点検: コンテナ 20/20 Up、監視対象 18/18 up、Vault は unseal、ランナーは online。firing は既知の `SynologyDiskHighUsage` 2 件と `Watchdog` だけ
 
 ## 前々回の戦果（2026-10-29: Dependabot の残りを片付けた）
 
@@ -55,6 +57,8 @@ wow-exporter は VPS のホスト鍵を固定して同期している（`StrictH
 6. CVE-2026-98432: https://ubuntu.com/security/CVE-2026-98432 で 24.04 の `linux` に修正版が出たら、このサーバーのカーネルを更新して再起動する（未適用の 78 件も合わせて当てるかは、その時に決める。再起動の間は監視も止まる）。カーネルが上がったのを確かめてから、`~/repos/pi-ops` で `ansible-playbook playbooks/mitigate-cve-2026-98432.yml -K --limit monitoring-lab -e cve_mode=absent` を打って規則を外す。sudo のパスワードが要るので、`!` ではなく本物の端末で打つ
 
 ## 決定事項・メモ
+
+- 定期実行のワークフローは、GitHub が自動で止めることがある（`disabled_inactivity`）。止まっても通知は来ない。`gh workflow list --all` で `disabled_` が無いかを時々見る（2026-10-31 に gitleaks と Queue Watchdog が止まっているのを見つけた）
 
 - ローテーション時、前の世代の末尾は exporter が読む前に入れ替わるので、メトリクスから最大 10 分/回落ちる。生ログは手元の `.1` と VPS の世代に残るため許容した（2 段化は途中状態が増えるので採らない）
 - 検知は「VPS 側が手元より小さい」ことだけに頼る。同期が 1 周期（週）以上止まると見逃すが、そのときは `.1` も圧縮済みで、どの方式でも引き切れない
