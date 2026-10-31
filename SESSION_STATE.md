@@ -1,6 +1,6 @@
 # SESSION_STATE
 
-最終更新: 2026-10-29
+最終更新: 2026-10-31
 
 ## 現在の状況
 
@@ -10,14 +10,23 @@
 
 wow-exporter は VPS のホスト鍵を固定して同期している（`StrictHostKeyChecking=yes`）。
 
-## 前回の戦果（2026-10-29: Dependabot の残りを片付けた）
+## 前回の戦果（2026-10-31: 自宅サーバー群の保守と CVE-2026-98432。labo の外の作業のうち、このサーバーに関わる分）
+
+- ラズパイ群の保守用に `~/repos/pi-ops`（Ansible、GitHub private）を作った。インベントリは home_env の `environments.yaml` から実行時に組み立てる。このサーバー（10.0.0.220）も群 `other_linux` として入っている。`status.yml`（読み取りのみ）で正本との食い違いを見られるが、`update.yml` の対象には入れていない
+- CVE-2026-98432（IPv4 TCP の IP オプションの use-after-free、CVSS 9.8）の緩和策を、このサーバーにも入れた。IP オプション付きの IPv4 TCP SYN を、専用の nft 表 `ip cve_2026_98432`（prerouting・raw 優先度）で落とす。`cve-2026-98432-mitigation.service` が起動時に読み込む。10 分の観測で 0 件だったので drop。適用後もコンテナ 20 個はすべて Up
+  - Docker の規則とは別の表なので、Docker の通信を調べるときにこの表が見えても、Docker のものではない
+  - カーネルは `6.8.0-147-generic`。Ubuntu 24.04 の修正版は 10/30 時点で未提供
+- home_env の正本で、このサーバーのカーネルを 6.8.0-147 に直した（home_env e9a578d）
+- 未適用の更新が 78 件ある（10/31 時点）
+
+## 前々回の戦果（2026-10-29: Dependabot の残りを片付けた）
 
 - open の PR は 0 件。#164（uuid）、vitest 5（#165・#166・#168・#169・#170）、typescript 7（#167）をマージした
 - CI のマトリクスに `mcp/shared` が無く、shared 自身の依存更新は CI で一度も検証されていなかった。#171 で `shared` と、ワークフロー自身を `paths` に加えた。#167・#170 は rebase 後に `Build & Test (shared)` が pass してからマージした
 - #167 と #170 は同じ shared の lock を触るので、片方をマージするともう片方が CONFLICTING になる。`@dependabot rebase` で解消した（数分で応じた）
 - #145 は取り込み済みなのに、Dependabot が rebase（2 回）にも close にも応じなかったので、手で閉じた
 
-## 前々回の戦果（2026-10-28 夜: MCP の依存更新）
+## それ以前の戦果（2026-10-28 夜: MCP の依存更新）
 
 - Dependabot の PR が 7 月から 20 件（既定の上限 5 件 × 4 ディレクトリ）溜まって止まっていた。`npm audit` は各サーバーで critical 1・high 11〜12
 - #162: PR と同じ更新と `npm audit fix` をまとめて当てた。#163: OpenTelemetry を 3.0 系へ（`api` 1.10.0 / `sdk-metrics`・`resources` 3.0.0 / `exporter` 0.300.0）。両方マージ済みで、`npm audit` は全ディレクトリ 0 件
@@ -43,6 +52,7 @@ wow-exporter は VPS のホスト鍵を固定して同期している（`StrictH
 3. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討（未着手）
 4. ランナーのイメージタグを 30 日以内に追従させる仕組み（自動アップデートを止めたため。期限を過ぎると GitHub がジョブを回さなくなる）。次の版が出たら上げる
 5. HCP トークンの期限を週 1 で見るワークフロー（未着手。GitHub 側ランナーか自宅ランナーかが未決）
+6. CVE-2026-98432: https://ubuntu.com/security/CVE-2026-98432 で 24.04 の `linux` に修正版が出たら、このサーバーのカーネルを更新して再起動する（未適用の 78 件も合わせて当てるかは、その時に決める。再起動の間は監視も止まる）。カーネルが上がったのを確かめてから、`~/repos/pi-ops` で `ansible-playbook playbooks/mitigate-cve-2026-98432.yml -K --limit monitoring-lab -e cve_mode=absent` を打って規則を外す。sudo のパスワードが要るので、`!` ではなく本物の端末で打つ
 
 ## 決定事項・メモ
 
