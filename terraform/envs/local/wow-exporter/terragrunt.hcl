@@ -19,6 +19,8 @@ inputs = {
   volumes = [
     "wow_logs",
     "wow_geoip",
+    # 新顔の判定に使う「初めて見た時刻」（first_seen.json）。ログと違い作り直せないので分ける
+    "wow_state",
   ]
 
   services = {
@@ -37,6 +39,9 @@ inputs = {
         "TOP_N=20",
         # blackbox-exporter の honeypot_http モジュールと揃える（config/blackbox/blackbox.yml）
         "PROBE_USER_AGENT=monitoring-lab-blackbox/1.0",
+        "STATE_DIR=/data/wow-state",
+        "RECENT_WINDOW_HOURS=24",
+        "NEW_PATH_WINDOW_HOURS=168",
       ]
 
       volumes = [
@@ -47,6 +52,10 @@ inputs = {
         {
           source = "wow_geoip"
           target = "/data/geoip"
+        },
+        {
+          source = "wow_state"
+          target = "/data/wow-state"
         },
       ]
 

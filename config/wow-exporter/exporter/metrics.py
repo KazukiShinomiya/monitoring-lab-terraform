@@ -81,6 +81,78 @@ requests_by_ua_category_total = Counter(
     ["category"],
 )
 
+# 直近の窓（RECENT_WINDOW_HOURS、既定 24 時間）の集計。ログの時刻で数えるので
+# 再起動・読み直しで値が跳ねない（Counter の rate() は再起動後の全件再集計で跳ねる）。
+# 先週との比較は Grafana 側で `offset 7d` を使う。
+recent_window_seconds = Gauge(
+    "wowhoneypot_recent_window_seconds",
+    "Length of the window used by wowhoneypot_recent_* metrics",
+)
+
+recent_requests_by_bucket = Gauge(
+    "wowhoneypot_recent_requests_by_bucket",
+    "Requests per path category in the recent window (by log timestamp)",
+    ["path_bucket"],
+)
+
+recent_unique_src_ips = Gauge(
+    "wowhoneypot_recent_unique_src_ips",
+    "Unique source IPs in the recent window",
+)
+
+recent_top_paths = Gauge(
+    "wowhoneypot_recent_top_path_requests",
+    "Requests per path in the recent window (top paths)",
+    ["path", "path_bucket"],
+)
+
+recent_top_ips = Gauge(
+    "wowhoneypot_recent_top_src_ip_requests",
+    "Requests per source IP in the recent window (top IPs)",
+    ["src_ip"],
+)
+
+recent_top_user_agents = Gauge(
+    "wowhoneypot_recent_top_user_agent_requests",
+    "Requests per user agent in the recent window (top agents)",
+    ["user_agent"],
+)
+
+recent_top_asns = Gauge(
+    "wowhoneypot_recent_top_asn_requests",
+    "Requests per ASN in the recent window (top ASNs)",
+    ["asn", "org"],
+)
+
+recent_requests_by_country = Gauge(
+    "wowhoneypot_recent_requests_by_country",
+    "Requests per country in the recent window",
+    ["country_code", "country_name"],
+)
+
+# 新顔のパス（初見が NEW_PATH_WINDOW_HOURS 以内、既定 7 日）。初見は永続化している
+new_path_requests = Gauge(
+    "wowhoneypot_new_path_requests",
+    "Requests to paths first seen within the new-path window (top by count)",
+    ["path", "path_bucket"],
+)
+
+new_path_first_seen = Gauge(
+    "wowhoneypot_new_path_first_seen_timestamp",
+    "Unix timestamp when the path was first seen",
+    ["path", "path_bucket"],
+)
+
+new_paths_24h = Gauge(
+    "wowhoneypot_new_paths_24h",
+    "Number of distinct paths first seen in the last 24 hours",
+)
+
+known_paths = Gauge(
+    "wowhoneypot_known_paths",
+    "Number of distinct paths in the first-seen store",
+)
+
 # 処理状態
 processed_lines_gauge = Gauge(
     "wowhoneypot_processed_lines",
