@@ -1,73 +1,60 @@
 # SESSION_STATE
 
-最終更新: 2026-10-31
+最終更新: 2026-11-01
 
 ## 現在の状況
 
 作業の場は WSL の `~/repos/labo`。Windows 側（`/mnt/e/work/labo`）の作業ツリーにはもう触らない。`.env` は Windows 側から写したもので、その後 `WOW_VPS_HOST` と `TF_TOKEN_app_terraform_io` を書き換えた。
 
-2026-10-28 にブレーカーが落ち、自宅サーバー・NAS・10.0.0.250 が同時に止まった。サーバーは復帰し、Vault を unseal、CI ランナーを直し、apply（run 40693432147）は緑。NAS（10.0.0.200）と 10.0.0.250 は自然に復帰（NAS は up=1、10.0.0.250 は HDD 5 台ともマウント済み、`TargetDown`・`FilesystemMountDisappeared` は解消）。残る firing は `SynologyDiskHighUsage` 2 件（warning）だけで、これは停電前から 7 日以上続いているもの。
+2026-10-28 の停電からは復旧済み。残る firing は `SynologyDiskHighUsage` 2 件（warning、停電前から）だけ。
 
-wow-exporter は VPS のホスト鍵を固定して同期している（`StrictHostKeyChecking=yes`）。
+wow-exporter は 2026-11-01 に PR #172 で改修・配備した（下記）。VPS のホスト鍵を固定して同期している（`StrictHostKeyChecking=yes`）。
 
-## 前回の戦果（2026-10-31: 自宅サーバー群の保守と CVE-2026-98432。labo の外の作業のうち、このサーバーに関わる分）
+**「次のローテーションは 2026-11-02 0:00 JST 頃」という前回の記述は誤りだった。取り消す。** 実際は 2026-11-01 0:00 JST（10-31 15:00Z）に起きていた。日付を数え違えたまま、ファイルの時刻を見ずに書いていた。週次の基準は「土曜 → 日曜に替わる 0:00 JST」と読むこと（未検証。次回の時刻で確かめる）。
 
-- ラズパイ群の保守用に `~/repos/pi-ops`（Ansible、GitHub private）を作った。インベントリは home_env の `environments.yaml` から実行時に組み立てる。このサーバー（10.0.0.220）も群 `other_linux` として入っている。`status.yml`（読み取りのみ）で正本との食い違いを見られるが、`update.yml` の対象には入れていない
-- CVE-2026-98432（IPv4 TCP の IP オプションの use-after-free、CVSS 9.8）の緩和策を、このサーバーにも入れた。IP オプション付きの IPv4 TCP SYN を、専用の nft 表 `ip cve_2026_98432`（prerouting・raw 優先度）で落とす。`cve-2026-98432-mitigation.service` が起動時に読み込む。10 分の観測で 0 件だったので drop。適用後もコンテナ 20 個はすべて Up
-  - Docker の規則とは別の表なので、Docker の通信を調べるときにこの表が見えても、Docker のものではない
-  - カーネルは `6.8.0-147-generic`。Ubuntu 24.04 の修正版は 10/30 時点で未提供
-- home_env の正本で、このサーバーのカーネルを 6.8.0-147 に直した（home_env e9a578d）
-- 未適用の更新が 78 件ある（10/31 時点）
-- ワークフロー `gitleaks` と `Queue Watchdog` が GitHub に止められていた（`disabled_inactivity`。gitleaks の最後の実行は 9/28）。`gh workflow enable` で再開し、手動で 1 回ずつ流して両方 success（gitleaks は 191 commit を検査して漏れなし）。止まっていた間の commit は、再開前に手元の gitleaks 8.28.0（mise）でも検査して漏れなし
-- 同日の点検: コンテナ 20/20 Up、監視対象 18/18 up、Vault は unseal、ランナーは online。firing は既知の `SynologyDiskHighUsage` 2 件と `Watchdog` だけ
+## 前回の戦果（2026-11-01: ハニーポットの表示を「何を狙われているか」が読める形にした）
 
-## 前々回の戦果（2026-10-29: Dependabot の残りを片付けた）
-
-- open の PR は 0 件。#164（uuid）、vitest 5（#165・#166・#168・#169・#170）、typescript 7（#167）をマージした
-- CI のマトリクスに `mcp/shared` が無く、shared 自身の依存更新は CI で一度も検証されていなかった。#171 で `shared` と、ワークフロー自身を `paths` に加えた。#167・#170 は rebase 後に `Build & Test (shared)` が pass してからマージした
-- #167 と #170 は同じ shared の lock を触るので、片方をマージするともう片方が CONFLICTING になる。`@dependabot rebase` で解消した（数分で応じた）
-- #145 は取り込み済みなのに、Dependabot が rebase（2 回）にも close にも応じなかったので、手で閉じた
-
-## それ以前の戦果（2026-10-28 夜: MCP の依存更新）
-
-- Dependabot の PR が 7 月から 20 件（既定の上限 5 件 × 4 ディレクトリ）溜まって止まっていた。`npm audit` は各サーバーで critical 1・high 11〜12
-- #162: PR と同じ更新と `npm audit fix` をまとめて当てた。#163: OpenTelemetry を 3.0 系へ（`api` 1.10.0 / `sdk-metrics`・`resources` 3.0.0 / `exporter` 0.300.0）。両方マージ済みで、`npm audit` は全ディレクトリ 0 件
-  - OTel 3.0 は `api` を `>=1.10.0 <1.11.0` に縛るので、パッケージ単位の PR は `ERESOLVE` で落ちる。`dependabot.yml` に `@opentelemetry/*` のグループを足し、漏れていた `mcp/shared` も加えた
-  - 手元の OTLP 受け口で、exporter 0.300.0 からメトリクスが届くことを確認（chunked 送信なので受け口は `Content-Length` だけで読まないこと）
-- 取り込み済みの PR は手で閉じず、`@dependabot rebase` とコメントして Dependabot 自身に閉じさせた（「up-to-date now」と書いて閉じる）。ただし、さらに新しい版があると閉じずにその版へ差し替わる
-
-## それ以前の戦果（2026-10-28 昼: 停電の後始末）
-
-- VPS のホスト鍵を固定した（41ad40c）。鍵 1 行をサーバーの `/home/ubuntu/.ssh/wow-exporter-known_hosts`（644・ubuntu・111 バイト）に置き、`/root/.ssh/known_hosts_wow` へ read-only でマウント。ホスト名を含むのでリポジトリには置かない
-  - 41ad40c の commit メッセージに指紋を書いてしまい（公開リポジトリ）、VPS とこのリポジトリを結ぶ手がかりになったため、同日 VPS の ed25519 ホスト鍵を作り直し、known_hosts を差し替えた（13:39Z の同期で成功を確認）。**指紋やホスト名は、このリポジトリのファイルにも commit メッセージにも書かない**。値と経緯は honeypot-vps の SESSION_STATE にある
-  - 最初の鍵の指紋は、サーバーからの `ssh-keyscan` と WSL の known_hosts（Ansible 接続時の記録）の 2 経路で照合。業者コンソールでの照合はしていない
-  - 一時コンテナで、正しい鍵は rc=0、偽の鍵は rc=255 と `Host key verification failed` を確認。本番で起動時（13:07Z）と cron（13:10Z）の同期が成功し、4 本のオフセットがファイルの大きさと一致（13:12Z）
-- CI ランナーを直した（e85bfd2）。停電で自動アップデート（2.336.0 → 2.338.0）が途中で止まり `bin` が欠け、終了コード 127 で再起動ループしていた。イメージを 2.338.2 に上げ、`DISABLE_AUTO_UPDATE=true` で自動アップデートを止めた
-  - ランナー自身が壊れていたので、復旧の apply は手元から CI と同じ版（terraform 1.10.5 / terragrunt 0.68.0、mise で導入）で実施。手元の 1.16 で state を書くと CI が読めなくなるため
-- `VaultSealedOrDown` が停電後に firing になることを本番で確認（12:17Z）。Alertmanager は起動後に Slack へ 9 件送り失敗 0（`alertmanager_notifications_total{integration="slack"}`）。どの 1 件が Vault のものかまでは記録に残らない
+- PR #172 をマージ（c285924）。apply の run 41288201668 は success。新しいイメージ `8f9e9d19dffe` のコンテナが再起動 0 回で動いている
+- exporter（`config/wow-exporter/exporter/`）
+  - `insights.py`: ログに書かれた時刻で 1 時間ごとの箱に数え、直近 24 時間の種類別・上位（パス・IP・UA・ASN・国）を `wowhoneypot_recent_*` で出す。再起動しても値は跳ねない
+  - 新顔のパス: 初見の時刻をボリューム `monitoring-lab-wow_state` の `/data/wow-state/first_seen.json` に残し、直近 7 日に初めて現れたパスを `wowhoneypot_new_path_*` で出す。記録が無い初回は、手元のログにあるパスを既知として扱う。180 日来なかったパスは記録から外す
+  - 起動時に `.1` を読み、窓の集計と初見だけを埋める（累計には足さない）
+  - 分類を 7 種足した（ai-agent=/mcp・/sse、config-leak、backup、app-exploit、vpn-appliance、cms、proxy）。2 世代・13,114 件で `other` が 13.9% → 5.8%
+  - 上位ゲージが落ちた系列を残し続ける不具合を直した（20 のはずが 27 系列あった → 20）
+  - pytest を初めて導入した（`config/wow-exporter/tests/`、61 件 pass）
+- 本番での確認: 起動ログに `bootstrapped with 2469 known paths`。Prometheus で `wowhoneypot_known_paths`=2469、直近 24 時間 701 件・送信元 IP 122、`up`=1
+- ダッシュボード `wow-honeypot.json` を 3 段に組み直した（いま何を狙われているか / いつもと違うか / 誰が来ているか）。既存の 31 枚は末尾の折りたたみ行に残した。`sync-config.sh grafana` で配り、配ったファイルの sha が手元と一致、プロビジョニングにエラーは無いことを確認した。**画面での見え方は未検証**（`/api/search` は認証が要り、Claude からは見られない）
+- ローテーション（11-01 0:00 JST）の検証: 4 本とも `rotation detected`、VPS の `.1` の大きさは手元と一致（取りこぼしなし）、exporter は 4 本ともオフセットを戻した。ただし継ぎ足しは今回も 0 バイトで、**継ぎ足しの経路は本番では未検証のまま**。VPS 側の `.2.gz` 圧縮は見ていない
 
 ## 次の行動
 
-0. （軽い）Dependabot が付けるラベル `dependencies`・`mcp` がリポジトリに無い。害はないが、作るか `dependabot.yml` から消すと PR の警告コメントが止まる
-1. 自然なローテーション（2026-11-02 0:00 JST 頃）の後に、`docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と exporter のログの `has shrunk` を見る。この回で初めて `.1` からの継ぎ足しが 0 バイトでなくなるはず（本番では未検証）。VPS 側では `.1` → `.2.gz` の圧縮も初めて起きる。ホスト鍵固定後の初のローテーションでもある
-2. NAS の容量: `/volume1` が 99.5%、`/volumeUSB1/usbshare` が 100%（`SynologyDiskHighUsage`、2026-10-21 以前から firing）。何を消すか移すかはユーザーの判断
-3. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討（未着手）
-4. ランナーのイメージタグを 30 日以内に追従させる仕組み（自動アップデートを止めたため。期限を過ぎると GitHub がジョブを回さなくなる）。次の版が出たら上げる
-5. HCP トークンの期限を週 1 で見るワークフロー（未着手。GitHub 側ランナーか自宅ランナーかが未決）
-6. CVE-2026-98432: https://ubuntu.com/security/CVE-2026-98432 で 24.04 の `linux` に修正版が出たら、このサーバーのカーネルを更新して再起動する（未適用の 78 件も合わせて当てるかは、その時に決める。再起動の間は監視も止まる）。カーネルが上がったのを確かめてから、`~/repos/pi-ops` で `ansible-playbook playbooks/mitigate-cve-2026-98432.yml -K --limit monitoring-lab -e cve_mode=absent` を打って規則を外す。sudo のパスワードが要るので、`!` ではなく本物の端末で打つ
+1. （ユーザー）Grafana で `WOWHoneypot - Attack Dashboard` を開き、見え方を確かめる。解説表の高さ、種類の名前が日本語に置き換わっているか、表の列の並び。直す点があれば JSON を直接直す（生成に使ったスクリプトは 2026-11-01 のセッションのスクラッチパッドにしか無く、リポジトリには入れていない）
+2. 数日後: `wowhoneypot_new_paths_24h` と新顔の表に何が出ているかを見る。新顔が `other` ばかりなら、分類（`parser.py`）を足す
+3. 2026-11-08 以降: 「先週との比較」の先週の列が埋まっているかを見る（メトリクスを入れてから 7 日経つまでは空）
+4. `scripts/build-wow-exporter.sh` の手直し: 実行権限が無い（git 上で 100644）、`StrictHostKeyChecking=no`、鍵のパスを `/home/ubuntu/.ssh/id_ed25519` に決め打ちしている（WSL には無く、警告が出て別の鍵で入っている）
+5. 次のローテーション（2026-11-08 0:00 JST の見込み、未検証）の後に、`docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と、exporter のログの `has shrunk` を見る。継ぎ足しが 0 バイトでなければ、そこで初めて経路が検証される。ローテーションの後で `wowhoneypot_recent_*` が欠けないことも見る
+6. NAS の容量: `/volume1` が 99.5%、`/volumeUSB1/usbshare` が 100%（`SynologyDiskHighUsage`）。何を消すか移すかはユーザーの判断
+7. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討する（未着手）
+8. ランナーのイメージタグを 30 日以内に追従させる仕組み（自動アップデートを止めたため）。次の版が出たら上げる
+9. HCP トークンの期限を週 1 で見るワークフロー（未着手。GitHub 側ランナーか自宅ランナーかが未決）
+10. CVE-2026-98432: https://ubuntu.com/security/CVE-2026-98432 で 24.04 の `linux` に修正版が出たら、このサーバーのカーネルを更新して再起動する（未適用の 78 件も合わせて当てるかは、その時に決める）。カーネルが上がったのを確かめてから、`~/repos/pi-ops` で `ansible-playbook playbooks/mitigate-cve-2026-98432.yml -K --limit monitoring-lab -e cve_mode=absent` を打つ。sudo のパスワードが要るので、本物の端末で打つ
+11. （軽い）Dependabot のラベル `dependencies`・`mcp` がリポジトリに無い。作るか `dependabot.yml` から消す
 
 ## 決定事項・メモ
 
-- 定期実行のワークフローは、GitHub が自動で止めることがある（`disabled_inactivity`）。止まっても通知は来ない。`gh workflow list --all` で `disabled_` が無いかを時々見る（2026-10-31 に gitleaks と Queue Watchdog が止まっているのを見つけた）
-
-- ローテーション時、前の世代の末尾は exporter が読む前に入れ替わるので、メトリクスから最大 10 分/回落ちる。生ログは手元の `.1` と VPS の世代に残るため許容した（2 段化は途中状態が増えるので採らない）
-- 検知は「VPS 側が手元より小さい」ことだけに頼る。同期が 1 周期（週）以上止まると見逃すが、そのときは `.1` も圧縮済みで、どの方式でも引き切れない
-- `/data/wow-logs` を読むのは wow-exporter だけ（サーバー上で `docker ps --filter volume=` を使って確認）。promtail は docker_sd のみ
-- WOW_VPS_HOST の注入経路: GitHub secret → apply workflow の env → `terragrunt.hcl` の `get_env` → コンテナの env。`.env` が効くのは手元で terragrunt を回すときだけ
-- イメージは `wow-exporter:latest` 固定なので、イメージを作り直しただけでは再作成されない。env かマウントの変更で再作成させる。ビルドは push の前に行う
-- exporter は起動のたびにログ全体を集計し直す（HTTP 側は約 1 分）。オフセットは `wowhoneypot_processed_lines`（バイト）で見る。読み直しは 300 秒ごと
-- VPS のホスト鍵が変わったら（OS 再インストール等）同期は `Host key verification failed` で止まる。そのときは指紋を独立の経路で確かめてから `/home/ubuntu/.ssh/wow-exporter-known_hosts` を差し替える
-- 手元で terragrunt を回すときは CI と同じ版を使う: `mise exec terraform@1.10.5 terragrunt@0.68.0 -- terragrunt …`。plan は env を平文で出すので `ACCESS_TOKEN=` を伏せて表示する
-- HCP Terraform のユーザートークン `monitoring-lab-cli` は 2027-10-25 に期限切れ（1 年）。古い期限切れのトークンは 2026-10-25 に削除済み（ユーザー申告）。差し替えは GitHub secret `TF_API_TOKEN` と `.env` の `TF_TOKEN_app_terraform_io` の 2 か所
-- Vault はサーバー再起動で sealed に戻る（5 本中 3 本で開く。鍵は `.env` の `VAULT_UNSEAL_KEY_1`〜`5`）。開け方: リポジトリ直下で `! ( set -a; . ./.env; set +a; for i in 1 2 3; do eval "k=\$VAULT_UNSEAL_KEY_$i"; printf '{"key":"%s"}' "$k" | ssh "${TARGET_USER:-ubuntu}@${TARGET_HOST}" 'curl -sk -X PUT --data @- https://127.0.0.1:8200/v1/sys/unseal' | python3 -c 'import sys,json; s=json.load(sys.stdin); print("sealed", s["sealed"], "progress", s["progress"], "/", s["t"])'; done )`（鍵が画面とプロセス一覧に出ない。3 行目が `sealed False` なら開いた）。sealed のままだと apply の `vault-secrets` が 503 で落ちる
-- infra-guard フックは `.env` や `.ssh` を含むコマンドと、terraform/terragrunt の apply を含む文字列（commit メッセージも）を止める。これらはユーザーが `!` で打つか、メッセージをファイルに書いて `git commit -F` を使う。値を表示しない確かめ方（長さ・一致判定）を使うこと
+- **応答の中で英字だけの行が「（英語の行を伏せた。日本語での書き直しを待て）」に置き換わり、ユーザーに届かないことがある**（2026-11-01、`!` で打つコマンドを 2 回取りこぼした）。どこで伏せているかは未調査。コマンドを渡すときは「打つコマンド → ! …」のように、日本語と同じ行に入れる
+- wow-exporter のテストは `uv venv` で作った venv で動かす（`python3 -m venv` は ensurepip が無く失敗する）。`config/wow-exporter` で `python -m pytest tests`
+- wow-exporter のログはホストの `/data/wow-logs` には無い。名前付きボリューム `monitoring-lab-wow_logs` なので、`docker exec monitoring-lab-wow-exporter …` で読む
+- Grafana の API（`/api/search` 等）は認証が要る。パスワードは `.env` の `GRAFANA_ADMIN_PASSWORD`。Claude から見られるのは health とコンテナのログまで
+- `docker logs --since 10m` は、再起動の直後に 0 行を返したことがある（理由は未調査）。件数で判断するときは `--tail N` で取り直す
+- ローテーション時、前の世代の末尾は exporter が読む前に入れ替わるので、累計のメトリクスから最大 10 分/回落ちる（許容済み）。直近 24 時間の集計は、起動時に `.1` を読み直すので影響を受けにくい
+- 検知は「VPS 側が手元より小さい」ことだけに頼る。同期が 1 周期（週）以上止まると見逃す
+- WOW_VPS_HOST の注入経路: GitHub secret → apply workflow の env → `terragrunt.hcl` の `get_env` → コンテナの env
+- イメージは `wow-exporter:latest` 固定なので、作り直しただけではコンテナは入れ替わらない。env かマウントの変更で作り直させる。ビルドはマージの前に行う（`! ( set -a; . ./.env; set +a; bash scripts/build-wow-exporter.sh )`）
+- exporter は起動のたびにログ全体を集計し直す。累計の Counter の `rate()` は再起動の直後に跳ねるので、傾向を見るなら `wowhoneypot_recent_*` を使う
+- VPS のホスト鍵が変わったら、同期は `Host key verification failed` で止まる。指紋を独立の経路で確かめてから `/home/ubuntu/.ssh/wow-exporter-known_hosts` を差し替える。**指紋やホスト名は、このリポジトリのファイルにも commit メッセージにも書かない**（公開リポジトリ。値は honeypot-vps の SESSION_STATE にある）
+- 定期実行のワークフローは、GitHub が自動で止めることがある（`disabled_inactivity`）。止まっても通知は来ない。`gh workflow list --all` で時々見る
+- 手元で terragrunt を回すときは CI と同じ版を使う: `mise exec terraform@1.10.5 terragrunt@0.68.0 -- terragrunt …`。plan は env を平文で出すので、値を伏せて表示する
+- HCP Terraform のトークン `monitoring-lab-cli` は 2027-10-25 に期限切れ。差し替えは GitHub secret `TF_API_TOKEN` と `.env` の `TF_TOKEN_app_terraform_io` の 2 か所
+- Vault はサーバーを再起動すると sealed に戻る（5 本中 3 本で開く）。開け方: リポジトリ直下で `! ( set -a; . ./.env; set +a; for i in 1 2 3; do eval "k=\$VAULT_UNSEAL_KEY_$i"; printf '{"key":"%s"}' "$k" | ssh "${TARGET_USER:-ubuntu}@${TARGET_HOST}" 'curl -sk -X PUT --data @- https://127.0.0.1:8200/v1/sys/unseal' | python3 -c 'import sys,json; s=json.load(sys.stdin); print("sealed", s["sealed"], "progress", s["progress"], "/", s["t"])'; done )`。3 行目が `sealed False` なら開いた
+- infra-guard フックは `.env` や `.ssh` を含むコマンドと、terraform/terragrunt の apply を含む文字列（commit メッセージも）を止める。ユーザーが `!` で打つか、メッセージをファイルに書いて `git commit -F` を使う
