@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 7,
+  "version": 8,
   "refresh": "5m",
   "time": {
     "from": "now-24h",
@@ -1242,7 +1242,13 @@
         },
         "valueMode": "color",
         "namePlacement": "left",
-        "sizing": "auto"
+        "sizing": "manual",
+        "minVizHeight": 14,
+        "maxVizHeight": 18,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 12
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -1287,7 +1293,13 @@
         },
         "valueMode": "color",
         "namePlacement": "left",
-        "sizing": "auto"
+        "sizing": "manual",
+        "minVizHeight": 14,
+        "maxVizHeight": 18,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 12
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -1332,7 +1344,13 @@
         },
         "valueMode": "color",
         "namePlacement": "left",
-        "sizing": "auto"
+        "sizing": "manual",
+        "minVizHeight": 14,
+        "maxVizHeight": 18,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 12
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -1377,7 +1395,13 @@
         },
         "valueMode": "color",
         "namePlacement": "left",
-        "sizing": "auto"
+        "sizing": "manual",
+        "minVizHeight": 14,
+        "maxVizHeight": 18,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 12
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -1422,7 +1446,13 @@
         },
         "valueMode": "color",
         "namePlacement": "left",
-        "sizing": "auto"
+        "sizing": "manual",
+        "minVizHeight": 14,
+        "maxVizHeight": 18,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 12
+        }
       },
       "fieldConfig": {
         "defaults": {
