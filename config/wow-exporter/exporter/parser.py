@@ -49,6 +49,21 @@ _UA_CATEGORIES = [
 # Counter のラベルには使わず、有限個のバケットに落とす。生パスの詳細は
 # top_paths_gauge (TOP_N) が引き続き担う。先に書いたものが優先される。
 # 分類の根拠: 2026-07 時点の wowhoneypot_top_path_requests 実測 TOP40。
+# 2026-11 に生ログ（2 世代・約 1.3 万件）で other の上位を見て、ai-agent・
+# config-leak・backup・app-exploit・vpn-appliance・cms を足した。
+# カテゴリ名の意味（何を狙うか）は Grafana の値の置き換えで人の言葉に直す。
+
+# パス全体で判定するもの。部分一致だと /ssets 等を誤って拾うため。
+_PATH_EXACT = [
+    (re.compile(r"^/(mcp|sse)(/|$)"), "ai-agent"),  # MCP サーバー（AI エージェントの道具箱）探し
+    # CMS の設置場所探し（この後に /wp-includes/ 等を続けて叩く）
+    (re.compile(r"^/(wp|blog|cms|news|press|site|web|old|new|test|demo|home|shop|main)/?$"), "cms"),
+    (re.compile(r"^/index\.html?$"), "root"),
+    # 踏み台にできるプロキシ探し（CONNECT host:443 や GET http://… の形で来る）
+    (re.compile(r"^[a-z0-9.-]+:\d+$"), "proxy"),
+    (re.compile(r"^https?://"), "proxy"),
+]
+
 _PATH_CATEGORIES = [
     ("wp-", "wordpress"),          # /wp-login.php 等（.php より先に判定）
     ("wordpress", "wordpress"),
@@ -58,6 +73,66 @@ _PATH_CATEGORIES = [
     ("config/getuser", "secrets-probe"),
     ("credential", "secrets-probe"),
     ("/aws", "secrets-probe"),
+    (".aws/", "secrets-probe"),
+    (".htpasswd", "secrets-probe"),
+    # 設定ファイル・ソースの漏れ探し（中に DB の接続先や API キーが書かれがち）
+    ("config.js", "config-leak"),  # config.json も含む
+    ("config.yml", "config-leak"),
+    ("config.yaml", "config-leak"),
+    ("settings.py", "config-leak"),
+    ("settings.json", "config-leak"),
+    ("appsettings", "config-leak"),
+    ("web.config", "config-leak"),
+    ("docker-compose", "config-leak"),
+    (".svn/", "config-leak"),
+    (".npmrc", "config-leak"),
+    (".netrc", "config-leak"),
+    ("env.js", "config-leak"),
+    ("secrets.yml", "config-leak"),
+    ("database.yml", "config-leak"),
+    ("application.properties", "config-leak"),
+    ("application.yml", "config-leak"),
+    ("service-account", "config-leak"),
+    ("serviceaccount", "config-leak"),
+    ("laravel.log", "config-leak"),
+    ("php.ini", "config-leak"),
+    ("sftp-config", "config-leak"),
+    (".ds_store", "config-leak"),
+    ("parameters.yml", "config-leak"),
+    (".vscode/", "config-leak"),
+    ("sftp.json", "config-leak"),
+    ("ftpconfig", "config-leak"),
+    ("ftp-sync", "config-leak"),
+    (".travis.yml", "config-leak"),
+    (".s3cfg", "config-leak"),
+    (".msmtprc", "config-leak"),
+    ("web-inf/", "config-leak"),
+    ("terraform.tf", "config-leak"),  # .tfstate / .tfvars
+    ("/actuator", "config-leak"),  # Spring Boot（env 等が丸見えになる）
+    # 公開済みの脆弱性を持つ特定の製品
+    ("developmentserver/metadatauploader", "app-exploit"),  # SAP NetWeaver
+    ("geoserver", "app-exploit"),
+    ("viewdefaultdecorator.action", "app-exploit"),  # Confluence
+    ("names.nsf", "app-exploit"),  # HCL Domino
+    ("_profiler", "app-exploit"),  # Symfony
+    ("/debug/default/view", "app-exploit"),  # Yii
+    ("cs/satellite", "app-exploit"),  # Oracle WebCenter Sites
+    # VPN 機器（社内ネットワークの入口）
+    ("+cscoe+", "vpn-appliance"),  # Cisco ASA
+    ("/sra_", "vpn-appliance"),  # SonicWall
+    ("/remote/login", "vpn-appliance"),  # Fortinet
+    ("global-protect", "vpn-appliance"),  # Palo Alto
+    ("/dana-na", "vpn-appliance"),  # Ivanti
+    # バックアップの置き忘れ探し
+    (".zip", "backup"),
+    (".tar", "backup"),
+    (".tgz", "backup"),
+    (".gz", "backup"),
+    (".7z", "backup"),
+    (".rar", "backup"),
+    (".sql", "backup"),
+    (".bak", "backup"),
+    ("/backup", "backup"),
     ("cgi-bin", "cgi"),
     (".cgi", "cgi"),
     ("/luci", "cgi"),
@@ -70,20 +145,28 @@ _PATH_CATEGORIES = [
     ("/login", "admin-panel"),
     ("/console", "admin-panel"),
     ("jenkins", "admin-panel"),
+    ("phpmyadmin", "admin-panel"),
+    ("/signin", "admin-panel"),
     ("autodiscover", "exchange"),
     ("/owa", "exchange"),
     ("/ews", "exchange"),
     (".php", "php"),
     ("xdebug", "php"),
     ("_ignition", "php"),          # Laravel RCE probe
+    ("php", "php"),                # /phpinfo・/php-info 等の拡張子なしの変種
     ("favicon.ico", "well-known"),
     ("robots.txt", "well-known"),
     (".well-known", "well-known"),
+    ("security.txt", "well-known"),
     ("sitemap", "well-known"),
+    ("cdn-cgi/trace", "well-known"),
     ("/api/", "api"),
     ("graphql", "api"),
     ("/v1/", "api"),
     ("/v2/", "api"),
+    ("swagger", "api"),
+    ("openapi", "api"),
+    ("api-docs", "api"),
 ]
 
 
@@ -93,6 +176,10 @@ def categorize_path(path: str) -> str:
     path_lower = path.lower()
     if "../" in path_lower or "%2e" in path_lower or "/etc/passwd" in path_lower:
         return "traversal"
+    bare = path_lower.split("?", 1)[0]
+    for pattern, category in _PATH_EXACT:
+        if pattern.search(bare):
+            return category
     for keyword, category in _PATH_CATEGORIES:
         if keyword in path_lower:
             return category

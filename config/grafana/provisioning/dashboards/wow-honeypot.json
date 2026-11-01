@@ -8,638 +8,58 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 4,
+  "version": 5,
   "refresh": "5m",
   "time": {
-    "from": "now-1h",
+    "from": "now-7d",
     "to": "now"
   },
   "panels": [
     {
-      "id": 101,
-      "title": "",
-      "type": "text",
+      "id": 1001,
+      "type": "row",
+      "title": "① いま何を狙われているか（直近 24 時間）",
+      "collapsed": false,
       "gridPos": {
-        "h": 2,
-        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 1002,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 2
       },
       "options": {
         "mode": "markdown",
-        "content": "## 📊 サマリー — 攻撃全体統計\nVPSのWOWHoneypotに届いた累積リクエストの概要。**Total HTTP Requests**: 全リクエスト総数 / **Unique Source IPs**: ユニーク送信元IP数 / **Matched Attack Requests**: 攻撃ルールにマッチした累積数 / **Last Log Sync**: 最終ログ同期日時"
+        "content": "VPS のおとりに届いたアクセスを、**何を狙ったものか**で分けて数えています。数えるのはログに書かれた時刻の直近 24 時間なので、exporter が再起動しても値は跳ねません。種類の意味は右の表を見てください。"
       }
     },
     {
-      "id": 1,
-      "title": "Total Requests (累積)",
-      "description": "エクスポーター起動以来の累積リクエスト数（HTTP + HTTPS 合計）。時系列グラフが0でもこの値は高い — 時系列は「現在の処理レート」、この値は「これまでの合計」を示す。",
+      "id": 1003,
       "type": "stat",
+      "title": "アクセス（24h）",
+      "description": "直近 24 時間に届いたリクエストの数（自前の外形監視は除く）",
+      "datasource": "Prometheus",
       "gridPos": {
-        "h": 4,
+        "x": 0,
+        "y": 3,
         "w": 6,
-        "x": 0,
-        "y": 2
+        "h": 4
       },
-      "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(wowhoneypot_http_requests_total)",
-          "legendFormat": "Total"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 2,
-      "title": "Unique Source IPs",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 2
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "wowhoneypot_unique_src_ips",
-          "legendFormat": "Unique IPs"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "orange",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 3,
-      "title": "Matched Attack Requests",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 2
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "wowhoneypot_matched_requests_total",
-          "legendFormat": "Matched"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 4,
-      "title": "Last Log Sync",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 2
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "wowhoneypot_last_sync_timestamp * 1000",
-          "legendFormat": "Last Sync"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "dateTimeAsLocal",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 105,
-      "title": "HTTP リクエスト数 (時系列) ※ログ処理タイミング基準",
-      "description": "注意: このグラフはログの実際の攻撃タイムラインではなく、wow-exporterがログを処理したタイミングを示します。ログ同期(10分おき)の直後にスパイクが発生します。",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 6
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sum(rate(wowhoneypot_http_requests_total[20m])) * 60",
-          "legendFormat": "総リクエスト数"
-        },
-        {
-          "expr": "sum(rate(wowhoneypot_http_requests_total{matched=\"True\"}[20m])) * 60",
-          "legendFormat": "攻撃マッチ数"
-        }
-      ],
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqpm",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": false
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "攻撃マッチ数"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 102,
-      "title": "",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 14
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "## 🌍 地理・手法分析\n**Top Attacking Countries**: GeoIPによる攻撃元の国別リクエスト数（上位15カ国） / **HTTP Method Distribution**: GET・POST・HEAD等のメソッド別リクエスト分布 / **Matched vs Unmatched**: 攻撃ルールにマッチしたリクエストとそれ以外の比率"
-      }
-    },
-    {
-      "id": 5,
-      "title": "Top Attacking Countries",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(topk(15, wowhoneypot_requests_by_country))",
-          "legendFormat": "{{country_name}} ({{country_code}})"
-        }
-      ],
-      "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "displayMode": "gradient",
-        "showUnfilled": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "continuous-RdYlGr",
-            "fixedColor": "red",
-            "seriesBy": "last"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1000
-              },
-              {
-                "color": "red",
-                "value": 10000
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 6,
-      "title": "HTTP Method Distribution",
-      "type": "piechart",
-      "gridPos": {
-        "h": 10,
-        "w": 6,
-        "x": 12,
-        "y": 16
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sum by (method) (wowhoneypot_http_requests_total)",
-          "legendFormat": "{{method}}"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "pieType": "donut",
-        "legend": {
-          "displayMode": "table",
-          "placement": "right"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        }
-      }
-    },
-    {
-      "id": 7,
-      "title": "Matched vs Unmatched",
-      "type": "piechart",
-      "gridPos": {
-        "h": 10,
-        "w": 6,
-        "x": 18,
-        "y": 16
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sum by (matched) (wowhoneypot_http_requests_total)",
-          "legendFormat": "matched={{matched}}"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "pieType": "donut",
-        "legend": {
-          "displayMode": "table",
-          "placement": "right"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        }
-      }
-    },
-    {
-      "id": 103,
-      "title": "",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 26
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "## 🔍 攻撃パターン詳細\n**Top Attack Paths**: 最も多くアクセスされたURLパス上位20件。既知の脆弱性スキャン（.git露出・phpMyAdmin・Solr等）の傾向を確認できる / **Top Source IPs**: リクエスト数が多い送信元IPアドレス上位20件"
-      }
-    },
-    {
-      "id": 8,
-      "title": "Top Attack Paths",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 0,
-        "y": 28
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(topk(20, wowhoneypot_top_path_requests))",
-          "legendFormat": "{{path}}"
-        }
-      ],
-      "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "displayMode": "basic",
-        "showUnfilled": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 9,
-      "title": "Top Source IPs",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 8,
-        "y": 28
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(topk(20, wowhoneypot_top_src_ip_requests))",
-          "legendFormat": "{{src_ip}}"
-        }
-      ],
-      "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "displayMode": "basic",
-        "showUnfilled": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "orange",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 19,
-      "title": "Attack Category Distribution (path_bucket)",
-      "type": "piechart",
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 16,
-        "y": 28
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(sum by (path_bucket) (wowhoneypot_http_requests_total))",
-          "legendFormat": "{{path_bucket}}"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "pieType": "donut",
-        "legend": {
-          "displayMode": "table",
-          "placement": "right"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        }
-      }
-    },
-    {
-      "id": 104,
-      "title": "",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 38
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "## 🛡️ セキュリティイベント & 処理状況\n**HTTP Status Code Distribution**: WOWHoneypotが返したステータスコード別の分布（200/401/404等） / **Blocklist Denials by IP**: ブロックリストにより接続拒否されたIP別の累積件数 / **Processed Log Lines**: wow-exporterが処理したログのバイトオフセット（ログ読み取り進捗の確認用）"
-      }
-    },
-    {
-      "id": 10,
-      "title": "HTTP Status Code Distribution",
-      "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 40
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sum by (status) (wowhoneypot_http_requests_total)",
-          "legendFormat": "HTTP {{status}}"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "pieType": "pie",
-        "legend": {
-          "displayMode": "table",
-          "placement": "right"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        }
-      }
-    },
-    {
-      "id": 11,
-      "title": "Blocklist Denials by IP",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 40
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(topk(10, wowhoneypot_top_blocklisted_ips))",
-          "legendFormat": "{{src_ip}}"
-        }
-      ],
-      "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "displayMode": "basic",
-        "showUnfilled": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 12,
-      "title": "Processed Log Lines",
-      "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 40
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "wowhoneypot_processed_lines",
-          "legendFormat": "{{log_file}}"
+          "refId": "A",
+          "expr": "sum(wowhoneypot_recent_requests_by_bucket)",
+          "instant": true
         }
       ],
       "options": {
@@ -650,295 +70,116 @@
         },
         "colorMode": "value",
         "graphMode": "none",
-        "textMode": "auto",
-        "orientation": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 106,
-      "title": "",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 48
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "## 🔬 攻撃インフラ分析\n**UA Category Distribution**: User-Agentをスキャナーツール別に分類した分布。`browser-like`はブラウザに偽装した攻撃ツール / **Top Attacking ASNs**: 攻撃元ASN（クラウド事業者・ホスティング会社）別のリクエスト数上位15件 / **Top User Agents**: 生のUser-Agent文字列ランキング上位20件"
-      }
-    },
-    {
-      "id": 13,
-      "title": "UA Category Distribution",
-      "type": "piechart",
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 0,
-        "y": 50
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(wowhoneypot_requests_by_ua_category)",
-          "legendFormat": "{{category}}"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "pieType": "donut",
-        "legend": {
-          "displayMode": "table",
-          "placement": "right"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        }
-      }
-    },
-    {
-      "id": 14,
-      "title": "Top Attacking ASNs",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 10,
-        "w": 16,
-        "x": 8,
-        "y": 50
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sort_desc(topk(15, wowhoneypot_requests_by_asn))",
-          "legendFormat": "{{asn}} — {{org}}"
-        }
-      ],
-      "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "displayMode": "gradient",
-        "showUnfilled": true
+        "textMode": "value"
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "color": {
-            "mode": "continuous-RdYlGr"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5000
-              },
-              {
-                "color": "red",
-                "value": 20000
-              }
-            ]
+            "mode": "fixed",
+            "fixedColor": "blue"
           }
-        }
+        },
+        "overrides": []
       }
     },
     {
-      "id": 15,
-      "title": "Top User Agents",
-      "type": "bargauge",
-      "gridPos": {
-        "h": 10,
-        "w": 24,
-        "x": 0,
-        "y": 60
-      },
+      "id": 1004,
+      "type": "stat",
+      "title": "送信元 IP（24h）",
+      "description": "直近 24 時間に来た送信元 IP の種類の数",
       "datasource": "Prometheus",
+      "gridPos": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 4
+      },
       "targets": [
         {
-          "expr": "sort_desc(topk(20, wowhoneypot_top_user_agents))",
-          "legendFormat": "{{user_agent}}"
+          "refId": "A",
+          "expr": "wowhoneypot_recent_unique_src_ips",
+          "instant": true
         }
       ],
       "options": {
-        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ]
         },
-        "displayMode": "basic",
-        "showUnfilled": true
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
           }
-        }
+        },
+        "overrides": []
       }
     },
     {
-      "id": 107,
-      "title": "",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 70
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "## 📈 攻撃トレンド分析\n**Attack Match Rate**: 全リクエストに占める攻撃ルールマッチ率（%）の時系列推移。値が上昇すれば既知の攻撃手法が増加している / **Scanner Tool Activity**: スキャナーカテゴリ別リクエスト数の推移。新ツールの台頭を時系列で検知できる / **Timeout Errors**: タイムアウト接続数（スロースキャナー・帯域調査の指標）"
-      }
-    },
-    {
-      "id": 16,
-      "title": "Attack Match Rate (%) Over Time",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 72
-      },
+      "id": 1005,
+      "type": "stat",
+      "title": "新顔のパス（24h）",
+      "description": "直近 24 時間に初めて現れたパスの数。新しい脆弱性が公開されると、それを試すパスが突然増える",
       "datasource": "Prometheus",
+      "gridPos": {
+        "x": 12,
+        "y": 3,
+        "w": 6,
+        "h": 4
+      },
       "targets": [
         {
-          "expr": "sum(rate(wowhoneypot_matched_requests_total[20m])) / sum(rate(wowhoneypot_http_requests_total[20m])) * 100",
-          "legendFormat": "Match Rate %"
+          "refId": "A",
+          "expr": "wowhoneypot_new_paths_24h",
+          "instant": true
         }
       ],
       "options": {
-        "tooltip": {
-          "mode": "single"
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
         },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
+          "unit": "short",
           "color": {
             "mode": "fixed",
             "fixedColor": "red"
-          },
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 15,
-            "spanNulls": false
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 30
-              }
-            ]
           }
-        }
-      }
-    },
-    {
-      "id": 17,
-      "title": "Scanner Tool Activity Trend",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 72
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "topk(8, sum by (category) (rate(wowhoneypot_ua_category_requests_total[20m]))) * 60",
-          "legendFormat": "{{category}}"
-        }
-      ],
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
         },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": false
-          }
-        }
+        "overrides": []
       }
     },
     {
-      "id": 18,
-      "title": "Timeout Errors",
+      "id": 1006,
       "type": "stat",
+      "title": "最終同期",
+      "description": "exporter が最後にログを処理した時刻。古ければ同期か exporter が止まっている",
+      "datasource": "Prometheus",
       "gridPos": {
-        "h": 4,
+        "x": 18,
+        "y": 3,
         "w": 6,
-        "x": 0,
-        "y": 80
+        "h": 4
       },
-      "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "wowhoneypot_timeout_errors_total",
-          "legendFormat": "Timeouts"
+          "refId": "A",
+          "expr": "wowhoneypot_last_sync_timestamp * 1000",
+          "instant": true
         }
       ],
       "options": {
@@ -947,189 +188,538 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none",
-        "textMode": "auto"
+        "textMode": "value"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "yellow",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 200,
-      "title": "",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 84
-      },
-      "options": {
-        "mode": "markdown",
-        "content": "## 🔒 HTTP / HTTPS 比較\n**HTTP vs HTTPS 内訳**:  ラベルによる HTTP・HTTPS 別リクエスト数の比較。HTTPS インスタンス (WOWHoneypot-new, port 443) のトラフィックが増加すると HTTPS 側が伸びる。"
-      }
-    },
-    {
-      "id": 201,
-      "title": "HTTP Requests (累積)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 0,
-        "y": 86
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sum(wowhoneypot_http_requests_total{protocol=\"http\"})",
-          "legendFormat": "HTTP"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 202,
-      "title": "HTTPS Requests (累積)",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 8,
-        "y": 86
-      },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "sum(wowhoneypot_http_requests_total{protocol=\"https\"})",
-          "legendFormat": "HTTPS"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
+          "unit": "dateTimeFromNow",
           "color": {
             "mode": "fixed",
             "fixedColor": "green"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
-        }
+        },
+        "overrides": []
       }
     },
     {
-      "id": 204,
-      "title": "HTTP vs HTTPS リクエスト数 (時系列)",
-      "description": "HTTP (port 80) と HTTPS (port 443) の処理レート比較。ログ同期タイミング基準。",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 16,
-        "x": 0,
-        "y": 90
-      },
+      "id": 1007,
+      "type": "bargauge",
+      "title": "狙われているもの（種類別・24h）",
+      "description": "直近 24 時間のリクエストを狙いの種類で分けたもの。分類の規則は config/wow-exporter/exporter/parser.py",
       "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 10,
+        "h": 14
+      },
       "targets": [
         {
-          "expr": "sum(rate(wowhoneypot_http_requests_total{protocol=\"http\"}[20m])) * 60",
-          "legendFormat": "HTTP (port 80)"
-        },
-        {
-          "expr": "sum(rate(wowhoneypot_http_requests_total{protocol=\"https\"}[20m])) * 60",
-          "legendFormat": "HTTPS (port 443)"
+          "refId": "A",
+          "expr": "sort_desc(wowhoneypot_recent_requests_by_bucket)",
+          "legendFormat": "{{path_bucket}}",
+          "instant": true
         }
       ],
       "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
         },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqpm",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": false
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
           }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "HTTPS (port 443)"
+              "options": "secrets-probe"
             },
             "properties": [
               {
-                "id": "color",
+                "id": "displayName",
+                "value": "鍵・パスワードの盗み見"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "config-leak"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "設定ファイル・ソースの漏れ探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "backup"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "バックアップの置き忘れ探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "php"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "PHP の弱点探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wordpress"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "WordPress の乗っ取り"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "CMS の設置場所探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "admin-panel"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "管理画面・ログイン画面探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "app-exploit"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "特定製品の既知の脆弱性"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vpn-appliance"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "VPN 機器の入口探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ai-agent"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "AI エージェント（MCP）探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traversal"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "ディレクトリ越えでファイル読み"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cgi"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "CGI・ルーターの穴"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "iot-device"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "ルーター・IoT 機器の乗っ取り"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "exchange"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Exchange（メールサーバー）狙い"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "proxy"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "踏み台プロキシ探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "api"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "API・仕様書の探り"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "root"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "トップページ（下見）"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "well-known"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "定番ファイル（ほぼ無害）"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "未分類"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 1008,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 10,
+        "y": 7,
+        "w": 14,
+        "h": 14
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "#### 種類の読み方\n\n| 種類 | 何を狙う | 成功すると | 守る側は |\n|---|---|---|---|\n| **鍵・パスワードの盗み見** | .env・.git・認証情報ファイル | クラウドや DB の鍵がそのまま奪われる | 公開ディレクトリに置かない・.git を配信しない |\n| **設定ファイル・ソースの漏れ探し** | config.json・docker-compose.yml・tfstate 等 | 接続先・内部構成・鍵が漏れる | 設定は公開領域の外へ。ビルド成果物だけ配る |\n| **バックアップの置き忘れ探し** | site.zip・db.sql・*.bak | サイト丸ごと・DB 丸ごとの持ち出し | 公開領域にアーカイブを置かない |\n| **PHP の弱点探し** | phpinfo・既知の RCE（Laravel 等） | 環境情報の露出、最悪はコード実行 | phpinfo を消す・フレームワークを更新 |\n| **WordPress の乗っ取り** | wp-login・xmlrpc・プラグインの穴 | サイト改ざん・踏み台化 | 本体とプラグインを更新・ログイン制限 |\n| **CMS の設置場所探し** | /blog/・/wp/ 等（この後に本命の攻撃が続く） | （下見。続く攻撃の前触れ） | 使っていないパスは 404 のまま |\n| **管理画面・ログイン画面探し** | /admin・/login・phpMyAdmin・Tomcat Manager | 総当たりで管理者権限を取られる | 管理画面を外に出さない・多要素認証 |\n| **特定製品の既知の脆弱性** | SAP・Confluence・GeoServer・Domino 等 | 製品の脆弱性からコード実行 | 該当製品を使っていれば即パッチ |\n| **VPN 機器の入口探し** | Cisco ASA・SonicWall・Fortinet・Ivanti | 社内ネットワークへの侵入口になる | VPN 機器のファームウェア更新 |\n| **AI エージェント（MCP）探し** | /mcp・/sse | AI に渡した道具（ファイル・API）を他人に使われる | MCP サーバーを認証なしで外に出さない |\n| **ディレクトリ越えでファイル読み** | ../ や %2e で上の階層へ（/etc/passwd 等） | サーバー内の任意のファイルが読まれる | 入力のパスを正規化して検査 |\n| **CGI・ルーターの穴** | cgi-bin・LuCI（OpenWrt） | 機器の乗っ取り・ボット化 | 機器の更新・管理画面を外に出さない |\n| **ルーター・IoT 機器の乗っ取り** | GPON・Boa・HNAP 等 | ボットネット（Mirai 系）への編入 | 初期パスワードを変える・更新 |\n| **Exchange（メールサーバー）狙い** | autodiscover・OWA・EWS | メールの盗み見・社内への侵入 | Exchange の更新 |\n| **踏み台プロキシ探し** | CONNECT host:443・GET http://… | 他人の攻撃の中継に使われる | プロキシを開けっぱなしにしない |\n| **API・仕様書の探り** | /api/・swagger.json・graphql | 未認証の API や内部仕様の露出 | API に認証・仕様書を公開しない |\n| **トップページ（下見）** | / ・/index.html | （生存確認。害は小さい） | — |\n| **定番ファイル（ほぼ無害）** | robots.txt・favicon・security.txt | （クローラーの通常動作） | — |\n| **未分類** | 上のどれにも当たらないもの | — | 増えたら分類を足す（parser.py） |"
+      }
+    },
+    {
+      "id": 1009,
+      "type": "row",
+      "title": "② いつもと違うか",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 1010,
+      "type": "table",
+      "title": "先週の同じ時間帯との比較（24h）",
+      "datasource": "Prometheus",
+      "description": "直近 24 時間と、ちょうど 7 日前の直近 24 時間。比が大きいものが「いつもと違う」。このメトリクスを入れてから 7 日経つまで、先週の列は空になる",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 10,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "wowhoneypot_recent_requests_by_bucket",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "wowhoneypot_recent_requests_by_bucket offset 7d",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "wowhoneypot_recent_requests_by_bucket / (wowhoneypot_recent_requests_by_bucket offset 7d)",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true
+            },
+            "renameByName": {
+              "path_bucket": "種類",
+              "Value #A": "今週",
+              "Value #B": "先週",
+              "Value #C": "比"
+            },
+            "indexByName": {
+              "path_bucket": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "今週",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "種類"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "secrets-probe": {
+                        "text": "鍵・パスワードの盗み見",
+                        "index": 0
+                      },
+                      "config-leak": {
+                        "text": "設定ファイル・ソースの漏れ探し",
+                        "index": 1
+                      },
+                      "backup": {
+                        "text": "バックアップの置き忘れ探し",
+                        "index": 2
+                      },
+                      "php": {
+                        "text": "PHP の弱点探し",
+                        "index": 3
+                      },
+                      "wordpress": {
+                        "text": "WordPress の乗っ取り",
+                        "index": 4
+                      },
+                      "cms": {
+                        "text": "CMS の設置場所探し",
+                        "index": 5
+                      },
+                      "admin-panel": {
+                        "text": "管理画面・ログイン画面探し",
+                        "index": 6
+                      },
+                      "app-exploit": {
+                        "text": "特定製品の既知の脆弱性",
+                        "index": 7
+                      },
+                      "vpn-appliance": {
+                        "text": "VPN 機器の入口探し",
+                        "index": 8
+                      },
+                      "ai-agent": {
+                        "text": "AI エージェント（MCP）探し",
+                        "index": 9
+                      },
+                      "traversal": {
+                        "text": "ディレクトリ越えでファイル読み",
+                        "index": 10
+                      },
+                      "cgi": {
+                        "text": "CGI・ルーターの穴",
+                        "index": 11
+                      },
+                      "iot-device": {
+                        "text": "ルーター・IoT 機器の乗っ取り",
+                        "index": 12
+                      },
+                      "exchange": {
+                        "text": "Exchange（メールサーバー）狙い",
+                        "index": 13
+                      },
+                      "proxy": {
+                        "text": "踏み台プロキシ探し",
+                        "index": 14
+                      },
+                      "api": {
+                        "text": "API・仕様書の探り",
+                        "index": 15
+                      },
+                      "root": {
+                        "text": "トップページ（下見）",
+                        "index": 16
+                      },
+                      "well-known": {
+                        "text": "定番ファイル（ほぼ無害）",
+                        "index": 17
+                      },
+                      "other": {
+                        "text": "未分類",
+                        "index": 18
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "比"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
                 "value": {
-                  "mode": "fixed",
-                  "fixedColor": "green"
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 5
+                    }
+                  ]
                 }
               }
             ]
@@ -1138,39 +728,1868 @@
       }
     },
     {
-      "id": 205,
-      "title": "HTTP vs HTTPS 分布",
-      "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 90
-      },
+      "id": 1011,
+      "type": "timeseries",
+      "title": "種類別の推移（24 時間の移動合計）",
       "datasource": "Prometheus",
+      "description": "各時点での「その前 24 時間」の件数。山が立ったところで何かが流行った",
+      "gridPos": {
+        "x": 10,
+        "y": 22,
+        "w": 14,
+        "h": 12
+      },
       "targets": [
         {
-          "expr": "sum by (protocol) (wowhoneypot_http_requests_total{protocol=~\"http|https\"})",
-          "legendFormat": "{{protocol}}"
+          "refId": "A",
+          "expr": "sum by (path_bucket) (wowhoneypot_recent_requests_by_bucket)",
+          "legendFormat": "{{path_bucket}}"
         }
       ],
       "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "secrets-probe"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "鍵・パスワードの盗み見"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "config-leak"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "設定ファイル・ソースの漏れ探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "backup"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "バックアップの置き忘れ探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "php"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "PHP の弱点探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wordpress"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "WordPress の乗っ取り"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "CMS の設置場所探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "admin-panel"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "管理画面・ログイン画面探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "app-exploit"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "特定製品の既知の脆弱性"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vpn-appliance"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "VPN 機器の入口探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ai-agent"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "AI エージェント（MCP）探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traversal"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "ディレクトリ越えでファイル読み"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cgi"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "CGI・ルーターの穴"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "iot-device"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "ルーター・IoT 機器の乗っ取り"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "exchange"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Exchange（メールサーバー）狙い"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "proxy"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "踏み台プロキシ探し"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "api"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "API・仕様書の探り"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "root"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "トップページ（下見）"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "well-known"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "定番ファイル（ほぼ無害）"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "未分類"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 1012,
+      "type": "table",
+      "title": "新顔のパス（直近 7 日に初めて現れたもの）",
+      "datasource": "Prometheus",
+      "description": "初めて見た時刻はファイルに残しているので、再起動やローテーションでは新顔に戻らない。導入時点で手元のログにあったパスは既知として扱う。180 日来なかったパスは忘れ、また来れば新顔になる",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "wowhoneypot_new_path_requests",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "wowhoneypot_new_path_first_seen_timestamp * 1000",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true
+            },
+            "renameByName": {
+              "path": "パス",
+              "path_bucket": "種類",
+              "Value #A": "件数（7 日）",
+              "Value #B": "初めて見た時刻"
+            },
+            "indexByName": {
+              "Value #B": 0,
+              "path": 1,
+              "path_bucket": 2,
+              "Value #A": 3
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "初めて見た時刻",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "種類"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "secrets-probe": {
+                        "text": "鍵・パスワードの盗み見",
+                        "index": 0
+                      },
+                      "config-leak": {
+                        "text": "設定ファイル・ソースの漏れ探し",
+                        "index": 1
+                      },
+                      "backup": {
+                        "text": "バックアップの置き忘れ探し",
+                        "index": 2
+                      },
+                      "php": {
+                        "text": "PHP の弱点探し",
+                        "index": 3
+                      },
+                      "wordpress": {
+                        "text": "WordPress の乗っ取り",
+                        "index": 4
+                      },
+                      "cms": {
+                        "text": "CMS の設置場所探し",
+                        "index": 5
+                      },
+                      "admin-panel": {
+                        "text": "管理画面・ログイン画面探し",
+                        "index": 6
+                      },
+                      "app-exploit": {
+                        "text": "特定製品の既知の脆弱性",
+                        "index": 7
+                      },
+                      "vpn-appliance": {
+                        "text": "VPN 機器の入口探し",
+                        "index": 8
+                      },
+                      "ai-agent": {
+                        "text": "AI エージェント（MCP）探し",
+                        "index": 9
+                      },
+                      "traversal": {
+                        "text": "ディレクトリ越えでファイル読み",
+                        "index": 10
+                      },
+                      "cgi": {
+                        "text": "CGI・ルーターの穴",
+                        "index": 11
+                      },
+                      "iot-device": {
+                        "text": "ルーター・IoT 機器の乗っ取り",
+                        "index": 12
+                      },
+                      "exchange": {
+                        "text": "Exchange（メールサーバー）狙い",
+                        "index": 13
+                      },
+                      "proxy": {
+                        "text": "踏み台プロキシ探し",
+                        "index": 14
+                      },
+                      "api": {
+                        "text": "API・仕様書の探り",
+                        "index": 15
+                      },
+                      "root": {
+                        "text": "トップページ（下見）",
+                        "index": 16
+                      },
+                      "well-known": {
+                        "text": "定番ファイル（ほぼ無害）",
+                        "index": 17
+                      },
+                      "other": {
+                        "text": "未分類",
+                        "index": 18
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "初めて見た時刻"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 1013,
+      "type": "row",
+      "title": "③ 誰が・何で来ているか（直近 24 時間）",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 1014,
+      "type": "bargauge",
+      "title": "叩かれたパス（24h）",
+      "description": "直近 24 時間の上位パス",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(wowhoneypot_recent_top_path_requests)",
+          "legendFormat": "{{path}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ]
         },
-        "pieType": "donut",
-        "legend": {
-          "displayMode": "table",
-          "placement": "right"
-        }
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
-        }
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": []
       }
+    },
+    {
+      "id": 1015,
+      "type": "bargauge",
+      "title": "送信元 IP（24h）",
+      "description": "直近 24 時間の上位の送信元 IP",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 12,
+        "y": 45,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(wowhoneypot_recent_top_src_ip_requests)",
+          "legendFormat": "{{src_ip}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 1016,
+      "type": "bargauge",
+      "title": "国（24h）",
+      "description": "送信元 IP の国（GeoLite2）。VPS やクラウドの場所であって、攻撃者の居場所とは限らない",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 8,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(topk(15, wowhoneypot_recent_requests_by_country))",
+          "legendFormat": "{{country_name}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 1017,
+      "type": "bargauge",
+      "title": "ネットワーク事業者 ASN（24h）",
+      "description": "送信元 IP の持ち主。クラウド事業者が多ければ、借りたサーバーからの自動スキャン",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 8,
+        "y": 57,
+        "w": 8,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(wowhoneypot_recent_top_asn_requests)",
+          "legendFormat": "{{org}} ({{asn}})",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 1018,
+      "type": "bargauge",
+      "title": "User-Agent（24h）",
+      "description": "名乗っている道具。zgrab・masscan 等はスキャナ。ブラウザを名乗っていても自動化のことが多い",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "x": 16,
+        "y": 57,
+        "w": 8,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sort_desc(wowhoneypot_recent_top_user_agent_requests)",
+          "legendFormat": "{{user_agent}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 1019,
+      "type": "row",
+      "title": "運用・累計（以前の表示。ログ同期の健全性や全期間の数はここ）",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 69,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 101,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 70
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 📊 サマリー — 攻撃全体統計\nVPSのWOWHoneypotに届いた累積リクエストの概要。**Total HTTP Requests**: 全リクエスト総数 / **Unique Source IPs**: ユニーク送信元IP数 / **Matched Attack Requests**: 攻撃ルールにマッチした累積数 / **Last Log Sync**: 最終ログ同期日時"
+          }
+        },
+        {
+          "id": 1,
+          "title": "Total Requests (累積)",
+          "description": "エクスポーター起動以来の累積リクエスト数（HTTP + HTTPS 合計）。時系列グラフが0でもこの値は高い — 時系列は「現在の処理レート」、この値は「これまでの合計」を示す。",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 72
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(wowhoneypot_http_requests_total)",
+              "legendFormat": "Total"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 2,
+          "title": "Unique Source IPs",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 72
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "wowhoneypot_unique_src_ips",
+              "legendFormat": "Unique IPs"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "orange",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Matched Attack Requests",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 72
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "wowhoneypot_matched_requests_total",
+              "legendFormat": "Matched"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Last Log Sync",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 72
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "wowhoneypot_last_sync_timestamp * 1000",
+              "legendFormat": "Last Sync"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "dateTimeAsLocal",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 105,
+          "title": "HTTP リクエスト数 (時系列) ※ログ処理タイミング基準",
+          "description": "注意: このグラフはログの実際の攻撃タイムラインではなく、wow-exporterがログを処理したタイミングを示します。ログ同期(10分おき)の直後にスパイクが発生します。",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 76
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(wowhoneypot_http_requests_total[20m])) * 60",
+              "legendFormat": "総リクエスト数"
+            },
+            {
+              "expr": "sum(rate(wowhoneypot_http_requests_total{matched=\"True\"}[20m])) * 60",
+              "legendFormat": "攻撃マッチ数"
+            }
+          ],
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqpm",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "攻撃マッチ数"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 102,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 84
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 🌍 地理・手法分析\n**Top Attacking Countries**: GeoIPによる攻撃元の国別リクエスト数（上位15カ国） / **HTTP Method Distribution**: GET・POST・HEAD等のメソッド別リクエスト分布 / **Matched vs Unmatched**: 攻撃ルールにマッチしたリクエストとそれ以外の比率"
+          }
+        },
+        {
+          "id": 5,
+          "title": "Top Attacking Countries",
+          "type": "bargauge",
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 86
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(topk(15, wowhoneypot_requests_by_country))",
+              "legendFormat": "{{country_name}} ({{country_code}})"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "displayMode": "gradient",
+            "showUnfilled": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "continuous-RdYlGr",
+                "fixedColor": "red",
+                "seriesBy": "last"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1000
+                  },
+                  {
+                    "color": "red",
+                    "value": 10000
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "HTTP Method Distribution",
+          "type": "piechart",
+          "gridPos": {
+            "h": 10,
+            "w": 6,
+            "x": 12,
+            "y": 86
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by (method) (wowhoneypot_http_requests_total)",
+              "legendFormat": "{{method}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "pieType": "donut",
+            "legend": {
+              "displayMode": "table",
+              "placement": "right"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 7,
+          "title": "Matched vs Unmatched",
+          "type": "piechart",
+          "gridPos": {
+            "h": 10,
+            "w": 6,
+            "x": 18,
+            "y": 86
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by (matched) (wowhoneypot_http_requests_total)",
+              "legendFormat": "matched={{matched}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "pieType": "donut",
+            "legend": {
+              "displayMode": "table",
+              "placement": "right"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 103,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 96
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 🔍 攻撃パターン詳細\n**Top Attack Paths**: 最も多くアクセスされたURLパス上位20件。既知の脆弱性スキャン（.git露出・phpMyAdmin・Solr等）の傾向を確認できる / **Top Source IPs**: リクエスト数が多い送信元IPアドレス上位20件"
+          }
+        },
+        {
+          "id": 8,
+          "title": "Top Attack Paths",
+          "type": "bargauge",
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 0,
+            "y": 98
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(topk(20, wowhoneypot_top_path_requests))",
+              "legendFormat": "{{path}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "displayMode": "basic",
+            "showUnfilled": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 9,
+          "title": "Top Source IPs",
+          "type": "bargauge",
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 8,
+            "y": 98
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(topk(20, wowhoneypot_top_src_ip_requests))",
+              "legendFormat": "{{src_ip}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "displayMode": "basic",
+            "showUnfilled": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "orange",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 19,
+          "title": "Attack Category Distribution (path_bucket)",
+          "type": "piechart",
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 16,
+            "y": 98
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(sum by (path_bucket) (wowhoneypot_http_requests_total))",
+              "legendFormat": "{{path_bucket}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "pieType": "donut",
+            "legend": {
+              "displayMode": "table",
+              "placement": "right"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 104,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 108
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 🛡️ セキュリティイベント & 処理状況\n**HTTP Status Code Distribution**: WOWHoneypotが返したステータスコード別の分布（200/401/404等） / **Blocklist Denials by IP**: ブロックリストにより接続拒否されたIP別の累積件数 / **Processed Log Lines**: wow-exporterが処理したログのバイトオフセット（ログ読み取り進捗の確認用）"
+          }
+        },
+        {
+          "id": 10,
+          "title": "HTTP Status Code Distribution",
+          "type": "piechart",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 110
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by (status) (wowhoneypot_http_requests_total)",
+              "legendFormat": "HTTP {{status}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "pieType": "pie",
+            "legend": {
+              "displayMode": "table",
+              "placement": "right"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 11,
+          "title": "Blocklist Denials by IP",
+          "type": "bargauge",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 110
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(topk(10, wowhoneypot_top_blocklisted_ips))",
+              "legendFormat": "{{src_ip}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "displayMode": "basic",
+            "showUnfilled": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 12,
+          "title": "Processed Log Lines",
+          "type": "stat",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 110
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "wowhoneypot_processed_lines",
+              "legendFormat": "{{log_file}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 106,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 118
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 🔬 攻撃インフラ分析\n**UA Category Distribution**: User-Agentをスキャナーツール別に分類した分布。`browser-like`はブラウザに偽装した攻撃ツール / **Top Attacking ASNs**: 攻撃元ASN（クラウド事業者・ホスティング会社）別のリクエスト数上位15件 / **Top User Agents**: 生のUser-Agent文字列ランキング上位20件"
+          }
+        },
+        {
+          "id": 13,
+          "title": "UA Category Distribution",
+          "type": "piechart",
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 0,
+            "y": 120
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(wowhoneypot_requests_by_ua_category)",
+              "legendFormat": "{{category}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "pieType": "donut",
+            "legend": {
+              "displayMode": "table",
+              "placement": "right"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "id": 14,
+          "title": "Top Attacking ASNs",
+          "type": "bargauge",
+          "gridPos": {
+            "h": 10,
+            "w": 16,
+            "x": 8,
+            "y": 120
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(topk(15, wowhoneypot_requests_by_asn))",
+              "legendFormat": "{{asn}} — {{org}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "displayMode": "gradient",
+            "showUnfilled": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "continuous-RdYlGr"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5000
+                  },
+                  {
+                    "color": "red",
+                    "value": 20000
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 15,
+          "title": "Top User Agents",
+          "type": "bargauge",
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 130
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sort_desc(topk(20, wowhoneypot_top_user_agents))",
+              "legendFormat": "{{user_agent}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "displayMode": "basic",
+            "showUnfilled": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 107,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 140
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 📈 攻撃トレンド分析\n**Attack Match Rate**: 全リクエストに占める攻撃ルールマッチ率（%）の時系列推移。値が上昇すれば既知の攻撃手法が増加している / **Scanner Tool Activity**: スキャナーカテゴリ別リクエスト数の推移。新ツールの台頭を時系列で検知できる / **Timeout Errors**: タイムアウト接続数（スロースキャナー・帯域調査の指標）"
+          }
+        },
+        {
+          "id": 16,
+          "title": "Attack Match Rate (%) Over Time",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 142
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(wowhoneypot_matched_requests_total[20m])) / sum(rate(wowhoneypot_http_requests_total[20m])) * 100",
+              "legendFormat": "Match Rate %"
+            }
+          ],
+          "options": {
+            "tooltip": {
+              "mode": "single"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "red"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "spanNulls": false
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 30
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 17,
+          "title": "Scanner Tool Activity Trend",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 142
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "topk(8, sum by (category) (rate(wowhoneypot_ua_category_requests_total[20m]))) * 60",
+              "legendFormat": "{{category}}"
+            }
+          ],
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": false
+              }
+            }
+          }
+        },
+        {
+          "id": 18,
+          "title": "Timeout Errors",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 150
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "wowhoneypot_timeout_errors_total",
+              "legendFormat": "Timeouts"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 200,
+          "title": "",
+          "type": "text",
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 154
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## 🔒 HTTP / HTTPS 比較\n**HTTP vs HTTPS 内訳**:  ラベルによる HTTP・HTTPS 別リクエスト数の比較。HTTPS インスタンス (WOWHoneypot-new, port 443) のトラフィックが増加すると HTTPS 側が伸びる。"
+          }
+        },
+        {
+          "id": 201,
+          "title": "HTTP Requests (累積)",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 0,
+            "y": 156
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(wowhoneypot_http_requests_total{protocol=\"http\"})",
+              "legendFormat": "HTTP"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 202,
+          "title": "HTTPS Requests (累積)",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 8,
+            "y": 156
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(wowhoneypot_http_requests_total{protocol=\"https\"})",
+              "legendFormat": "HTTPS"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 204,
+          "title": "HTTP vs HTTPS リクエスト数 (時系列)",
+          "description": "HTTP (port 80) と HTTPS (port 443) の処理レート比較。ログ同期タイミング基準。",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 16,
+            "x": 0,
+            "y": 160
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(wowhoneypot_http_requests_total{protocol=\"http\"}[20m])) * 60",
+              "legendFormat": "HTTP (port 80)"
+            },
+            {
+              "expr": "sum(rate(wowhoneypot_http_requests_total{protocol=\"https\"}[20m])) * 60",
+              "legendFormat": "HTTPS (port 443)"
+            }
+          ],
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqpm",
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "HTTPS (port 443)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": 205,
+          "title": "HTTP vs HTTPS 分布",
+          "type": "piechart",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 160
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by (protocol) (wowhoneypot_http_requests_total{protocol=~\"http|https\"})",
+              "legendFormat": "{{protocol}}"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "pieType": "donut",
+            "legend": {
+              "displayMode": "table",
+              "placement": "right"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        }
+      ]
     }
   ]
 }
