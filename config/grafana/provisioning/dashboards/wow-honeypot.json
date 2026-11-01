@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 5,
+  "version": 6,
   "refresh": "5m",
   "time": {
     "from": "now-7d",
@@ -18,7 +18,7 @@
     {
       "id": 1001,
       "type": "row",
-      "title": "① いま何を狙われているか（直近 24 時間）",
+      "title": "直近 24 時間",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -40,14 +40,14 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "VPS のおとりに届いたアクセスを、**何を狙ったものか**で分けて数えています。数えるのはログに書かれた時刻の直近 24 時間なので、exporter が再起動しても値は跳ねません。種類の意味は右の表を見てください。"
+        "content": "ハニーポットへのリクエストを、パスから種類に分けて集計しています。期間はログの時刻で直近 24 時間です。分類規則は config/wow-exporter/exporter/parser.py にあります。"
       }
     },
     {
       "id": 1003,
       "type": "stat",
-      "title": "アクセス（24h）",
-      "description": "直近 24 時間に届いたリクエストの数（自前の外形監視は除く）",
+      "title": "リクエスト数（24h）",
+      "description": "直近 24 時間のリクエスト数。外形監視のリクエストは除く",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 0,
@@ -86,8 +86,8 @@
     {
       "id": 1004,
       "type": "stat",
-      "title": "送信元 IP（24h）",
-      "description": "直近 24 時間に来た送信元 IP の種類の数",
+      "title": "送信元 IP 数（24h）",
+      "description": "直近 24 時間のユニーク送信元 IP 数",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 6,
@@ -126,8 +126,8 @@
     {
       "id": 1005,
       "type": "stat",
-      "title": "新顔のパス（24h）",
-      "description": "直近 24 時間に初めて現れたパスの数。新しい脆弱性が公開されると、それを試すパスが突然増える",
+      "title": "新規パス数（24h）",
+      "description": "直近 24 時間に初めて観測したパスの数",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 12,
@@ -167,7 +167,7 @@
       "id": 1006,
       "type": "stat",
       "title": "最終同期",
-      "description": "exporter が最後にログを処理した時刻。古ければ同期か exporter が止まっている",
+      "description": "exporter が最後にログを処理した時刻",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 18,
@@ -206,8 +206,8 @@
     {
       "id": 1007,
       "type": "bargauge",
-      "title": "狙われているもの（種類別・24h）",
-      "description": "直近 24 時間のリクエストを狙いの種類で分けたもの。分類の規則は config/wow-exporter/exporter/parser.py",
+      "title": "種類別リクエスト数（24h）",
+      "description": "分類規則: config/wow-exporter/exporter/parser.py",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 0,
@@ -254,7 +254,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "鍵・パスワードの盗み見"
+                "value": "認証情報ファイルの探索"
               }
             ]
           },
@@ -266,7 +266,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "設定ファイル・ソースの漏れ探し"
+                "value": "設定ファイルの探索"
               }
             ]
           },
@@ -278,7 +278,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "バックアップの置き忘れ探し"
+                "value": "バックアップファイルの探索"
               }
             ]
           },
@@ -290,7 +290,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "PHP の弱点探し"
+                "value": "PHP 関連"
               }
             ]
           },
@@ -302,7 +302,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "WordPress の乗っ取り"
+                "value": "WordPress"
               }
             ]
           },
@@ -314,7 +314,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "CMS の設置場所探し"
+                "value": "CMS ディレクトリの探索"
               }
             ]
           },
@@ -326,7 +326,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "管理画面・ログイン画面探し"
+                "value": "管理画面・ログイン画面"
               }
             ]
           },
@@ -338,7 +338,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "特定製品の既知の脆弱性"
+                "value": "特定製品の既知脆弱性"
               }
             ]
           },
@@ -350,7 +350,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "VPN 機器の入口探し"
+                "value": "VPN 機器"
               }
             ]
           },
@@ -362,7 +362,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "AI エージェント（MCP）探し"
+                "value": "MCP サーバー"
               }
             ]
           },
@@ -374,7 +374,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "ディレクトリ越えでファイル読み"
+                "value": "パストラバーサル"
               }
             ]
           },
@@ -386,7 +386,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "CGI・ルーターの穴"
+                "value": "CGI"
               }
             ]
           },
@@ -398,7 +398,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "ルーター・IoT 機器の乗っ取り"
+                "value": "IoT 機器・ルーター"
               }
             ]
           },
@@ -410,7 +410,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Exchange（メールサーバー）狙い"
+                "value": "Exchange"
               }
             ]
           },
@@ -422,7 +422,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "踏み台プロキシ探し"
+                "value": "オープンプロキシの探索"
               }
             ]
           },
@@ -434,7 +434,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "API・仕様書の探り"
+                "value": "API"
               }
             ]
           },
@@ -446,7 +446,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "トップページ（下見）"
+                "value": "トップページ"
               }
             ]
           },
@@ -458,7 +458,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "定番ファイル（ほぼ無害）"
+                "value": "定番ファイル"
               }
             ]
           },
@@ -489,13 +489,13 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "#### 種類の読み方\n\n| 種類 | 何を狙う | 成功すると | 守る側は |\n|---|---|---|---|\n| **鍵・パスワードの盗み見** | .env・.git・認証情報ファイル | クラウドや DB の鍵がそのまま奪われる | 公開ディレクトリに置かない・.git を配信しない |\n| **設定ファイル・ソースの漏れ探し** | config.json・docker-compose.yml・tfstate 等 | 接続先・内部構成・鍵が漏れる | 設定は公開領域の外へ。ビルド成果物だけ配る |\n| **バックアップの置き忘れ探し** | site.zip・db.sql・*.bak | サイト丸ごと・DB 丸ごとの持ち出し | 公開領域にアーカイブを置かない |\n| **PHP の弱点探し** | phpinfo・既知の RCE（Laravel 等） | 環境情報の露出、最悪はコード実行 | phpinfo を消す・フレームワークを更新 |\n| **WordPress の乗っ取り** | wp-login・xmlrpc・プラグインの穴 | サイト改ざん・踏み台化 | 本体とプラグインを更新・ログイン制限 |\n| **CMS の設置場所探し** | /blog/・/wp/ 等（この後に本命の攻撃が続く） | （下見。続く攻撃の前触れ） | 使っていないパスは 404 のまま |\n| **管理画面・ログイン画面探し** | /admin・/login・phpMyAdmin・Tomcat Manager | 総当たりで管理者権限を取られる | 管理画面を外に出さない・多要素認証 |\n| **特定製品の既知の脆弱性** | SAP・Confluence・GeoServer・Domino 等 | 製品の脆弱性からコード実行 | 該当製品を使っていれば即パッチ |\n| **VPN 機器の入口探し** | Cisco ASA・SonicWall・Fortinet・Ivanti | 社内ネットワークへの侵入口になる | VPN 機器のファームウェア更新 |\n| **AI エージェント（MCP）探し** | /mcp・/sse | AI に渡した道具（ファイル・API）を他人に使われる | MCP サーバーを認証なしで外に出さない |\n| **ディレクトリ越えでファイル読み** | ../ や %2e で上の階層へ（/etc/passwd 等） | サーバー内の任意のファイルが読まれる | 入力のパスを正規化して検査 |\n| **CGI・ルーターの穴** | cgi-bin・LuCI（OpenWrt） | 機器の乗っ取り・ボット化 | 機器の更新・管理画面を外に出さない |\n| **ルーター・IoT 機器の乗っ取り** | GPON・Boa・HNAP 等 | ボットネット（Mirai 系）への編入 | 初期パスワードを変える・更新 |\n| **Exchange（メールサーバー）狙い** | autodiscover・OWA・EWS | メールの盗み見・社内への侵入 | Exchange の更新 |\n| **踏み台プロキシ探し** | CONNECT host:443・GET http://… | 他人の攻撃の中継に使われる | プロキシを開けっぱなしにしない |\n| **API・仕様書の探り** | /api/・swagger.json・graphql | 未認証の API や内部仕様の露出 | API に認証・仕様書を公開しない |\n| **トップページ（下見）** | / ・/index.html | （生存確認。害は小さい） | — |\n| **定番ファイル（ほぼ無害）** | robots.txt・favicon・security.txt | （クローラーの通常動作） | — |\n| **未分類** | 上のどれにも当たらないもの | — | 増えたら分類を足す（parser.py） |"
+        "content": "#### 種類の説明\n\n| 種類 | 主な対象 | 想定される影響 | 対策 |\n|---|---|---|---|\n| **認証情報ファイルの探索** | .env、.git、認証情報ファイル | クラウドや DB の認証情報の漏えい | 公開ディレクトリに置かない。.git を配信しない |\n| **設定ファイルの探索** | config.json、docker-compose.yml、tfstate など | 接続先、内部構成、認証情報の漏えい | 設定ファイルを公開ディレクトリに置かない |\n| **バックアップファイルの探索** | site.zip、db.sql、*.bak | サイトや DB の内容の漏えい | 公開ディレクトリにアーカイブを置かない |\n| **PHP 関連** | phpinfo、既知の RCE（Laravel など） | 環境情報の露出、コード実行 | phpinfo を置かない。フレームワークを更新する |\n| **WordPress** | wp-login、xmlrpc、プラグイン | 改ざん、踏み台化 | 本体とプラグインを更新する。ログインを制限する |\n| **CMS ディレクトリの探索** | /blog/、/wp/ など | 後続の攻撃の事前調査 | — |\n| **管理画面・ログイン画面** | /admin、/login、phpMyAdmin、Tomcat Manager | 総当たりによる不正ログイン | 管理画面を公開しない。多要素認証 |\n| **特定製品の既知脆弱性** | SAP、Confluence、GeoServer、Domino など | コード実行 | 該当製品を更新する |\n| **VPN 機器** | Cisco ASA、SonicWall、Fortinet、Ivanti | 内部ネットワークへの侵入 | ファームウェアを更新する |\n| **MCP サーバー** | /mcp、/sse | MCP サーバーのツールの不正利用 | MCP サーバーを認証なしで公開しない |\n| **パストラバーサル** | ../、%2e（/etc/passwd など） | サーバー上の任意ファイルの読み取り | 入力パスを正規化して検証する |\n| **CGI** | cgi-bin、LuCI（OpenWrt） | 機器の乗っ取り | 機器を更新する。管理画面を公開しない |\n| **IoT 機器・ルーター** | GPON、Boa、HNAP など | ボットネットへの組み込み | 初期パスワードを変更する。更新する |\n| **Exchange** | autodiscover、OWA、EWS | メールの漏えい、内部への侵入 | Exchange を更新する |\n| **オープンプロキシの探索** | CONNECT host:443、GET http://… | 攻撃の中継への悪用 | プロキシを公開しない |\n| **API** | /api/、swagger.json、graphql | 未認証 API や仕様の露出 | API に認証をかける |\n| **トップページ** | /、/index.html | — | — |\n| **定番ファイル** | robots.txt、favicon.ico、security.txt | — | — |\n| **未分類** | 上記以外 | — | — |"
       }
     },
     {
       "id": 1009,
       "type": "row",
-      "title": "② いつもと違うか",
+      "title": "前週比・新規パス",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -508,9 +508,9 @@
     {
       "id": 1010,
       "type": "table",
-      "title": "先週の同じ時間帯との比較（24h）",
+      "title": "種類別の前週比（24h）",
       "datasource": "Prometheus",
-      "description": "直近 24 時間と、ちょうど 7 日前の直近 24 時間。比が大きいものが「いつもと違う」。このメトリクスを入れてから 7 日経つまで、先週の列は空になる",
+      "description": "直近 24 時間と、7 日前の同じ 24 時間の比較。導入から 7 日間は前週の列が空",
       "gridPos": {
         "x": 0,
         "y": 22,
@@ -553,9 +553,9 @@
             },
             "renameByName": {
               "path_bucket": "種類",
-              "Value #A": "今週",
-              "Value #B": "先週",
-              "Value #C": "比"
+              "Value #A": "直近",
+              "Value #B": "前週",
+              "Value #C": "前週比"
             },
             "indexByName": {
               "path_bucket": 0,
@@ -570,7 +570,7 @@
           "options": {
             "sort": [
               {
-                "field": "今週",
+                "field": "直近",
                 "desc": true
               }
             ]
@@ -601,75 +601,75 @@
                     "type": "value",
                     "options": {
                       "secrets-probe": {
-                        "text": "鍵・パスワードの盗み見",
+                        "text": "認証情報ファイルの探索",
                         "index": 0
                       },
                       "config-leak": {
-                        "text": "設定ファイル・ソースの漏れ探し",
+                        "text": "設定ファイルの探索",
                         "index": 1
                       },
                       "backup": {
-                        "text": "バックアップの置き忘れ探し",
+                        "text": "バックアップファイルの探索",
                         "index": 2
                       },
                       "php": {
-                        "text": "PHP の弱点探し",
+                        "text": "PHP 関連",
                         "index": 3
                       },
                       "wordpress": {
-                        "text": "WordPress の乗っ取り",
+                        "text": "WordPress",
                         "index": 4
                       },
                       "cms": {
-                        "text": "CMS の設置場所探し",
+                        "text": "CMS ディレクトリの探索",
                         "index": 5
                       },
                       "admin-panel": {
-                        "text": "管理画面・ログイン画面探し",
+                        "text": "管理画面・ログイン画面",
                         "index": 6
                       },
                       "app-exploit": {
-                        "text": "特定製品の既知の脆弱性",
+                        "text": "特定製品の既知脆弱性",
                         "index": 7
                       },
                       "vpn-appliance": {
-                        "text": "VPN 機器の入口探し",
+                        "text": "VPN 機器",
                         "index": 8
                       },
                       "ai-agent": {
-                        "text": "AI エージェント（MCP）探し",
+                        "text": "MCP サーバー",
                         "index": 9
                       },
                       "traversal": {
-                        "text": "ディレクトリ越えでファイル読み",
+                        "text": "パストラバーサル",
                         "index": 10
                       },
                       "cgi": {
-                        "text": "CGI・ルーターの穴",
+                        "text": "CGI",
                         "index": 11
                       },
                       "iot-device": {
-                        "text": "ルーター・IoT 機器の乗っ取り",
+                        "text": "IoT 機器・ルーター",
                         "index": 12
                       },
                       "exchange": {
-                        "text": "Exchange（メールサーバー）狙い",
+                        "text": "Exchange",
                         "index": 13
                       },
                       "proxy": {
-                        "text": "踏み台プロキシ探し",
+                        "text": "オープンプロキシの探索",
                         "index": 14
                       },
                       "api": {
-                        "text": "API・仕様書の探り",
+                        "text": "API",
                         "index": 15
                       },
                       "root": {
-                        "text": "トップページ（下見）",
+                        "text": "トップページ",
                         "index": 16
                       },
                       "well-known": {
-                        "text": "定番ファイル（ほぼ無害）",
+                        "text": "定番ファイル",
                         "index": 17
                       },
                       "other": {
@@ -685,7 +685,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "比"
+              "options": "前週比"
             },
             "properties": [
               {
@@ -730,9 +730,9 @@
     {
       "id": 1011,
       "type": "timeseries",
-      "title": "種類別の推移（24 時間の移動合計）",
+      "title": "種類別リクエスト数の推移（24 時間移動合計）",
       "datasource": "Prometheus",
-      "description": "各時点での「その前 24 時間」の件数。山が立ったところで何かが流行った",
+      "description": "各時点から過去 24 時間の件数",
       "gridPos": {
         "x": 10,
         "y": 22,
@@ -777,7 +777,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "鍵・パスワードの盗み見"
+                "value": "認証情報ファイルの探索"
               }
             ]
           },
@@ -789,7 +789,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "設定ファイル・ソースの漏れ探し"
+                "value": "設定ファイルの探索"
               }
             ]
           },
@@ -801,7 +801,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "バックアップの置き忘れ探し"
+                "value": "バックアップファイルの探索"
               }
             ]
           },
@@ -813,7 +813,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "PHP の弱点探し"
+                "value": "PHP 関連"
               }
             ]
           },
@@ -825,7 +825,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "WordPress の乗っ取り"
+                "value": "WordPress"
               }
             ]
           },
@@ -837,7 +837,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "CMS の設置場所探し"
+                "value": "CMS ディレクトリの探索"
               }
             ]
           },
@@ -849,7 +849,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "管理画面・ログイン画面探し"
+                "value": "管理画面・ログイン画面"
               }
             ]
           },
@@ -861,7 +861,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "特定製品の既知の脆弱性"
+                "value": "特定製品の既知脆弱性"
               }
             ]
           },
@@ -873,7 +873,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "VPN 機器の入口探し"
+                "value": "VPN 機器"
               }
             ]
           },
@@ -885,7 +885,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "AI エージェント（MCP）探し"
+                "value": "MCP サーバー"
               }
             ]
           },
@@ -897,7 +897,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "ディレクトリ越えでファイル読み"
+                "value": "パストラバーサル"
               }
             ]
           },
@@ -909,7 +909,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "CGI・ルーターの穴"
+                "value": "CGI"
               }
             ]
           },
@@ -921,7 +921,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "ルーター・IoT 機器の乗っ取り"
+                "value": "IoT 機器・ルーター"
               }
             ]
           },
@@ -933,7 +933,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Exchange（メールサーバー）狙い"
+                "value": "Exchange"
               }
             ]
           },
@@ -945,7 +945,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "踏み台プロキシ探し"
+                "value": "オープンプロキシの探索"
               }
             ]
           },
@@ -957,7 +957,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "API・仕様書の探り"
+                "value": "API"
               }
             ]
           },
@@ -969,7 +969,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "トップページ（下見）"
+                "value": "トップページ"
               }
             ]
           },
@@ -981,7 +981,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "定番ファイル（ほぼ無害）"
+                "value": "定番ファイル"
               }
             ]
           },
@@ -1003,9 +1003,9 @@
     {
       "id": 1012,
       "type": "table",
-      "title": "新顔のパス（直近 7 日に初めて現れたもの）",
+      "title": "新規パス（初回観測から 7 日以内）",
       "datasource": "Prometheus",
-      "description": "初めて見た時刻はファイルに残しているので、再起動やローテーションでは新顔に戻らない。導入時点で手元のログにあったパスは既知として扱う。180 日来なかったパスは忘れ、また来れば新顔になる",
+      "description": "初回観測時刻はファイルに保存しており、再起動やローテーションの影響を受けない。導入時点のログにあったパスは対象外。180 日間観測されなかったパスは記録から削除する",
       "gridPos": {
         "x": 0,
         "y": 34,
@@ -1044,7 +1044,7 @@
               "path": "パス",
               "path_bucket": "種類",
               "Value #A": "件数（7 日）",
-              "Value #B": "初めて見た時刻"
+              "Value #B": "初回観測"
             },
             "indexByName": {
               "Value #B": 0,
@@ -1059,7 +1059,7 @@
           "options": {
             "sort": [
               {
-                "field": "初めて見た時刻",
+                "field": "初回観測",
                 "desc": true
               }
             ]
@@ -1086,75 +1086,75 @@
                     "type": "value",
                     "options": {
                       "secrets-probe": {
-                        "text": "鍵・パスワードの盗み見",
+                        "text": "認証情報ファイルの探索",
                         "index": 0
                       },
                       "config-leak": {
-                        "text": "設定ファイル・ソースの漏れ探し",
+                        "text": "設定ファイルの探索",
                         "index": 1
                       },
                       "backup": {
-                        "text": "バックアップの置き忘れ探し",
+                        "text": "バックアップファイルの探索",
                         "index": 2
                       },
                       "php": {
-                        "text": "PHP の弱点探し",
+                        "text": "PHP 関連",
                         "index": 3
                       },
                       "wordpress": {
-                        "text": "WordPress の乗っ取り",
+                        "text": "WordPress",
                         "index": 4
                       },
                       "cms": {
-                        "text": "CMS の設置場所探し",
+                        "text": "CMS ディレクトリの探索",
                         "index": 5
                       },
                       "admin-panel": {
-                        "text": "管理画面・ログイン画面探し",
+                        "text": "管理画面・ログイン画面",
                         "index": 6
                       },
                       "app-exploit": {
-                        "text": "特定製品の既知の脆弱性",
+                        "text": "特定製品の既知脆弱性",
                         "index": 7
                       },
                       "vpn-appliance": {
-                        "text": "VPN 機器の入口探し",
+                        "text": "VPN 機器",
                         "index": 8
                       },
                       "ai-agent": {
-                        "text": "AI エージェント（MCP）探し",
+                        "text": "MCP サーバー",
                         "index": 9
                       },
                       "traversal": {
-                        "text": "ディレクトリ越えでファイル読み",
+                        "text": "パストラバーサル",
                         "index": 10
                       },
                       "cgi": {
-                        "text": "CGI・ルーターの穴",
+                        "text": "CGI",
                         "index": 11
                       },
                       "iot-device": {
-                        "text": "ルーター・IoT 機器の乗っ取り",
+                        "text": "IoT 機器・ルーター",
                         "index": 12
                       },
                       "exchange": {
-                        "text": "Exchange（メールサーバー）狙い",
+                        "text": "Exchange",
                         "index": 13
                       },
                       "proxy": {
-                        "text": "踏み台プロキシ探し",
+                        "text": "オープンプロキシの探索",
                         "index": 14
                       },
                       "api": {
-                        "text": "API・仕様書の探り",
+                        "text": "API",
                         "index": 15
                       },
                       "root": {
-                        "text": "トップページ（下見）",
+                        "text": "トップページ",
                         "index": 16
                       },
                       "well-known": {
-                        "text": "定番ファイル（ほぼ無害）",
+                        "text": "定番ファイル",
                         "index": 17
                       },
                       "other": {
@@ -1170,7 +1170,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "初めて見た時刻"
+              "options": "初回観測"
             },
             "properties": [
               {
@@ -1185,7 +1185,7 @@
     {
       "id": 1013,
       "type": "row",
-      "title": "③ 誰が・何で来ているか（直近 24 時間）",
+      "title": "送信元・パスの内訳（24h）",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -1198,8 +1198,8 @@
     {
       "id": 1014,
       "type": "bargauge",
-      "title": "叩かれたパス（24h）",
-      "description": "直近 24 時間の上位パス",
+      "title": "上位パス（24h）",
+      "description": "直近 24 時間のリクエスト数上位のパス",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 0,
@@ -1243,8 +1243,8 @@
     {
       "id": 1015,
       "type": "bargauge",
-      "title": "送信元 IP（24h）",
-      "description": "直近 24 時間の上位の送信元 IP",
+      "title": "上位送信元 IP（24h）",
+      "description": "直近 24 時間のリクエスト数上位の送信元 IP",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 12,
@@ -1288,8 +1288,8 @@
     {
       "id": 1016,
       "type": "bargauge",
-      "title": "国（24h）",
-      "description": "送信元 IP の国（GeoLite2）。VPS やクラウドの場所であって、攻撃者の居場所とは限らない",
+      "title": "国別（24h）",
+      "description": "GeoLite2 による送信元 IP の国。VPS やクラウドの所在地を含む",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 0,
@@ -1333,8 +1333,8 @@
     {
       "id": 1017,
       "type": "bargauge",
-      "title": "ネットワーク事業者 ASN（24h）",
-      "description": "送信元 IP の持ち主。クラウド事業者が多ければ、借りたサーバーからの自動スキャン",
+      "title": "上位 ASN（24h）",
+      "description": "送信元 IP の AS 番号と組織名",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 8,
@@ -1378,8 +1378,8 @@
     {
       "id": 1018,
       "type": "bargauge",
-      "title": "User-Agent（24h）",
-      "description": "名乗っている道具。zgrab・masscan 等はスキャナ。ブラウザを名乗っていても自動化のことが多い",
+      "title": "上位 User-Agent（24h）",
+      "description": "リクエストの User-Agent ヘッダー",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 16,
@@ -1423,7 +1423,7 @@
     {
       "id": 1019,
       "type": "row",
-      "title": "運用・累計（以前の表示。ログ同期の健全性や全期間の数はここ）",
+      "title": "累計・運用（旧パネル）",
       "collapsed": true,
       "gridPos": {
         "x": 0,
