@@ -40,7 +40,7 @@ inputs = {
         # blackbox-exporter の honeypot_http モジュールと揃える（config/blackbox/blackbox.yml）
         "PROBE_USER_AGENT=monitoring-lab-blackbox/1.0",
         "STATE_DIR=/data/wow-state",
-        "RECENT_WINDOW_HOURS=24",
+        "RECENT_WINDOWS=1h,24h,7d",
         "NEW_PATH_WINDOW_HOURS=168",
       ]
 

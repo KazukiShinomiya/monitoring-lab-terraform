@@ -8,17 +8,17 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 6,
+  "version": 7,
   "refresh": "5m",
   "time": {
-    "from": "now-7d",
+    "from": "now-24h",
     "to": "now"
   },
   "panels": [
     {
       "id": 1001,
       "type": "row",
-      "title": "直近 24 時間",
+      "title": "概要",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -40,14 +40,14 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "ハニーポットへのリクエストを、パスから種類に分けて集計しています。期間はログの時刻で直近 24 時間です。分類規則は config/wow-exporter/exporter/parser.py にあります。"
+        "content": "リクエスト数と種類別の件数は、ダッシュボードの表示期間で集計します。送信元 IP 数と上位の一覧は、変数「IP 数・上位の集計期間」で選んだ期間（1h / 24h / 7d、ログの時刻基準）です。分類規則は config/wow-exporter/exporter/parser.py にあります。"
       }
     },
     {
       "id": 1003,
       "type": "stat",
-      "title": "リクエスト数（24h）",
-      "description": "直近 24 時間のリクエスト数。外形監視のリクエストは除く",
+      "title": "リクエスト数（表示期間）",
+      "description": "表示期間のリクエスト数。外形監視のリクエストは除く",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 0,
@@ -58,7 +58,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(wowhoneypot_recent_requests_by_bucket)",
+          "expr": "sum(increase(wowhoneypot_http_requests_total[$__range]))",
           "instant": true
         }
       ],
@@ -78,7 +78,8 @@
           "color": {
             "mode": "fixed",
             "fixedColor": "blue"
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       }
@@ -86,8 +87,8 @@
     {
       "id": 1004,
       "type": "stat",
-      "title": "送信元 IP 数（24h）",
-      "description": "直近 24 時間のユニーク送信元 IP 数",
+      "title": "送信元 IP 数（$window）",
+      "description": "選択した集計期間のユニーク送信元 IP 数",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 6,
@@ -98,7 +99,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "wowhoneypot_recent_unique_src_ips",
+          "expr": "wowhoneypot_recent_unique_src_ips{window=\"$window\"}",
           "instant": true
         }
       ],
@@ -206,7 +207,7 @@
     {
       "id": 1007,
       "type": "bargauge",
-      "title": "種類別リクエスト数（24h）",
+      "title": "種類別リクエスト数（表示期間）",
       "description": "分類規則: config/wow-exporter/exporter/parser.py",
       "datasource": "Prometheus",
       "gridPos": {
@@ -218,7 +219,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sort_desc(wowhoneypot_recent_requests_by_bucket)",
+          "expr": "sort_desc(sum by (path_bucket) (increase(wowhoneypot_http_requests_total[$__range])))",
           "legendFormat": "{{path_bucket}}",
           "instant": true
         }
@@ -243,7 +244,8 @@
           "color": {
             "mode": "fixed",
             "fixedColor": "orange"
-          }
+          },
+          "decimals": 0
         },
         "overrides": [
           {
@@ -495,7 +497,7 @@
     {
       "id": 1009,
       "type": "row",
-      "title": "前週比・新規パス",
+      "title": "前期間比・新規パス",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -508,9 +510,9 @@
     {
       "id": 1010,
       "type": "table",
-      "title": "種類別の前週比（24h）",
+      "title": "種類別の前期間比（表示期間）",
       "datasource": "Prometheus",
-      "description": "直近 24 時間と、7 日前の同じ 24 時間の比較。導入から 7 日間は前週の列が空",
+      "description": "表示期間と、その直前の同じ長さの期間の比較",
       "gridPos": {
         "x": 0,
         "y": 22,
@@ -520,19 +522,19 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "wowhoneypot_recent_requests_by_bucket",
+          "expr": "sum by (path_bucket) (increase(wowhoneypot_http_requests_total[$__range]))",
           "instant": true,
           "format": "table"
         },
         {
           "refId": "B",
-          "expr": "wowhoneypot_recent_requests_by_bucket offset 7d",
+          "expr": "sum by (path_bucket) (increase(wowhoneypot_http_requests_total[$__range] offset $__range))",
           "instant": true,
           "format": "table"
         },
         {
           "refId": "C",
-          "expr": "wowhoneypot_recent_requests_by_bucket / (wowhoneypot_recent_requests_by_bucket offset 7d)",
+          "expr": "sum by (path_bucket) (increase(wowhoneypot_http_requests_total[$__range])) / sum by (path_bucket) (increase(wowhoneypot_http_requests_total[$__range] offset $__range))",
           "instant": true,
           "format": "table"
         }
@@ -553,9 +555,9 @@
             },
             "renameByName": {
               "path_bucket": "種類",
-              "Value #A": "直近",
-              "Value #B": "前週",
-              "Value #C": "前週比"
+              "Value #A": "表示期間",
+              "Value #B": "前期間",
+              "Value #C": "前期間比"
             },
             "indexByName": {
               "path_bucket": 0,
@@ -570,7 +572,7 @@
           "options": {
             "sort": [
               {
-                "field": "直近",
+                "field": "表示期間",
                 "desc": true
               }
             ]
@@ -685,7 +687,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "前週比"
+              "options": "前期間比"
             },
             "properties": [
               {
@@ -723,6 +725,18 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "表示期間|前期間"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
           }
         ]
       }
@@ -730,9 +744,9 @@
     {
       "id": 1011,
       "type": "timeseries",
-      "title": "種類別リクエスト数の推移（24 時間移動合計）",
+      "title": "種類別リクエスト数の推移",
       "datasource": "Prometheus",
-      "description": "各時点から過去 24 時間の件数",
+      "description": "1 区間あたりの件数。区間の長さは表示期間に応じて変わる（最短 1 時間）",
       "gridPos": {
         "x": 10,
         "y": 22,
@@ -742,7 +756,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (path_bucket) (wowhoneypot_recent_requests_by_bucket)",
+          "expr": "sum by (path_bucket) (increase(wowhoneypot_http_requests_total[$__interval]))",
           "legendFormat": "{{path_bucket}}"
         }
       ],
@@ -766,7 +780,8 @@
           "custom": {
             "lineWidth": 1,
             "fillOpacity": 0
-          }
+          },
+          "decimals": 0
         },
         "overrides": [
           {
@@ -998,7 +1013,8 @@
             ]
           }
         ]
-      }
+      },
+      "interval": "1h"
     },
     {
       "id": 1012,
@@ -1185,7 +1201,7 @@
     {
       "id": 1013,
       "type": "row",
-      "title": "送信元・パスの内訳（24h）",
+      "title": "送信元・パスの内訳（$window）",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -1198,8 +1214,8 @@
     {
       "id": 1014,
       "type": "bargauge",
-      "title": "上位パス（24h）",
-      "description": "直近 24 時間のリクエスト数上位のパス",
+      "title": "上位パス（$window）",
+      "description": "選択した集計期間のリクエスト数上位のパス",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 0,
@@ -1210,7 +1226,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sort_desc(wowhoneypot_recent_top_path_requests)",
+          "expr": "sort_desc(wowhoneypot_recent_top_path_requests{window=\"$window\"})",
           "legendFormat": "{{path}}",
           "instant": true
         }
@@ -1243,8 +1259,8 @@
     {
       "id": 1015,
       "type": "bargauge",
-      "title": "上位送信元 IP（24h）",
-      "description": "直近 24 時間のリクエスト数上位の送信元 IP",
+      "title": "上位送信元 IP（$window）",
+      "description": "選択した集計期間のリクエスト数上位の送信元 IP",
       "datasource": "Prometheus",
       "gridPos": {
         "x": 12,
@@ -1255,7 +1271,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sort_desc(wowhoneypot_recent_top_src_ip_requests)",
+          "expr": "sort_desc(wowhoneypot_recent_top_src_ip_requests{window=\"$window\"})",
           "legendFormat": "{{src_ip}}",
           "instant": true
         }
@@ -1288,7 +1304,7 @@
     {
       "id": 1016,
       "type": "bargauge",
-      "title": "国別（24h）",
+      "title": "国別（$window）",
       "description": "GeoLite2 による送信元 IP の国。VPS やクラウドの所在地を含む",
       "datasource": "Prometheus",
       "gridPos": {
@@ -1300,7 +1316,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sort_desc(topk(15, wowhoneypot_recent_requests_by_country))",
+          "expr": "sort_desc(topk(15, wowhoneypot_recent_requests_by_country{window=\"$window\"}))",
           "legendFormat": "{{country_name}}",
           "instant": true
         }
@@ -1333,7 +1349,7 @@
     {
       "id": 1017,
       "type": "bargauge",
-      "title": "上位 ASN（24h）",
+      "title": "上位 ASN（$window）",
       "description": "送信元 IP の AS 番号と組織名",
       "datasource": "Prometheus",
       "gridPos": {
@@ -1345,7 +1361,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sort_desc(wowhoneypot_recent_top_asn_requests)",
+          "expr": "sort_desc(wowhoneypot_recent_top_asn_requests{window=\"$window\"})",
           "legendFormat": "{{org}} ({{asn}})",
           "instant": true
         }
@@ -1378,7 +1394,7 @@
     {
       "id": 1018,
       "type": "bargauge",
-      "title": "上位 User-Agent（24h）",
+      "title": "上位 User-Agent（$window）",
       "description": "リクエストの User-Agent ヘッダー",
       "datasource": "Prometheus",
       "gridPos": {
@@ -1390,7 +1406,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sort_desc(wowhoneypot_recent_top_user_agent_requests)",
+          "expr": "sort_desc(wowhoneypot_recent_top_user_agent_requests{window=\"$window\"})",
           "legendFormat": "{{user_agent}}",
           "instant": true
         }
@@ -2591,5 +2607,40 @@
         }
       ]
     }
-  ]
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "window",
+        "label": "IP 数・上位の集計期間",
+        "type": "custom",
+        "query": "1h,24h,7d",
+        "current": {
+          "text": "24h",
+          "value": "24h",
+          "selected": true
+        },
+        "options": [
+          {
+            "text": "1h",
+            "value": "1h",
+            "selected": false
+          },
+          {
+            "text": "24h",
+            "value": "24h",
+            "selected": true
+          },
+          {
+            "text": "7d",
+            "value": "7d",
+            "selected": false
+          }
+        ],
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  }
 }
