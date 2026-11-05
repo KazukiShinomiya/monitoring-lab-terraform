@@ -12,7 +12,7 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 
 **「次のローテーションは 2026-11-02 0:00 JST 頃」という以前の記述は誤りだった。取り消す。** 実際は 2026-11-01 0:00 JST（10-31 15:00Z）に起きていた。日付を数え違えたまま、ファイルの時刻を見ずに書いていた。週次の基準は「土曜 → 日曜に替わる 0:00 JST」と読む（未検証。次回の時刻で確かめる）。
 
-**Zabbix 8.0 への移行を準備中。** ブランチ `feat/zabbix-8-prep` に commit 済みで、push も PR もしていない。ただし `.env.example` の追記（`ZBX_MCP_ALLOWEDIP`、`ZABBIX_MCP_TOKEN`）は guardrails に止められ、未 commit で作業ツリーに残っている。本番は 7.4.3 のまま。Zabbix 8.0.0 は 2026-11-05 に出たが、その時点で `alpine-8.0.0` と `alpine-8.0-latest` は registry に無く（server / web / agent2 / mcp-server のすべて 404。`alpine-7.4.3` を対照に確認）、ここで待っている。手順は `docs/zabbix-8-upgrade.md`。
+**Zabbix 8.0 への移行を準備中。** ブランチ `feat/zabbix-8-prep` に commit して push した。PR はまだ作っていない。`.env.example` の追記（`ZBX_MCP_ALLOWEDIP`、`ZABBIX_MCP_TOKEN`）は guardrails の git 層に止められるので、`--no-verify` を含めユーザーが `!` で commit する。本番は 7.4.3 のまま。Zabbix 8.0.0 は 2026-11-05 に出たが、その時点で `alpine-8.0.0` と `alpine-8.0-latest` は registry に無く（server / web / agent2 / mcp-server のすべて 404。`alpine-7.4.3` を対照に確認）、ここで待っている。手順は `docs/zabbix-8-upgrade.md`。
 
 ## 前回の戦果（2026-11-05: Zabbix 8.0 と MCP の移行準備）
 
@@ -35,7 +35,7 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 
 ## 次の行動
 
-1. Zabbix 8.0: 4 リポジトリに `alpine-8.0.x` が載ったら、`docs/zabbix-8-upgrade.md` の 2（本物のダンプでのリハーサル）へ進む。本番を上げる時期は未決（Claude はリハーサルはすぐ、本番は 8.0.1 待ちを提案した。ユーザーの回答待ち）。MCP を読み取り専用のままにするかも、ユーザーの確認待ち。PR はタグが出るまで作らない（マージすると存在しないイメージを適用しようとする）
+1. Zabbix 8.0: 4 リポジトリに `alpine-8.0.x` が載ったら、`docs/zabbix-8-upgrade.md` の 2（本物のダンプでのリハーサル）へ進む。ユーザーの決定（2026-11-05）: リハーサルはタグが出たらすぐ、本番は 8.0.1 を待つ。MCP は読み取り専用のまま。`ZBX_MCP_ALLOWEDIP` に入れる IP は未決で、secret も未登録。PR はタグが出るまで作らない（マージすると存在しないイメージを適用しようとする）
 2. 本番での再起動の確認（未実施。やるかはユーザーの判断。数分、ハニーポットの監視が止まる）: `docker restart monitoring-lab-wow-exporter` の前後で `sum(wowhoneypot_http_requests_total)` が減らないこと、ログに `checkpoint restored` が出ることを見る
 3. 件数の多めの表示: 2026-11-01 08:17Z と 09:46Z の再起動による `increase()` の跳ねは、すでに記録されていて消せない。その時刻を含む表示期間では件数が多めに出る。09:46Z の跳ねが最後のはず（チェックポイント導入時）。それ以降の再起動で跳ねないことを、1 か自然な再起動で確かめる
 4. 数日後: 新規パスの表に何が出ているかを見る。`other` ばかりなら分類（`parser.py`）を足す。11-01 の夕方の時点で、新規パスは 2 件あった
