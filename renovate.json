@@ -34,6 +34,11 @@
       "enabled": false
     },
     {
+      "description": "zabbix-server-local はローカルビルドのため追従対象外。web / agent2 / mcp が上がるときに一緒に作り直す",
+      "matchPackageNames": ["zabbix-server-local"],
+      "enabled": false
+    },
+    {
       "description": "メジャー更新は破壊的変更を伴いやすいので分離・要レビュー",
       "matchUpdateTypes": ["major"],
       "addLabels": ["major-update"],

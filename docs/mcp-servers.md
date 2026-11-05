@@ -64,10 +64,13 @@ docker build -t monitoring-lab-alertmanager-mcp   mcp/alertmanager-server/
     "docker":        { ... },
     "prometheus":    { ... },
     "terragrunt":    { ... },
-    "alertmanager":  { ... }
+    "alertmanager":  { ... },
+    "zabbix":        { ... }
   }
 }
 ```
+
+`zabbix` はこのリポジトリのサーバーではなく、公式の Zabbix MCP server（HTTP 接続）です。導入手順は [Zabbix 7.4 → 8.0 移行手順](zabbix-8-upgrade.md) を見てください。
 
 > **注意**: `docker` サーバーと `terragrunt` サーバーは SSH 鍵のバインドマウントが必要です。
 > WSL2 のパス `/home/ubuntu/.ssh/id_rsa` が存在することを確認してください。

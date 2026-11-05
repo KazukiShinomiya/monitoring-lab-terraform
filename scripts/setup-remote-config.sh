@@ -109,16 +109,8 @@ else
     warn "config/zabbix/scripts/externalscripts not found, skipping script transfer"
 fi
 
-# 初期化スクリプトの転送
-if [ -f "config/zabbix/scripts/init-zabbix-server.sh" ]; then
-    scp config/zabbix/scripts/init-zabbix-server.sh ${TARGET_USER}@${TARGET_HOST}:${REMOTE_BASE_DIR}/zabbix/scripts/
-    info "✓ Init script transferred"
-else
-    warn "config/zabbix/scripts/init-zabbix-server.sh not found"
-fi
-
 # 実行権限を付与
-ssh ${TARGET_USER}@${TARGET_HOST} "chmod +x ${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/*.py ${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/*.sh ${REMOTE_BASE_DIR}/zabbix/scripts/init-zabbix-server.sh 2>/dev/null || true"
+ssh ${TARGET_USER}@${TARGET_HOST} "chmod +x ${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/*.py ${REMOTE_BASE_DIR}/zabbix/scripts/externalscripts/*.sh 2>/dev/null || true"
 info "✓ Script permissions set"
 
 echo ""

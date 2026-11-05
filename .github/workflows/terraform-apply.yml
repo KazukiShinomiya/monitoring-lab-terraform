@@ -52,6 +52,8 @@ jobs:
       GH_RUNNER_PAT: "${{ secrets.GH_RUNNER_PAT }}"
       # wow-exporter コンテナ env（ログ同期先 VPS）の drift 防止（2026-06 監査 H-1）
       WOW_VPS_HOST: "${{ secrets.WOW_VPS_HOST }}"
+      # Zabbix MCP server に接続できる送信元。未設定なら loopback のみになる
+      ZBX_MCP_ALLOWEDIP: "${{ secrets.ZBX_MCP_ALLOWEDIP }}"
 
     steps:
       - name: Checkout

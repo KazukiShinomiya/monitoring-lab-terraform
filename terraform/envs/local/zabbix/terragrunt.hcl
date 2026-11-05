@@ -46,18 +46,13 @@ inputs = {
     # ----- Zabbix Server -----
     # メトリクス収集・アラート処理を行うバックエンド
     zbx_server = {
-      # Zabbix Server公式イメージ（PostgreSQL対応版 / バージョン固定で再現性を確保）
-      image = "zabbix/zabbix-server-pgsql:alpine-7.4.3"
+      # 公式イメージに Python を足した派生イメージ（config/zabbix/server/Dockerfile）
+      # 本番ホストで scripts/build-zabbix-server.sh を実行してから apply する
+      image = "zabbix-server-local:alpine-8.0.0"
 
       # Zabbix Serverのデフォルトポート
       internal_port = 10051
       external_port = 10051  # Zabbix AgentやZabbix Proxyからの接続用
-
-      # エントリーポイント（Python依存関係インストール + Zabbix Server起動）
-      entrypoint = ["/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh"]
-
-      # rootユーザーで起動（パッケージインストールのため）
-      user = "root"
 
       # 環境変数設定
       env = [
@@ -92,19 +87,14 @@ inputs = {
       # Bind マウント設定
       bind_mounts = [
         {
-          source    = "/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh"
-          target    = "/home/ubuntu/monitoring-lab/zabbix/scripts/init-zabbix-server.sh"
-          read_only = true
-        },
-        {
           source    = "/home/ubuntu/monitoring-lab/zabbix/scripts/externalscripts"
           target    = "/usr/lib/zabbix/externalscripts"
-          read_only = false  # スクリプトからのログ出力等を考慮
+          read_only = true
         },
         {
           source    = "/home/ubuntu/monitoring-lab/zabbix/scripts/alertscripts"
           target    = "/usr/lib/zabbix/alertscripts"
-          read_only = false
+          read_only = true
         }
       ]
     }
@@ -113,7 +103,7 @@ inputs = {
     # ユーザーインターフェース
     zbx_web = {
       # Zabbix Web公式イメージ（Apache + PostgreSQL対応版 / バージョン固定で再現性を確保）
-      image = "zabbix/zabbix-web-apache-pgsql:alpine-7.4.3"
+      image = "zabbix/zabbix-web-apache-pgsql:alpine-8.0.0"
 
       # WebサーバーのHTTPポート
       internal_port = 8080
@@ -147,6 +137,38 @@ inputs = {
 
       # Bind マウント設定
       bind_mounts = []
+    }
+
+    # ----- Zabbix MCP Server -----
+    # AI エージェント向けの API。認証は利用者ごとの Zabbix API トークン（クライアント側で持つ）
+    zbx_mcp = {
+      image = "zabbix/zabbix-mcp-server:alpine-8.0.0"
+
+      internal_port = 8443
+      external_port = 8443
+
+      # 証明書は本番ホストで scripts/zabbix-mcp-tls.sh を実行して作る（リポジトリには置かない）
+      # 接続元の許可は ZBX_MCP_ALLOWEDIP で与える。未設定なら loopback のみで、外からは届かない
+      # ツールは読み取りのみ。history_get / item_get / macro_get / interface_get / lld_get と書き込みは拒否
+      env = [
+        "ZBX_FRONTEND_URL=http://zbx_web:8080/api_jsonrpc.php",
+        "ZBX_ALLOWEDIP=${get_env("ZBX_MCP_ALLOWEDIP", "127.0.0.1,::1")}",
+        "ZBX_TLSACCEPT=cert",
+        "ZBX_TLSCERTFILE=server.crt",
+        "ZBX_TLSKEYFILE=server.key",
+        "ZBX_ALLOWTOOL_REGEXP_0=^(hostgroup|templategroup|host|template|problem|maintenance|trigger)_get$",
+        "ZBX_DENYTOOL_1=*"
+      ]
+
+      volumes = []
+
+      bind_mounts = [
+        {
+          source    = "/home/ubuntu/monitoring-lab/zabbix/mcp-tls"
+          target    = "/var/lib/zabbix/enc"
+          read_only = true
+        }
+      ]
     }
   }
 }

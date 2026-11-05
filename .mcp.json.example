@@ -27,6 +27,13 @@
         "-c",
         "docker run --rm -i monitoring-lab-alertmanager-mcp"
       ]
+    },
+    "zabbix": {
+      "type": "http",
+      "url": "https://YOUR_SERVER_IP:8443/mcp",
+      "headers": {
+        "Authorization": "Bearer ${ZABBIX_MCP_TOKEN}"
+      }
     }
   }
 }

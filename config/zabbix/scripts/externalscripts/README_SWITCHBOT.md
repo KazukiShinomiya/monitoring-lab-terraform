@@ -174,7 +174,7 @@ ssh ubuntu@YOUR_SERVER_IP "docker restart monitoring-lab-zbx_server"
 # Zabbix Serverコンテナ内でrequestsをインストール
 docker exec monitoring-lab-zbx_server pip3 install requests
 
-# または、コンテナ再起動（init-zabbix-server.shが実行される）
+# または、コンテナ再起動
 docker restart monitoring-lab-zbx_server
 ```
 
