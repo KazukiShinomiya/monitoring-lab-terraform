@@ -1,6 +1,6 @@
 # SESSION_STATE
 
-最終更新: 2026-11-05
+最終更新: 2026-11-06
 
 ## 現在の状況
 
@@ -12,16 +12,23 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 
 **「次のローテーションは 2026-11-02 0:00 JST 頃」という以前の記述は誤りだった。取り消す。** 実際は 2026-11-01 0:00 JST（10-31 15:00Z）に起きていた。日付を数え違えたまま、ファイルの時刻を見ずに書いていた。週次の基準は「土曜 → 日曜に替わる 0:00 JST」と読む（未検証。次回の時刻で確かめる）。
 
-**Zabbix 8.0 への移行を準備中。** ブランチ `feat/zabbix-8-prep` に commit して push した。PR はまだ作っていない。`.env.example` の追記（`ZBX_MCP_ALLOWEDIP`、`ZABBIX_MCP_TOKEN`）は guardrails の git 層に止められるので、`--no-verify` を含めユーザーが `!` で commit する。本番は 7.4.3 のまま。Zabbix 8.0.0 は 2026-11-05 に出たが、その時点で `alpine-8.0.0` と `alpine-8.0-latest` は registry に無く（server / web / agent2 / mcp-server のすべて 404。`alpine-7.4.3` を対照に確認）、ここで待っている。手順は `docs/zabbix-8-upgrade.md`。
+**Zabbix 8.0 への移行を準備中。** ブランチ `feat/zabbix-8-prep` に commit して push した。PR はまだ作っていない。`.env.example` の追記（`ZBX_MCP_ALLOWEDIP`、`ZABBIX_MCP_TOKEN`）は guardrails の git 層に止められるので、`--no-verify` を含めユーザーが `!` で commit する。本番は 7.4.3 のまま。2026-11-06 に `alpine-8.0.0` が 4 リポジトリすべてに載ったのを確認し、本番のダンプでのリハーサルも失敗 0 件で通った。いまは本番用に `alpine-8.0.1` を待っている（2026-11-06 時点で 4 リポジトリとも 404）。手順は `docs/zabbix-8-upgrade.md`。
 
-## 前回の戦果（2026-11-05: Zabbix 8.0 と MCP の移行準備）
+## 前回の戦果（2026-11-06: Zabbix 8.0.0 のリハーサル）
+
+- `alpine-8.0.0` と `alpine-8.0-latest` が server / web / agent2 / mcp-server のすべてにあることを、Docker Hub の API と `docker manifest inspect` で確認した（pull はしていない）
+- 本番のダンプ（80MB、取得 19 秒）で `scripts/zabbix-upgrade-rehearsal.sh` を手元で実行し、失敗 0 件。`dbversion` 7040000 → 8000000、移行を含む server の起動は 6 秒（手元の環境での値で、本番の見積もりにはそのまま使わない）。web と agent2 は 8.0.0 で応答。MCP は TLS・許可外 IP の 403・読み取りツール 7 個のみ・`maintenance_delete` の拒否を確認。本番の Admin のパスワードで API トークンも発行できた
+- ダンプは本番・手元とも消し、リハーサルのコンテナ・ネットワーク・ボリュームも残っていないことを確認した
+- 未確認: `alpine-8.0.1` での動作、`terragrunt plan` と本番への適用、SwitchBot の実取得、Claude Code からの MCP 接続
+
+## 前々回の戦果（2026-11-05: Zabbix 8.0 と MCP の移行準備）
 
 - `feat/zabbix-8-prep`: 派生イメージ（`config/zabbix/server/Dockerfile`）、terragrunt の更新（8.0.0・起動スクリプト廃止・非 root・`zbx_mcp` 追加）、リハーサル（`scripts/zabbix-upgrade-rehearsal.sh`）、ビルドと証明書のスクリプト、手順書
 - 手元の Docker で確認: 新規の 7.4.3 の DB を `alpine-trunk`（web は 8.0.0、agent2 は 8.0.0rc3 と応答）で移行し、リハーサルは失敗 0 件。MCP は TLS・許可外 IP の 403・読み取りツール 7 個のみ・`maintenance_delete` の拒否まで確認。切り戻しの DB 復元と 7.4.3 の起動も確認
-- 未確認: 8.0.0 正式版、本番 DB（817MB）での移行時間、`terragrunt plan` と本番への適用、SwitchBot の実取得、Claude Code からの MCP 接続（`NODE_EXTRA_CA_CERTS`）
+- 未確認（8.0.0 正式版と本番 DB のリハーサルは 11-06 に済んだ）: 8.0.0 正式版、本番 DB（817MB）での移行時間、`terragrunt plan` と本番への適用、SwitchBot の実取得、Claude Code からの MCP 接続（`NODE_EXTRA_CA_CERTS`）
 - ブランチの `hclfmt` の整形チェックは通らない。`terraform fmt -check` は master でも同じ exit 3 で、今回は直していない。`hclvalidate` は通る
 
-## 前々回の戦果（2026-11-01: ハニーポットの表示を「何を狙われているか」が読める形にした）
+## それ以前の戦果（2026-11-01: ハニーポットの表示を「何を狙われているか」が読める形にした）
 
 - **#172**（c285924）exporter に `insights.py` を足した。ログの時刻で 1 時間ごとに数え、直近の種類別・上位（パス・IP・UA・ASN・国）を `wowhoneypot_recent_*` で出す。新規パス: 初見の時刻を `/data/wow-state/first_seen.json`（ボリューム `monitoring-lab-wow_state`）に残し、直近 7 日の新規を `wowhoneypot_new_path_*` で出す。分類を 7 種足した（ai-agent=/mcp・/sse、config-leak、backup、app-exploit、vpn-appliance、cms、proxy）。2 世代・13,114 件で `other` が 13.9% → 5.8%。上位ゲージが落ちた系列を残す不具合も直した。pytest を初めて導入した
 - **#173**（be21b6b）ダッシュボードの文言を平坦にした。問いかけの見出しや比喩をやめ、新規パス・前期間比・上位・初回観測などの用語にした（ユーザーから「AI がすぎる」と指摘があった）
@@ -35,7 +42,7 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 
 ## 次の行動
 
-1. Zabbix 8.0: 4 リポジトリに `alpine-8.0.x` が載ったら、`docs/zabbix-8-upgrade.md` の 2（本物のダンプでのリハーサル）へ進む。ユーザーの決定（2026-11-05）: リハーサルはタグが出たらすぐ、本番は 8.0.1 を待つ。MCP は読み取り専用のまま。`ZBX_MCP_ALLOWEDIP` に入れる IP は未決で、secret も未登録。PR はタグが出るまで作らない（マージすると存在しないイメージを適用しようとする）
+1. Zabbix 8.0: 4 リポジトリに `alpine-8.0.1` が載るのを待つ。載ったらタグの既定値（`terraform/envs/local/zabbix/terragrunt.hcl`、`terraform/envs/local/zabbix-agent/terragrunt.hcl`、`config/zabbix/server/Dockerfile`）を上げ、`docs/zabbix-8-upgrade.md` の 2 のリハーサルをそのタグで撃ち直してから、3 以降へ進む。ユーザーの決定（2026-11-05）: 本番は 8.0.1 を待つ。MCP は読み取り専用のまま。`ZBX_MCP_ALLOWEDIP` は、RTX の DHCP レンジを含む `/26` に決めた（2026-11-06 のユーザーの決定。VPN の接続先も同じプールなので許可に入るのは想定内。公開リポジトリなので値は書かない）。secret は 2026-11-06 に登録した。RTX の設定では、8443 は IPv4 でも IPv6 でも外から通していない（2026-11-06 に `show config` で確認）。MCP の起動後に、実際に外からも叩いて確かめる。PR は 8.0.1 まで作らない（マージすると本番に適用される）
 2. 本番での再起動の確認（未実施。やるかはユーザーの判断。数分、ハニーポットの監視が止まる）: `docker restart monitoring-lab-wow-exporter` の前後で `sum(wowhoneypot_http_requests_total)` が減らないこと、ログに `checkpoint restored` が出ることを見る
 3. 件数の多めの表示: 2026-11-01 08:17Z と 09:46Z の再起動による `increase()` の跳ねは、すでに記録されていて消せない。その時刻を含む表示期間では件数が多めに出る。09:46Z の跳ねが最後のはず（チェックポイント導入時）。それ以降の再起動で跳ねないことを、1 か自然な再起動で確かめる
 4. 数日後: 新規パスの表に何が出ているかを見る。`other` ばかりなら分類（`parser.py`）を足す。11-01 の夕方の時点で、新規パスは 2 件あった
@@ -52,6 +59,8 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 ## 決定事項・メモ
 
 - **`master` のまま `scripts/setup-remote-config.sh` を実行しない**（`feat/zabbix-8-prep` のマージまで）。本番の `init-zabbix-server.sh` は `docker-entrypoint.sh` を経由するが、master の版は経由しない。上書きして再起動すると `ZBX_DB_*` が渡らず、server は DB に繋がらないはず（実際に動かしては確かめていない）。ブランチではこのスクリプトを廃止した。本番ホストのファイルは、切り戻しに要るので移行後もしばらく残す
+- **`.env` の `DOCKER_HOST=npipe:...` は 2026-11-06 にコメントにした**（Windows 側から写した名残。`grep -c '^DOCKER_HOST=' .env` は 0）。この値があると手元の `docker` が `Failed to initialize: protocol not available` で止まる。別のマシンに写した `.env` やスキルの注意書きには同じ罠が残りうる。Terraform は `TF_DOCKER_HOST` を見るので、この値を使わない
+- `ZBX_ALLOWEDIP` は CIDR とカンマ区切りが効く（2026-11-06 に手元の使い捨て環境で確認。範囲内は 401、範囲外は 403）。`.1-.50` のような範囲指定は効かず、起動時のエラーも無いまま全部 403 になる。LAN から公開ポート経由で繋いだときに送信元 IP がそのまま届くかは未確認で、移行後に見る。403 になればまずここを疑う
 - 8.0 のイメージは entrypoint が Go のバイナリで、`docker-entrypoint.sh` は無い。既定のユーザーは 1997。`/var/lib/zabbix` のボリュームは既に 1997 の所有
 - MCP の `ZBX_ALLOWEDIP` は GitHub secret `ZBX_MCP_ALLOWEDIP` から渡す（未設定なら loopback のみ）。ツールのルールを書くと既定の拒否リストは置き換わるので、許可リストで書いている
 - 本番で `docker run` すると、読み取りの確認でもイメージの pull が起きる（2026-11-05 に `alpine:3.20` を入れてしまい削除した）。確認は動いているコンテナへの `docker exec` で行う
