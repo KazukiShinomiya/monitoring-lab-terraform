@@ -73,8 +73,7 @@ inputs = {
         "GF_PATHS_PROVISIONING=/etc/grafana/provisioning",
         "GF_LOG_MODE=console",
         "GF_LOG_LEVEL=info",
-        "GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app",
-        "GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/home.json"
+        "GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app"
       ]
 
       # ボリュームマウント設定（Docker Volume）
