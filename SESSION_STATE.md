@@ -8,7 +8,7 @@
 
 2026-10-28 の停電からは復旧済み。残る firing は `SynologyDiskHighUsage` 2 件（warning、停電前から）だけ。
 
-wow-exporter とハニーポットのダッシュボードは、2026-11-01 に PR #172〜#176 で改修・配備した（下記）。いまの exporter のイメージは `d1b9c4e59c80`（#174）。VPS のホスト鍵を固定して同期している（`StrictHostKeyChecking=yes`）。
+wow-exporter とハニーポットのダッシュボードは、2026-11-01 に PR #172〜#176 で改修・配備した（下記）。いまの exporter のイメージは `9e671a0e9408`（#199、2026-11-14 12:28:57Z 起動）。VPS のホスト鍵を固定して同期している（`StrictHostKeyChecking=yes`）。
 
 **「次のローテーションは 2026-11-02 0:00 JST 頃」という以前の記述は誤りだった。取り消す。** 実際は 2026-11-01 0:00 JST（10-31 15:00Z）に起きていた。日付を数え違えたまま、ファイルの時刻を見ずに書いていた。週次の基準は「土曜 → 日曜に替わる 0:00 JST」。11-07 15:00Z（11-08 0:00 JST）にも同じ時刻に起きたことを、同期ログで確かめた。次は 11-14 15:00Z。
 
@@ -22,7 +22,12 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 - 11-08 0:00 JST のローテーション（チェックポイント導入後で初めて）を、ユーザーが `!` で打ったコマンドの出力で確かめた。私が打つと `.env` を読むので infra-guard に止められる
   - 同期側: 4 本とも検知し、WARN・ERROR は 0 行。2 本で中身のある継ぎ足しが初めて起きた（https の access_log が 506 バイト、http の access_log が 504 バイト）。手元の `.1` の大きさは 4 本とも VPS 側の値と一致した
   - exporter 側: 4 本とも `read 0 remaining lines from .1`。継ぎ足し分の 4 行は、UA がすべて blackbox のプローブ（`PROBE_USER_AGENT`）で、`stats["lines"]` に入らないのが正しい。同じ周期に `skipped 2 probe lines`（https）と `skipped 4 probe lines`（http。`.1` の 2 行と新しいファイルの 2 行と読むが、内訳は未確認）が出ていた。取りこぼしは無い
-  - exporter は 11-01 09:46:30Z に起動してから、再起動していない
+  - exporter は 11-01 09:46:30Z に起動してから、#199 の入れ替えまで再起動していなかった
+- **#199**（6f24a46）新規パスの一覧（上位 20 件）と `wowhoneypot_new_paths_24h` から、オープンプロキシの探索（`path_bucket=proxy`）を除いた。送信元が自分自身の IP:80 への中継を試すので送信元ごとに別のパスになり、上位 20 件中 5 件を占めていた
+  - ダッシュボードで `{path_bucket!="proxy"}` と絞る案は、本番で値を取ったところ使えないと分かった。上位 20 件で切った後に絞るだけで（20 → 15 件）、24h の数をダッシュボード側で数え直すと 0 になった（147 が正しい）。exporter の `Insights` で、上位で切る前に除く形にした。proxy かどうかは初見の記録のキーに `categorize_path` を当て直して決めるので、`first_seen.json` の移行は要らない。環境変数 `NEW_PATH_EXCLUDE_BUCKETS=proxy`（terragrunt）
+  - 設計は Codex にも見せた（`codex-review`、effort high）。(c') を推す点は一致した。「分類が永続化されないので既存の項目は判定できない」という指摘は、コードを読んで採らなかった
+  - 確認: pytest 71 件 pass。上位で切った後に除く実装に差し替えると、足したテストが落ちる。#197 のスクリプトでの本番ビルドが通った（`9e671a0e9408`）。入れ替えの前後で、通算の件数は 57,863 → 57,863（跳ねも減りもなし。ただし間に新しい行が無かった）、ログに `checkpoint restored: 141 counter series, 4 files`。一覧は 20 件で proxy は 0 件、24h の数は 147 → 146（proxy の分か、窓がずれた分かは区別できない）。ダッシュボードの説明文は `sync-config.sh grafana` で配ったが、画面ではまだ見ていない
+- `.codex-review` を master にも入れた（#199 に同梱）
 
 ## 前々回の戦果（2026-11-06: Zabbix 8.0.0 のリハーサル）
 
@@ -46,9 +51,9 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 ## 次の行動
 
 1. Zabbix 8.0: 4 リポジトリに `alpine-8.0.1` が載るのを待つ。載ったらタグの既定値（`terraform/envs/local/zabbix/terragrunt.hcl`、`terraform/envs/local/zabbix-agent/terragrunt.hcl`、`config/zabbix/server/Dockerfile`）を上げ、`docs/zabbix-8-upgrade.md` の 2 のリハーサルをそのタグで撃ち直してから、3 以降へ進む。ユーザーの決定（2026-11-05、11-06 に再確認）: 本番は 8.0.1 を待つ。理由: `.0` は動かし続けて初めて出る不具合の修正前で、DB の移行は戻せず切り戻すと移行後のデータを失う。MCP も、運用する版とセットで使い始める（手元の写しで先に試す案は見送った）。公式の予定は無く、過去の `.0` → `.1` は 21〜48 日なので、11 月下旬〜12 月下旬と推定。11 月の最終週から覗く。MCP は読み取り専用のまま。`ZBX_MCP_ALLOWEDIP` は、RTX の DHCP レンジを含む `/26` に決めた（2026-11-06 のユーザーの決定。VPN の接続先も同じプールなので許可に入るのは想定内。公開リポジトリなので値は書かない）。secret は 2026-11-06 に登録した。RTX の設定では、8443 は IPv4 でも IPv6 でも外から通していない（2026-11-06 に `show config` で確認）。MCP の起動後に、実際に外からも叩いて確かめる。PR は 8.0.1 まで作らない（マージすると本番に適用される）
-2. 本番での再起動の確認（未実施。やるかはユーザーの判断。数分、ハニーポットの監視が止まる）: `docker restart monitoring-lab-wow-exporter` の前後で `sum(wowhoneypot_http_requests_total)` が減らないこと、ログに `checkpoint restored` が出ること、`increase()` が跳ねないことを見る。2026-11-01 08:17Z と 09:46Z の再起動による跳ねは記録されていて消せず、その時刻を含む表示期間では件数が多めに出る。11-14 時点で 09:46Z 以降の再起動は 0 回なので、再起動しても跳ねないことはまだ確かめられていない。自然な再起動が起きたときに見てもよい
-3. 数日後: 新規パスの表に何が出ているかを見る。`other` ばかりなら分類（`parser.py`）を足す。11-01 の夕方の時点で、新規パスは 2 件あった
-4. 次に wow-exporter のイメージを作り直すとき、#197 で直した `scripts/build-wow-exporter.sh` がそのまま通るかを確かめる（未検証。ホスト鍵は known_hosts で検査するようになった）
+2. ダッシュボードの新規パスの表に `IP:80` の行が無いことと、説明文の書き足しを画面で見る（11-14 に配布済み、未確認）。2026-11-01 08:17Z と 09:46Z の再起動による `increase()` の跳ねは記録されていて消せず、その時刻を含む表示期間では件数が多めに出る（11-14 の入れ替えでは跳ねなかった）
+3. （軽い）`scripts/build-wow-exporter.sh` の `rsync` に `--exclude .venv` を足す。手元のテスト用 venv まで送られ、build context が 27.68MB になっていた（イメージの中身には入らない）
+4. （軽い・別件）新規パスと上位パスのラベルは 64 文字で切っており（`main.py` の `k[:64]`）、先頭 64 文字が同じ別のパスは同じ系列に上書きされる（Codex の指摘、コードで確認）。長いパスでたまに起きる程度
 5. NAS の容量: `/volume1` が 99.5%、`/volumeUSB1/usbshare` が 100%（`SynologyDiskHighUsage`）。何を消すか移すかはユーザーの判断
 6. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討する（未着手）
 7. ランナーのイメージタグを 30 日以内に追従させる仕組み（自動アップデートを止めたため）。次の版が出たら上げる
@@ -83,5 +88,7 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 - HCP Terraform のトークン `monitoring-lab-cli` は 2027-10-25 に期限切れ。差し替えは GitHub secret `TF_API_TOKEN` と `.env` の `TF_TOKEN_app_terraform_io` の 2 か所
 - Vault はサーバーを再起動すると sealed に戻る（5 本中 3 本で開く）。開け方: リポジトリ直下で `! ( set -a; . ./.env; set +a; for i in 1 2 3; do eval "k=\$VAULT_UNSEAL_KEY_$i"; printf '{"key":"%s"}' "$k" | ssh "${TARGET_USER:-ubuntu}@${TARGET_HOST}" 'curl -sk -X PUT --data @- https://127.0.0.1:8200/v1/sys/unseal' | python3 -c 'import sys,json; s=json.load(sys.stdin); print("sealed", s["sealed"], "progress", s["progress"], "/", s["t"])'; done )`。3 行目が `sealed False` なら開いた
 - infra-guard フックは `.env` や `.ssh` を含むコマンドと、terraform/terragrunt の apply を含む文字列（commit メッセージも）を止める。ユーザーが `!` で打つか、メッセージをファイルに書いて `git commit -F` を使う
+- `gh pr merge` は手元の `origin/master` を動かさない。マージの直後にブランチを切るときは、先に `git fetch origin master` する（2026-11-14、マージ前の master から切ってしまい、載せ直した）
+- `wow-exporter` の新規パスは、7 日の件数の多い順に上位 20 件（`TOP_N`）しか出ない。ダッシュボードで絞っても、20 件から漏れたものは戻らない。24h の数は全件を数えた値（11-14 で 146）
 - infra-guard は、heredoc で書くファイルの中身に `.env`・`.ssh` の文字列があるだけでも止める（2026-11-14）。そういうファイルは Write ツールで書く
 - `terragrunt hclfmt --terragrunt-check` は `terraform/envs/local/grafana/terragrunt.hcl` で失敗する。master でも同じなので、変更を確かめるときは master と比べる（2026-11-14）。zabbix のブランチでも整形チェックは通らず、`hclvalidate` は通る
