@@ -82,3 +82,30 @@ def test_new_paths_drop_out_after_window():
 def test_normalize_path():
     assert normalize_path("/A/B?c=1") == "/a/b"
     assert len(normalize_path("/" + "x" * 500)) == 128
+
+
+def test_new_paths_exclude_bucket_before_top_n():
+    # 件数の多い proxy の新顔が上位を取っても、除けば普通の新顔が 1 件の枠に入る
+    store = FirstSeenStore(None, retention_days=180)
+    plain = Insights(store, window_hours=24, new_path_hours=168)
+    for i in range(3):
+        plain.observe(T0 + i, "192.0.2.10:80", "proxy", "192.0.2.10", None, None, None)
+    plain.observe(T0 + 5, "/cgi-bin/gw.cgi", "cgi", "192.0.2.20", None, None, None)
+    assert [k for k, _, _ in plain.new_paths(T0 + 10, top_n=1)] == ["192.0.2.10:80"]
+    assert plain.new_path_count(T0 + 10, 24) == 2
+
+    excl = Insights(store, window_hours=24, new_path_hours=168, new_path_exclude=["proxy"])
+    excl.paths = plain.paths
+    assert [k for k, _, _ in excl.new_paths(T0 + 10, top_n=1)] == ["/cgi-bin/gw.cgi"]
+    assert excl.new_path_count(T0 + 10, 24) == 1
+
+
+def test_new_path_exclude_judged_from_stored_key():
+    # 再起動直後は分類を覚えていない。初見の記録のキーだけで proxy と判定できること
+    store = FirstSeenStore(None, retention_days=180)
+    before = Insights(store, window_hours=24, new_path_hours=168)
+    before.observe(T0, "HTTP://Example.COM/?x=1", "proxy", "192.0.2.1", None, None, None)
+    before.observe(T0, "192.0.2.10:80", "proxy", "192.0.2.10", None, None, None)
+    before.observe(T0, "/get_rdf", "other", "192.0.2.2", None, None, None)
+    after = Insights(store, window_hours=24, new_path_hours=168, new_path_exclude=["proxy"])
+    assert after.new_path_count(T0 + 1, 24) == 1

@@ -18,6 +18,8 @@ import time
 from collections import Counter, defaultdict
 from typing import Dict, Hashable, Iterable, List, Optional, Tuple
 
+from .parser import categorize_path
+
 logger = logging.getLogger(__name__)
 
 HOUR = 3600
@@ -150,10 +152,14 @@ class Insights:
         window_hours: int = 24,
         new_path_hours: int = 168,
         retention_hours: int = 168,
+        new_path_exclude: Iterable[str] = (),
     ):
         self.store = store
         self.window_hours = window_hours
         self.new_path_hours = new_path_hours
+        # 新顔の一覧と数から除く分類（例: proxy。中継先の host:port が送信元ごとに別のパスになり、
+        # 上位を埋めて普通の新顔を押し出す）。窓の集計・上位パス・初見の記録には残す
+        self.new_path_exclude = frozenset(new_path_exclude)
         # 新顔の件数は新顔の窓の分だけ遡って数えるので、そちらが長ければ合わせる
         retention = max(retention_hours, window_hours, new_path_hours)
         self.paths = HourlyCounts(retention)
@@ -199,15 +205,27 @@ class Insights:
         for key in [k for k in self._path_bucket if k not in live]:
             del self._path_bucket[key]
 
+    def _is_new_path_candidate(self, key: str) -> bool:
+        # 分類は覚えておらず（再起動で消える）、キーから決め直す。キーは「? より前・小文字」で、
+        # categorize_path の判定も同じ部分に掛かるので、初見の記録だけから判定できる
+        return not self.new_path_exclude or categorize_path(key) not in self.new_path_exclude
+
     def new_paths(self, now: float, top_n: int) -> List[Tuple[str, float, int]]:
-        """初見が新顔の窓に入るパスを、その窓での件数の多い順に (key, 初見, 件数)。"""
+        """初見が新顔の窓に入るパスを、その窓での件数の多い順に (key, 初見, 件数)。
+
+        除く分類は、上位 top_n 件で切る前に外す（後で外すと、押し出された新顔が戻らない）。
+        """
         since = now - self.new_path_hours * HOUR
         counts = self.paths.window(now, self.new_path_hours)
-        rows = [(k, first, counts.get(k, 0)) for k, first in self.store.seen_since(since)]
+        rows = [
+            (k, first, counts.get(k, 0))
+            for k, first in self.store.seen_since(since)
+            if self._is_new_path_candidate(k)
+        ]
         rows = [r for r in rows if r[2] > 0]
         rows.sort(key=lambda r: (-r[2], -r[1], r[0]))
         return rows[:top_n]
 
     def new_path_count(self, now: float, hours: int) -> int:
         since = now - hours * HOUR
-        return sum(1 for _ in self.store.seen_since(since))
+        return sum(1 for k, _ in self.store.seen_since(since) if self._is_new_path_candidate(k))

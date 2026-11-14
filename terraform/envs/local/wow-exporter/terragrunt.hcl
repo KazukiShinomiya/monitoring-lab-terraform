@@ -42,6 +42,8 @@ inputs = {
         "STATE_DIR=/data/wow-state",
         "RECENT_WINDOWS=1h,24h,7d",
         "NEW_PATH_WINDOW_HOURS=168",
+        # オープンプロキシの探索は中継先（送信元自身の IP:80 など）ごとに別のパスになり、新規パスの上位を埋める
+        "NEW_PATH_EXCLUDE_BUCKETS=proxy",
       ]
 
       volumes = [
