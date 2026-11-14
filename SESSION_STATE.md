@@ -1,6 +1,6 @@
 # SESSION_STATE
 
-最終更新: 2026-11-06
+最終更新: 2026-11-14
 
 ## 現在の状況
 
@@ -12,21 +12,21 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 
 **「次のローテーションは 2026-11-02 0:00 JST 頃」という以前の記述は誤りだった。取り消す。** 実際は 2026-11-01 0:00 JST（10-31 15:00Z）に起きていた。日付を数え違えたまま、ファイルの時刻を見ずに書いていた。週次の基準は「土曜 → 日曜に替わる 0:00 JST」と読む（未検証。次回の時刻で確かめる）。
 
-**Zabbix 8.0 への移行を準備中。** ブランチ `feat/zabbix-8-prep` に commit して push した。PR はまだ作っていない。`.env.example` の追記（`ZBX_MCP_ALLOWEDIP`、`ZABBIX_MCP_TOKEN`）は guardrails の git 層に止められるので、`--no-verify` を含めユーザーが `!` で commit する。本番は 7.4.3 のまま。2026-11-06 に `alpine-8.0.0` が 4 リポジトリすべてに載ったのを確認し、本番のダンプでのリハーサルも失敗 0 件で通った。いまは本番用に `alpine-8.0.1` を待っている（2026-11-06 時点で 4 リポジトリとも 404）。手順は `docs/zabbix-8-upgrade.md`。
+**Zabbix 8.0 への移行を準備中。** ブランチ `feat/zabbix-8-prep` に commit して push した。PR はまだ作っていない。`.env.example` の追記（`ZBX_MCP_ALLOWEDIP`、`ZABBIX_MCP_TOKEN`）は guardrails の git 層に止められるので、`--no-verify` を含めユーザーが `!` で commit する。本番は 7.4.3 のまま。2026-11-06 に `alpine-8.0.0` が 4 リポジトリすべてに載ったのを確認し、本番のダンプでのリハーサルも失敗 0 件で通った。いまは本番用に `alpine-8.0.1` を待っている（2026-11-14 時点でも 4 リポジトリとも 404。8.0 系は `alpine-8.0.0` と `alpine-8.0-latest` だけ）。手順は `docs/zabbix-8-upgrade.md`。
 
-## 前回の戦果（2026-11-06: Zabbix 8.0.0 のリハーサル）
+## 前回の戦果（2026-11-14: 細かい残タスクの片付け）
+
+- **#197**（945d5b0）`scripts/build-wow-exporter.sh` の ssh を `build-zabbix-server.sh` に揃えた。鍵パスの決め打ちと `StrictHostKeyChecking=no` をやめ、実行権限を付けた（100755）。確かめたのは `bash -n` だけ。本番でのビルドは未検証
+- **#198**（9aa7dac）Grafana の `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH`（初期コミットから存在しない `home.json` を指していた）を外した。ユーザーの決定で、標準のホームに戻す案を採った。PR の plan で置き換わるのが `docker_container.service["grafana"]` だけ（理由は env）と確かめてからマージした。本番への反映は success（grafana は 1 件作り直し、他の 19 モジュールは変更 0）。ホームに「Welcome to Grafana」が出て、ダッシュボード 10 枚が残っていることを、ユーザーが画面で確かめた
+- Dependabot 用のラベル `dependencies`・`mcp` を `gh label create` で作った（一覧で 2 件あるのを確認）
+- 11-08 のローテーション後の確認（次の行動の 3〜5）は、`.env` を読むので infra-guard に止められ、まだ見ていない
+
+## 前々回の戦果（2026-11-06: Zabbix 8.0.0 のリハーサル）
 
 - `alpine-8.0.0` と `alpine-8.0-latest` が server / web / agent2 / mcp-server のすべてにあることを、Docker Hub の API と `docker manifest inspect` で確認した（pull はしていない）
 - 本番のダンプ（80MB、取得 19 秒）で `scripts/zabbix-upgrade-rehearsal.sh` を手元で実行し、失敗 0 件。`dbversion` 7040000 → 8000000、移行を含む server の起動は 6 秒（手元の環境での値で、本番の見積もりにはそのまま使わない）。web と agent2 は 8.0.0 で応答。MCP は TLS・許可外 IP の 403・読み取りツール 7 個のみ・`maintenance_delete` の拒否を確認。本番の Admin のパスワードで API トークンも発行できた
 - ダンプは本番・手元とも消し、リハーサルのコンテナ・ネットワーク・ボリュームも残っていないことを確認した
 - 未確認: `alpine-8.0.1` での動作、`terragrunt plan` と本番への適用、SwitchBot の実取得、Claude Code からの MCP 接続
-
-## 前々回の戦果（2026-11-05: Zabbix 8.0 と MCP の移行準備）
-
-- `feat/zabbix-8-prep`: 派生イメージ（`config/zabbix/server/Dockerfile`）、terragrunt の更新（8.0.0・起動スクリプト廃止・非 root・`zbx_mcp` 追加）、リハーサル（`scripts/zabbix-upgrade-rehearsal.sh`）、ビルドと証明書のスクリプト、手順書
-- 手元の Docker で確認: 新規の 7.4.3 の DB を `alpine-trunk`（web は 8.0.0、agent2 は 8.0.0rc3 と応答）で移行し、リハーサルは失敗 0 件。MCP は TLS・許可外 IP の 403・読み取りツール 7 個のみ・`maintenance_delete` の拒否まで確認。切り戻しの DB 復元と 7.4.3 の起動も確認
-- 未確認（8.0.0 正式版と本番 DB のリハーサルは 11-06 に済んだ）: 8.0.0 正式版、本番 DB（817MB）での移行時間、`terragrunt plan` と本番への適用、SwitchBot の実取得、Claude Code からの MCP 接続（`NODE_EXTRA_CA_CERTS`）
-- ブランチの `hclfmt` の整形チェックは通らない。`terraform fmt -check` は master でも同じ exit 3 で、今回は直していない。`hclvalidate` は通る
 
 ## それ以前の戦果（2026-11-01: ハニーポットの表示を「何を狙われているか」が読める形にした）
 
@@ -46,15 +46,13 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 2. 本番での再起動の確認（未実施。やるかはユーザーの判断。数分、ハニーポットの監視が止まる）: `docker restart monitoring-lab-wow-exporter` の前後で `sum(wowhoneypot_http_requests_total)` が減らないこと、ログに `checkpoint restored` が出ることを見る
 3. 件数の多めの表示: 2026-11-01 08:17Z と 09:46Z の再起動による `increase()` の跳ねは、すでに記録されていて消せない。その時刻を含む表示期間では件数が多めに出る。09:46Z の跳ねが最後のはず（チェックポイント導入時）。それ以降の再起動で跳ねないことを、1 か自然な再起動で確かめる
 4. 数日後: 新規パスの表に何が出ているかを見る。`other` ばかりなら分類（`parser.py`）を足す。11-01 の夕方の時点で、新規パスは 2 件あった
-5. 次のローテーション（2026-11-08 0:00 JST の見込み、未検証）の後に、`docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と、exporter のログの `rotation detected, read N remaining lines from .1` を見る。チェックポイント導入後、初めてのローテーションになる。継ぎ足しが 0 バイトでなければ、同期側の継ぎ足しの経路もそこで初めて検証される
-6. `scripts/build-wow-exporter.sh` の手直し: 実行権限が無い（git 上で 100644）、`StrictHostKeyChecking=no`、鍵のパスを `/home/ubuntu/.ssh/id_ed25519` に決め打ちしている（WSL には無く、警告が出て別の鍵で入っている）
-7. Grafana のホーム画面が 500 になる（`/var/lib/grafana/dashboards/home.json` が無い。11-01 08:56Z に記録）。今回の作業とは無関係
-8. NAS の容量: `/volume1` が 99.5%、`/volumeUSB1/usbshare` が 100%（`SynologyDiskHighUsage`）。何を消すか移すかはユーザーの判断
-9. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討する（未着手）
-10. ランナーのイメージタグを 30 日以内に追従させる仕組み（自動アップデートを止めたため）。次の版が出たら上げる
-11. HCP トークンの期限を週 1 で見るワークフロー（未着手。GitHub 側ランナーか自宅ランナーかが未決）
-12. CVE-2026-98432: https://ubuntu.com/security/CVE-2026-98432 で 24.04 の `linux` に修正版が出たら、このサーバーのカーネルを更新して再起動する（未適用の 78 件も合わせて当てるかは、その時に決める）。カーネルが上がったのを確かめてから、`~/repos/pi-ops` で `ansible-playbook playbooks/mitigate-cve-2026-98432.yml -K --limit monitoring-lab -e cve_mode=absent` を打つ。sudo のパスワードが要るので、本物の端末で打つ
-13. （軽い）Dependabot のラベル `dependencies`・`mcp` がリポジトリに無い。作るか `dependabot.yml` から消す
+5. 2026-11-08 0:00 JST の見込みだったローテーションの後を、まだ見ていない（11-14 時点）。ユーザーが `!` で打つ: `( set -a; . ./.env; set +a; ssh "${TARGET_USER:-ubuntu}@${TARGET_HOST}" 'docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log | tail -20; docker logs --tail 300 monitoring-lab-wow-exporter 2>&1 | grep -E "rotation detected|checkpoint"; docker inspect -f "{{.State.StartedAt}}" monitoring-lab-wow-exporter' )`。見るのは `docker exec monitoring-lab-wow-exporter grep -E "rotation detected|WARN|ERROR" /var/log/wow-sync.log` と、exporter のログの `rotation detected, read N remaining lines from .1` を見る。チェックポイント導入後、初めてのローテーションになる。継ぎ足しが 0 バイトでなければ、同期側の継ぎ足しの経路もそこで初めて検証される
+6. 次に wow-exporter のイメージを作り直すとき、#197 で直した `scripts/build-wow-exporter.sh` がそのまま通るかを確かめる（未検証。ホスト鍵は known_hosts で検査するようになった）
+7. NAS の容量: `/volume1` が 99.5%、`/volumeUSB1/usbshare` が 100%（`SynologyDiskHighUsage`）。何を消すか移すかはユーザーの判断
+8. 自宅サーバーごと落ちると Alertmanager も止まり、誰も気づけない。外から生存を見る仕組みを検討する（未着手）
+9. ランナーのイメージタグを 30 日以内に追従させる仕組み（自動アップデートを止めたため）。次の版が出たら上げる
+10. HCP トークンの期限を週 1 で見るワークフロー（未着手。GitHub 側ランナーか自宅ランナーかが未決）
+11. CVE-2026-98432: https://ubuntu.com/security/CVE-2026-98432 で 24.04 の `linux` に修正版が出たら、このサーバーのカーネルを更新して再起動する（未適用の 78 件も合わせて当てるかは、その時に決める）。カーネルが上がったのを確かめてから、`~/repos/pi-ops` で `ansible-playbook playbooks/mitigate-cve-2026-98432.yml -K --limit monitoring-lab -e cve_mode=absent` を打つ。sudo のパスワードが要るので、本物の端末で打つ
 
 ## 決定事項・メモ
 
@@ -84,3 +82,5 @@ wow-exporter とハニーポットのダッシュボードは、2026-11-01 に P
 - HCP Terraform のトークン `monitoring-lab-cli` は 2027-10-25 に期限切れ。差し替えは GitHub secret `TF_API_TOKEN` と `.env` の `TF_TOKEN_app_terraform_io` の 2 か所
 - Vault はサーバーを再起動すると sealed に戻る（5 本中 3 本で開く）。開け方: リポジトリ直下で `! ( set -a; . ./.env; set +a; for i in 1 2 3; do eval "k=\$VAULT_UNSEAL_KEY_$i"; printf '{"key":"%s"}' "$k" | ssh "${TARGET_USER:-ubuntu}@${TARGET_HOST}" 'curl -sk -X PUT --data @- https://127.0.0.1:8200/v1/sys/unseal' | python3 -c 'import sys,json; s=json.load(sys.stdin); print("sealed", s["sealed"], "progress", s["progress"], "/", s["t"])'; done )`。3 行目が `sealed False` なら開いた
 - infra-guard フックは `.env` や `.ssh` を含むコマンドと、terraform/terragrunt の apply を含む文字列（commit メッセージも）を止める。ユーザーが `!` で打つか、メッセージをファイルに書いて `git commit -F` を使う
+- infra-guard は、heredoc で書くファイルの中身に `.env`・`.ssh` の文字列があるだけでも止める（2026-11-14）。そういうファイルは Write ツールで書く
+- `terragrunt hclfmt --terragrunt-check` は `terraform/envs/local/grafana/terragrunt.hcl` で失敗する。master でも同じなので、変更を確かめるときは master と比べる（2026-11-14）。zabbix のブランチでも整形チェックは通らず、`hclvalidate` は通る
