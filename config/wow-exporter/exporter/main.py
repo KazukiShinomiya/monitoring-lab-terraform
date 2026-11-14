@@ -26,6 +26,8 @@ PROBE_USER_AGENT = os.environ.get("PROBE_USER_AGENT", "")
 # 初見の記録（first_seen.json）とチェックポイント（checkpoint.json）の置き場所。ログとは別のボリューム
 STATE_DIR = os.environ.get("STATE_DIR", "/data/wow-state")
 NEW_PATH_WINDOW_HOURS = int(os.environ.get("NEW_PATH_WINDOW_HOURS", "168"))
+# 新規パスの一覧と数から除く分類（カンマ区切り。例: proxy）。空なら除かない
+NEW_PATH_EXCLUDE_BUCKETS = [b.strip() for b in os.environ.get("NEW_PATH_EXCLUDE_BUCKETS", "").split(",") if b.strip()]
 FIRST_SEEN_RETENTION_DAYS = int(os.environ.get("FIRST_SEEN_RETENTION_DAYS", "180"))
 
 
@@ -423,7 +425,15 @@ def main():
     bootstrap = not store.load()
     logger.info("first-seen store: %d paths (%s)", len(store), "bootstrap" if bootstrap else "loaded")
     retention = max(h for _, h in RECENT_WINDOWS)
-    INSIGHTS = Insights(store, window_hours=retention, new_path_hours=NEW_PATH_WINDOW_HOURS, retention_hours=retention)
+    INSIGHTS = Insights(
+        store,
+        window_hours=retention,
+        new_path_hours=NEW_PATH_WINDOW_HOURS,
+        retention_hours=retention,
+        new_path_exclude=NEW_PATH_EXCLUDE_BUCKETS,
+    )
+    if NEW_PATH_EXCLUDE_BUCKETS:
+        logger.info("new paths exclude buckets: %s", ",".join(NEW_PATH_EXCLUDE_BUCKETS))
 
     # ログは毎回頭から読み直す（上位の一覧・窓の集計を作り直すため）。カウンタだけは
     # チェックポイントから戻し、記録した位置より後の行だけを足す。チェックポイントが無い
